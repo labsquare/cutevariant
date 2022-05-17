@@ -31,7 +31,7 @@ class SampleModel(QAbstractTableModel):
     PHENOTYPE_COLUMN = 1
     SEX_COLUMN = 2
     COMMENT_COLUMN = 3
-    #INFO_COLUMN = 4
+    # INFO_COLUMN = 4
 
     def __init__(self, conn: sqlite3.Connection = None) -> None:
         super().__init__()
@@ -57,9 +57,7 @@ class SampleModel(QAbstractTableModel):
                     self._samples.append(sample)
             self.endResetModel()
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole):
         # Titles
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and section == 0:
             return self.tr("Samples")
@@ -104,26 +102,19 @@ class SampleModel(QAbstractTableModel):
                     return QIcon(FIcon(0xF017A, color))
                 else:
                     return QIcon(FIcon(0xF017A, color_alpha))
-                #return QIcon(FIcon(0xF02FD, color))
-               
-
-            if col == 4:
-                if sample["comment"]:
-                    return QIcon(FIcon(0xF017A, color))
-                else:
-                    return QIcon(FIcon(0xF017A, color_alpha))
+                # return QIcon(FIcon(0xF02FD, color))
 
         if role == Qt.ToolTipRole:
 
             sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
-                comment = sample["comment"].replace("\n","<br>")
+                comment = sample["comment"].replace("\n", "<br>")
                 if comment:
                     return comment
 
             if col == SampleModel.NAME_COLUMN:
-                info=""
+                info = ""
                 if "name" in sample:
                     if sample["name"]:
                         name = sample["name"]
@@ -132,22 +123,28 @@ class SampleModel(QAbstractTableModel):
                 for sample_field in sample:
                     if sample_field not in ["id"]:
                         if sample_field != "name":
-                            sample_field_value=str(sample[sample_field]).replace("\n","<br>")
+                            sample_field_value = str(sample[sample_field]).replace("\n", "<br>")
                             if sample_field == "phenotype":
-                                sample_field_value=cst.PHENOTYPE_DESC.get(int(sample[sample_field]), "Unknown")
+                                sample_field_value = cst.PHENOTYPE_DESC.get(
+                                    int(sample[sample_field]), "Unknown"
+                                )
                             if sample_field == "sex":
-                                sample_field_value=cst.SEX_DESC.get(int(sample[sample_field]), "Unknown")
+                                sample_field_value = cst.SEX_DESC.get(
+                                    int(sample[sample_field]), "Unknown"
+                                )
                             if sample_field == "classification":
-                                sample_field_value=""
+                                sample_field_value = ""
                                 style = None
                                 for i in self.classifications:
                                     if i["number"] == sample[sample_field]:
-                                        style=i
+                                        style = i
                                 if style:
                                     if "name" in style:
-                                        sample_field_value+=style["name"]
+                                        sample_field_value += style["name"]
                                         if "description" in style:
-                                            sample_field_value+=f" ("+style["description"].strip()+")"
+                                            sample_field_value += (
+                                                f" (" + style["description"].strip() + ")"
+                                            )
                             info += f"<tr><td>{sample_field}</td><td width='20'></td><td>{sample_field_value}</td></tr>"
                 info += f"</table>"
                 return info
@@ -157,7 +154,6 @@ class SampleModel(QAbstractTableModel):
 
             if col == SampleModel.SEX_COLUMN:
                 return cst.SEX_DESC.get(int(sample["sex"]), "Unknown")
-
 
     def get_sample(self, row: int):
         if row >= 0 and row < len(self._samples):
@@ -215,7 +211,7 @@ class SampleModel(QAbstractTableModel):
 class SampleVerticalHeader(QHeaderView):
     def __init__(self, parent=None):
         super().__init__(Qt.Vertical, parent)
-        self.mainwindow=parent
+        self.mainwindow = parent
 
     def sizeHint(self):
         return QSize(30, super().sizeHint().height())
@@ -234,11 +230,9 @@ class SampleVerticalHeader(QHeaderView):
 
             painter.restore()
 
-            style = next(
-                i for i in self.model().classifications if i["number"] == classification
-            )
+            style = next(i for i in self.model().classifications if i["number"] == classification)
             color = style.get("color", "white")
-            selected_samples=self.mainwindow.get_state_data("selected_samples") or []
+            selected_samples = self.mainwindow.get_state_data("selected_samples") or []
             if name in selected_samples:
                 icon = 0xF0133
             else:
@@ -248,9 +242,7 @@ class SampleVerticalHeader(QHeaderView):
             pen.setWidth(6)
             painter.setPen(pen)
             painter.setBrush(QBrush(color))
-            painter.drawLine(
-                rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1
-            )
+            painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
             target = QRect(0, 0, 20, 20)
             pix = FIcon(icon, color).pixmap(target.size())
@@ -302,17 +294,11 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.view.horizontalHeader().hide()
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            3, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.view.doubleClicked.connect(self.on_edit)
-        #self.view.clicked.connect(self.on_run)
+        # self.view.clicked.connect(self.on_run)
 
         self.view.setShowGrid(False)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -337,9 +323,7 @@ class SamplesWidget(plugin.PluginWidget):
         else:
             self.stack_layout.setCurrentIndex(0)
 
-        self.mainwindow.set_state_data(
-            "samples", copy.deepcopy(self.model.get_samples())
-        )
+        self.mainwindow.set_state_data("samples", copy.deepcopy(self.model.get_samples()))
         self.mainwindow.refresh_plugins(sender=self)
 
     def _create_classification_menu(self):
@@ -370,17 +354,13 @@ class SamplesWidget(plugin.PluginWidget):
         self.clear_action = self.tool_bar.addAction(
             FIcon(0xF120A), "Clear sample(s)", self.on_clear_samples
         )
-        self.edit_action = self.tool_bar.addAction(
-            FIcon(0xF0FFB), "Edit  sample", self.on_edit
-        )
+        self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit  sample", self.on_edit)
 
         self.select_action = QAction(FIcon(0xF0FFB), "Add selected sample to filter variant")
         self.select_action.triggered.connect(self.on_select)
         self.unselect_action = QAction(FIcon(0xF0FFB), "Remove selected sample to filter variant")
         self.unselect_action.triggered.connect(self.on_unselect)
-        self.source_action = QAction(
-            FIcon(0xF0FFB), "Create source from selected sample"
-        )
+        self.source_action = QAction(FIcon(0xF0FFB), "Create source from selected sample")
         self.source_action.triggered.connect(self.on_create_source)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
@@ -400,7 +380,7 @@ class SamplesWidget(plugin.PluginWidget):
     def on_edit(self):
 
         sample = self.model.get_sample(self.view.currentIndex().row())
-        #print(sample)
+        # print(sample)
         if sample:
             dialog = SampleDialog(self.model.conn, sample["id"])
 
@@ -445,7 +425,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         # hugly : Create genotype fields
         indexes = self.view.selectionModel().selectedRows()
-        selected_samples=self.mainwindow.get_state_data("selected_samples") or []
+        selected_samples = self.mainwindow.get_state_data("selected_samples") or []
         if indexes:
             sample_name = indexes[0].siblingAtColumn(0).data()
             if sample_name not in selected_samples:
@@ -458,11 +438,10 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
         self.mainwindow.refresh_plugins()
-        #self.mainwindow.refresh_plugins("samples")
+        # self.mainwindow.refresh_plugins("samples")
         self.on_model_reset()
-        #print("selected_samples:")
-        #print(self.mainwindow.get_state_data("selected_samples"))
-        
+        # print("selected_samples:")
+        # print(self.mainwindow.get_state_data("selected_samples"))
 
     def on_unselect(self):
 
@@ -471,7 +450,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         # hugly : Create genotype fields
         indexes = self.view.selectionModel().selectedRows()
-        selected_samples=self.mainwindow.get_state_data("selected_samples") or []
+        selected_samples = self.mainwindow.get_state_data("selected_samples") or []
         if indexes:
             sample_name = indexes[0].siblingAtColumn(0).data()
             if sample_name in selected_samples:
@@ -483,9 +462,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
-        #print("selected_samples:")
-        #print(self.mainwindow.get_state_data("selected_samples"))
-
+        # print("selected_samples:")
+        # print(self.mainwindow.get_state_data("selected_samples"))
 
     def on_create_source(self):
         name, success = QInputDialog.getText(
@@ -564,7 +542,7 @@ class SamplesWidget(plugin.PluginWidget):
         else:
             filters = {}
 
-        previous_samples_filters=self.mainwindow.get_state_data("samples_filters")
+        previous_samples_filters = self.mainwindow.get_state_data("samples_filters")
 
         if not filters:
             root = "$or"
@@ -576,19 +554,19 @@ class SamplesWidget(plugin.PluginWidget):
                 if i == previous_samples_filters:
                     filters[root].remove(i)
 
-        selected_samples=self.mainwindow.get_state_data("selected_samples") or []
+        selected_samples = self.mainwindow.get_state_data("selected_samples") or []
 
-        #for index in indexes:
+        # for index in indexes:
         if selected_samples:
-            samples_filters={}
-            samples_filters["$or"]=[]
+            samples_filters = {}
+            samples_filters["$or"] = []
             for sample_name in selected_samples:
                 if sample_name:
                     key = f"samples.{sample_name}.gt"
                     condition = {key: {"$gte": 1}}
                     samples_filters["$or"].append(condition)
 
-            self.mainwindow.set_state_data("samples_filters",samples_filters)
+            self.mainwindow.set_state_data("samples_filters", samples_filters)
             filters[root].append(samples_filters)
 
         return filters
