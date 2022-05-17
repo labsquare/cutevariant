@@ -114,46 +114,47 @@ class SampleModel(QAbstractTableModel):
                     return comment
 
             if col == SampleModel.NAME_COLUMN:
-                info = ""
-                if "name" in sample:
-                    if sample["name"]:
-                        name = sample["name"]
-                        info += f"Sample <b>{name}</b><hr>"
-                info += f"<table>"
-                for sample_field in sample:
-                    if sample_field not in ["id"]:
-                        if sample_field != "name":
-                            sample_field_value = str(sample[sample_field]).replace("\n", "<br>")
-                            if sample_field == "phenotype":
-                                sample_field_value = cst.PHENOTYPE_DESC.get(
-                                    int(sample[sample_field]), "Unknown"
-                                )
-                            if sample_field == "sex":
-                                sample_field_value = cst.SEX_DESC.get(
-                                    int(sample[sample_field]), "Unknown"
-                                )
-                            if sample_field == "classification":
-                                sample_field_value = ""
-                                style = None
-                                for i in self.classifications:
-                                    if i["number"] == sample[sample_field]:
-                                        style = i
-                                if style:
-                                    if "name" in style:
-                                        sample_field_value += style["name"]
-                                        if "description" in style:
-                                            sample_field_value += (
-                                                f" (" + style["description"].strip() + ")"
-                                            )
-                            info += f"<tr><td>{sample_field}</td><td width='20'></td><td>{sample_field_value}</td></tr>"
-                info += f"</table>"
-                return info
+                return self.get_tooltip(index.row())
 
             if col == SampleModel.PHENOTYPE_COLUMN:
                 return cst.PHENOTYPE_DESC.get(int(sample["phenotype"]), "Unknown")
 
             if col == SampleModel.SEX_COLUMN:
                 return cst.SEX_DESC.get(int(sample["sex"]), "Unknown")
+
+    def get_tooltip(self, row: int) -> str:
+        """Return all samples info as a formatted text"""
+        info = ""
+        sample = self._samples[row]
+        if "name" in sample:
+            if sample["name"]:
+                name = sample["name"]
+                info += f"Sample <b>{name}</b><hr>"
+        info += f"<table>"
+        for sample_field in sample:
+            if sample_field not in ["id"]:
+                if sample_field != "name":
+                    sample_field_value = str(sample[sample_field]).replace("\n", "<br>")
+                    if sample_field == "phenotype":
+                        sample_field_value = cst.PHENOTYPE_DESC.get(
+                            int(sample[sample_field]), "Unknown"
+                        )
+                    if sample_field == "sex":
+                        sample_field_value = cst.SEX_DESC.get(int(sample[sample_field]), "Unknown")
+                    if sample_field == "classification":
+                        sample_field_value = ""
+                        style = None
+                        for i in self.classifications:
+                            if i["number"] == sample[sample_field]:
+                                style = i
+                        if style:
+                            if "name" in style:
+                                sample_field_value += style["name"]
+                                if "description" in style:
+                                    sample_field_value += f" (" + style["description"].strip() + ")"
+                    info += f"<tr><td>{sample_field}</td><td width='20'></td><td>{sample_field_value}</td></tr>"
+        info += f"</table>"
+        return info
 
     def get_sample(self, row: int):
         if row >= 0 and row < len(self._samples):
