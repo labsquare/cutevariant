@@ -415,6 +415,29 @@ def test_update_variants_counts(conn):
     assert expected == observed
 
 
+def test_get_samples_from_query(conn):
+    query = "classification:3,4 sex:0 phenotype:1"
+
+    # Update database with complete sample information to test
+    # TODO: Have richer conn fixture to have more testability
+    sql.update_sample(conn, {"id": 1, "classification": 4, "sex": 0, "phenotype": 1})
+    sql.update_sample(conn, {"id": 2, "classification": 2, "sex": 0, "phenotype": 0})
+    assert sql.get_samples_from_query(conn, query) == (
+        {
+            "id": 1,
+            "name": "sacha",
+            "family_id": "fam",
+            "father_id": 0,
+            "mother_id": 0,
+            "sex": 0,
+            "phenotype": 1,
+            "classification": 4,
+            "tags": "",
+            "comment": "",
+        },
+    )
+
+
 def test_create_indexes(conn):
 
     VARIANT_IDX = ["dp"]

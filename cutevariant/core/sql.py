@@ -2015,6 +2015,35 @@ def get_sample_variant_classification_count(
     return int(r)
 
 
+def get_samples_from_query(conn: sqlite3.Connection, query: str):
+    """Selects all the samples matching query
+    Example query:
+    "classification:3,4 sex:1 phenotype:3"
+    Will call:
+    "SELECT * FROM samples WHERE classification in (3,4) AND sex=1 AND phenotype=3"
+
+    Args:
+        conn (sqlite3.Connection)
+        query (str): the query string
+    """
+    filters_list = query.split()
+
+    # A list such as [('classification','3,4'), ('sex','1')]
+    field_filters = [tuple(cat.split(":")) for cat in filters_list]
+
+    and_list = []
+    for field_name, field_values in field_filters:
+        if len(field_values.split(",")) > 1:
+            and_list.append(f"{field_name} in ({field_values})")
+        else:
+            and_list.append(f"{field_name}={field_values}")
+
+    sql_query = f"SELECT * FROM samples WHERE {' AND '.join(and_list)}"
+
+    # Suppose conn.row_factory = sqlite3.Row
+    return tuple(dict(data) for data in conn.execute(sql_query))
+
+
 def get_variants(
     conn: sqlite3.Connection,
     fields,
