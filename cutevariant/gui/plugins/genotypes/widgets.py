@@ -73,7 +73,7 @@ class VariantVerticalHeader(QHeaderView):
         default_color = "lightgray"
 
         # sample
-        valid = self.model().item(section)["valid"]
+        valid = self.model().item(section)["classification"]
         sample_color = style.SAMPLE_CLASSIFICATION[valid].get("color")
         sample_icon = style.SAMPLE_CLASSIFICATION[valid].get("icon")
         sample_blurred = style.SAMPLE_CLASSIFICATION[valid].get("blurred")
@@ -223,8 +223,8 @@ class GenotypeModel(QAbstractTableModel):
         if "classification" not in self.fields:
             self._headers.remove("classification")
 
-        if "valid" not in self.fields:
-            self._headers.remove("valid")
+        # if "valid" in self.fields:
+        #     self._headers.remove("valid")
 
         if "valid" in self._headers:
             self._headers.remove("valid")

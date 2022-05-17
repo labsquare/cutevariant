@@ -51,9 +51,7 @@ OPERATORS_SQL_2_PY = {
     "OR": "$or",
 }
 
-
 # Phenotype
-
 PHENOTYPE_DESC = {2: "Affected", 1: "Unaffected"}
 
 # Genotypes
@@ -65,6 +63,9 @@ GENOTYPE_DESC = {
     1: "Heterozygous",
     2: "Homozygous muted",
 }
+
+# Phenotype
+SEX_DESC = {1: "Male", 1: "Female"}
 
 # Paths
 DIR_LOGS = tempfile.gettempdir() + "/"
