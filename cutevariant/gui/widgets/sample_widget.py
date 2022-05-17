@@ -1,3 +1,5 @@
+import operator
+import platform
 import sqlite3
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
@@ -11,6 +13,58 @@ from cutevariant.gui.ficon import FIcon
 
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
+
+
+
+class MyTableModel(QAbstractTableModel):
+    """
+    Why is this so hard
+    """
+    def __init__(self, data, header):
+        super().__init__()
+        self._data = data
+        self.header = header
+
+    def rowCount(self, parent):
+        """override"""
+        return len(self._data)
+
+    def columnCount(self, parent):
+        """override"""
+        return len(self._data[0])
+
+    def data(self, index, role):
+        """
+        override
+        center table value if it is an int
+        """
+        if not index.isValid():
+            return None
+        elif role == Qt.TextAlignmentRole:
+            value = self._data[index.row()][index.column()]
+            if isinstance(value, int):
+                return Qt.AlignVCenter + Qt.AlignCenter
+        elif role != Qt.DisplayRole:
+            return None
+        return self._data[index.row()][index.column()]
+
+    def headerData(self, col, orientation, role):
+        """override"""
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self.header[col]
+        return None
+
+    def sort(self, col, order):
+        """
+        override
+        sort table by given column number
+        """
+        self.emit(SIGNAL("layoutAboutToBeChange()"))
+        self._data = sorted(self._data, key = operator.itemgetter(col))
+        if order == Qt.DescendingOrder:
+            self._data.reverse()
+        self.emit(SIGNAL("layoutChanged()"))
+
 
 
 class HpoWidget(QWidget):
@@ -126,15 +180,13 @@ class SampleWidget(QWidget):
         # pheno_layout.addRow("HPO", self.hpo_widget) #hidden for now
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
-        # Validated variant
 
-        self.variant_model = QStringListModel()
-        self.variant_view = QListView()
-        self.variant_view.setModel(self.variant_model)
+        self.variant_view = QTableView()
         self.tab_widget.addTab(self.variant_view, "Validated variants")
 
         self.history_view = DictWidget()
         self.tab_widget.addTab(self.history_view, "History")
+        # self.tab_widget.currentChanged.connect(self.on_tab_change)
 
         header_layout = QHBoxLayout()
         header_layout.addLayout(val_layout)
@@ -148,6 +200,9 @@ class SampleWidget(QWidget):
         vLayout.addLayout(button_layout)
 
         self.setLayout(vLayout)
+
+    # def on_tab_change(self):
+    #     self.adjustSize()
 
     def load(self, sample_id: int):
 
@@ -183,8 +238,18 @@ class SampleWidget(QWidget):
         str_lists = []
         for v in sql.get_variants(self.conn, ["chr", "pos", "ref", "alt"], filters={"$and": [{f"samples.{sample_name}.classification": 2}]}):
             str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
+        self.variant_model = MyTableModel(self.get_validated_variants_table(self.sample_id), ["Variant", "gt", "Validation tags", "Validation comment", "Variant comment"])
+        self.variant_view.setModel(self.variant_model)
+        self.variant_view.setSortingEnabled(True)
 
-        self.variant_model.setStringList(str_lists)
+        h_header = self.variant_view.horizontalHeader()
+        h_header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        # if platform.system() == "Windows" and platform.release() == "10":
+        #     h_header.setStyleSheet( "QHeaderView::section { border: 1px solid #D8D8D8; background-color: white; border-top: 0px; border-left: 0px;}")
+        v_header = self.variant_view.verticalHeader()
+        v_header.setSectionResizeMode(QHeaderView.ResizeToContents)
+
+        # self.variant_model.setStringList(str_lists)
 
     def save(self, sample_id: int):
         """
@@ -251,6 +316,14 @@ class SampleWidget(QWidget):
         values.append(self.phenotype_combo.currentIndex())
         return values
 
+    def get_validated_variants_table(self, sample_id):
+        """
+        """
+        cmd = "SELECT variants.chr || ':' || variants.pos || '-' || variants.ref || '>' || variants.alt AS 'Variant name' , sample_has_variant.gt, sample_has_variant.tags , sample_has_variant.comment AS 'Validation comment', variants.comment AS 'Variant comment' FROM variants INNER JOIN sample_has_variant on variants.id = sample_has_variant.variant_id WHERE sample_has_variant.classification >1 AND sample_has_variant.sample_id = 1;"
+        c = self.conn.cursor()
+        c.row_factory = lambda cursor, row: row
+        return c.execute(cmd).fetchall()
+
     def get_history_samples(self):
         """Get the history of samples"""
         results = {}
@@ -301,7 +374,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     # conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
-    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
+    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/edit_sample_update.db")
 
     w = SampleDialog(conn, 1)
 
