@@ -28,7 +28,7 @@ class ChoiceModel(QAbstractListModel):
             return QIcon(self._data[index.row()]["icon"])
 
         if role == Qt.CheckStateRole:
-            return Qt.Checked if self._data[index.row()]["checked"] else Qt.Unchecked
+            return int(Qt.Checked) if self._data[index.row()]["checked"] else int(Qt.Unchecked)
 
         if role == Qt.ToolTipRole:
             return self._data[index.row()]["description"]
@@ -102,10 +102,7 @@ class ChoiceView(QListView):
     def keyPressEvent(self, event: QKeyEvent):
 
         if self.model():
-            if (
-                event.key() == Qt.Key_Space
-                and len(self.selectionModel().selectedRows()) > 1
-            ):
+            if event.key() == Qt.Key_Space and len(self.selectionModel().selectedRows()) > 1:
 
                 self._check_state = (
                     Qt.Checked if self._check_state == Qt.Unchecked else Qt.Unchecked
@@ -241,7 +238,6 @@ if __name__ == "__main__":
     m = QStringListModel()
     m.setStringList(["sacha", "boby", "truc"])
     wc = ChoiceWidget()
-    wc.set_model(m)
 
     toolbar = w.addToolBar("test")
 
