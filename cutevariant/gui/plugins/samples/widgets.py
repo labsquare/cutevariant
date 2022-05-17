@@ -100,11 +100,11 @@ class SampleModel(QAbstractTableModel):
                     return QIcon(FIcon(0xF001A, color_alpha))
 
             if col == SampleModel.COMMENT_COLUMN:
-                # if sample["comment"]:
-                #     return QIcon(FIcon(0xF017A, color))
-                # else:
-                #     return QIcon(FIcon(0xF017A, color_alpha))
-                return QIcon(FIcon(0xF02FD, color))
+                if sample["comment"]:
+                    return QIcon(FIcon(0xF017A, color))
+                else:
+                    return QIcon(FIcon(0xF017A, color_alpha))
+                #return QIcon(FIcon(0xF02FD, color))
                
 
             if col == 4:
@@ -117,12 +117,12 @@ class SampleModel(QAbstractTableModel):
 
             sample = self._samples[index.row()]
 
-            # if col == SampleModel.COMMENT_COLUMN:
-            #     comment = sample["comment"].replace("\n","<br>")
-            #     if comment:
-            #         return comment
-
             if col == SampleModel.COMMENT_COLUMN:
+                comment = sample["comment"].replace("\n","<br>")
+                if comment:
+                    return comment
+
+            if col == SampleModel.NAME_COLUMN:
                 info=""
                 if "name" in sample:
                     if sample["name"]:
