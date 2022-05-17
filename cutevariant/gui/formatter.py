@@ -88,7 +88,11 @@ class FormatterDelegate(QItemDelegate):
 
         # Draw selections
         if option.state & QStyle.State_Enabled:
-            bg = QPalette.Normal if option.state & QStyle.State_Active or option.state & QStyle.State_Selected else QPalette.Inactive
+            bg = (
+                QPalette.Normal
+                if option.state & QStyle.State_Active or option.state & QStyle.State_Selected
+                else QPalette.Inactive
+            )
         else:
             bg = QPalette.Disabled
 
@@ -96,12 +100,18 @@ class FormatterDelegate(QItemDelegate):
         if option.state & QStyle.State_Selected:
             painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
         elif classification > 0:
-            color: QColor = QColor(CLASSIFICATION[classification].get("color"))
+
+            # Get color from config .. shortcut
+            item = next(i for i in index.model().classifications if i["number"] == classification)
+
+            color: QColor = QColor(item.get("color", "black"))
             color.setAlpha(50)
             painter.fillRect(option.rect, color)
 
         # Draw formatters
-        option.rect = option.rect.adjusted(3, 0, 0, 0)  # Don't know why I need to adjust the left margin ..
+        option.rect = option.rect.adjusted(
+            3, 0, 0, 0
+        )  # Don't know why I need to adjust the left margin ..
 
         field_name = index.model().headerData(index.column(), Qt.Horizontal, Qt.DisplayRole)
         field_value = index.data(Qt.DisplayRole)
