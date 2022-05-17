@@ -35,8 +35,6 @@ from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import (
     MarkdownDialog,
-    ChoiceWidget,
-    create_widget_action,
     VariantDialog,
     FilterDialog,
 )
@@ -366,16 +364,15 @@ class VariantModel(QAbstractTableModel):
                 return QSize(0, 20)
 
         if orientation == Qt.Horizontal:
-            if section in self.fields:
-                field_name = self.fields[section]
-                flattened_filters = filters_to_flat(self.filters)
-                col_filtered = any(field_name in f for f in flattened_filters)
-                if role == Qt.DecorationRole:
-                    return QIcon(FIcon(0xF0232)) if col_filtered else QIcon(FIcon(0xF0233))
-                if role == Qt.FontRole:
-                    font = QFont()
-                    font.setBold(col_filtered)
-                    return font
+            field_name = self.fields[section]
+            flattened_filters = filters_to_flat(self.filters)
+            col_filtered = any(field_name in f for f in flattened_filters)
+            if role == Qt.DecorationRole:
+                return QIcon(FIcon(0xF0232)) if col_filtered else QIcon(FIcon(0xF0233))
+            if role == Qt.FontRole:
+                font = QFont()
+                font.setBold(col_filtered)
+                return font
 
         # if orientation == Qt.Vertical:
         #     if role == Qt.DecorationRole:
