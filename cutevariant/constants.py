@@ -64,8 +64,8 @@ GENOTYPE_DESC = {
     2: "Homozygous muted",
 }
 
-# Phenotype
-SEX_DESC = {1: "Male", 1: "Female"}
+# Sex
+SEX_DESC = {1: "Male", 2: "Female"}
 
 # Paths
 DIR_LOGS = tempfile.gettempdir() + "/"
