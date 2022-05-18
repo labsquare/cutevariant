@@ -195,6 +195,7 @@ class SampleWidget(QWidget):
         for view in (self.variants_stats_view, self.valid_stats_view):
             h_header = view.horizontalHeader()
             h_header.setStretchLastSection(True)
+            view.setSortingEnabled(False)
 
         validated_variants, header = sql.get_validated_variants_table(self.conn, self.sample_id)
         self.variant_model = EditBoxTableModel(validated_variants, header)

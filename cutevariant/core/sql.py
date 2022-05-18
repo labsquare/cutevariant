@@ -3337,6 +3337,18 @@ def import_pedfile(conn: sqlite3.Connection, filename: str):
 
 ### EDIT BOXES
 
+def get_classif_dict(classif_config):
+    """
+    >>> get_classif_dict([{'color': '#ff5500', 'description': '', 'name': 'Likely Pathogenic', 'number': 4}, {'color': '#b7b7b8', 'description': '', 'name': 'VSI', 'number': 3}])
+    {"4": "Likely Pathogenic", "3": "VSI"}
+    """
+    dic = {}
+    for c in classif_config:
+        dic[c["number"]] = c["name"]
+    if 0 not in dic.keys():
+        dic[0] = "Unassigned (0)"
+    return dic
+
 def get_variants_classif_stats(conn: sqlite3.Connection, sample_id: int):
     """
     For a given sample
@@ -3350,6 +3362,10 @@ def get_variants_classif_stats(conn: sqlite3.Connection, sample_id: int):
     c = conn.cursor()
     c.row_factory = lambda cursor, row: list(row)
     res = c.execute(cmd).fetchall()
+
+    classif_dict = get_classif_dict(Config("classifications")["variants"])
+    for r in res:
+        r[0] = classif_dict[r[0]]
     return res, header
 
 def get_variants_valid_stats(conn: sqlite3.Connection, sample_id: int):
@@ -3365,6 +3381,10 @@ def get_variants_valid_stats(conn: sqlite3.Connection, sample_id: int):
     c = conn.cursor()
     c.row_factory = lambda cursor, row: list(row)
     res = c.execute(cmd).fetchall()
+
+    classif_dict = get_classif_dict(Config("classifications")["genotypes"])
+    for r in res:
+        r[0] = classif_dict[r[0]]
     return res, header
 
 def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
@@ -3389,7 +3409,7 @@ def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
         header = ["Variant name", "GT", "Validation Tags", "Validation Comment", "Variant Comment"]
         tags_index = [2]
 
-    cmd = "SELECT " + get_variant_name_select(conn) + select_fields + " FROM variants INNER JOIN sample_has_variant on variants.id = sample_has_variant.variant_id WHERE sample_has_variant.classification >1 AND sample_has_variant.sample_id = " + str(sample_id)
+    cmd = "SELECT " + get_variant_name_select() + select_fields + " FROM variants INNER JOIN sample_has_variant on variants.id = sample_has_variant.variant_id WHERE sample_has_variant.classification >1 AND sample_has_variant.sample_id = " + str(sample_id)
     c = conn.cursor()
     c.row_factory = lambda cursor, row: list(row)
     res = c.execute(cmd).fetchall()
@@ -3402,7 +3422,7 @@ def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
     return res, header
 
 
-def get_variant_name_select(conn: sqlite3.Connection):
+def get_variant_name_select():
     """
     :param conn: sqlite3.connect
     :param config: config file to fetch variant name pattern
@@ -3421,7 +3441,7 @@ def get_variant_name_select(conn: sqlite3.Connection):
         )
     cols = re.findall("\{(.*?)\}", pattern)
     seps = re.findall("\}(.*?)\{", pattern)
-    assert len(seps) == len(cols) - 1, "Unexpected error in get_variant_name_select(args)"
+    assert len(seps) == len(cols) - 1, "Unexpected error in get_variant_name_select()"
     imax = len(cols)
     name = pattern.split("{")[0]
     for i in range(imax):
@@ -3441,18 +3461,29 @@ def get_deja_vu_table(conn: sqlite3.Connection, variant_id: int, threshold = 0):
         cmd = "SELECT samples.name, samples.classification, samples.tags, samples.comment, sample_has_variant.gt, sample_has_variant.vaf, sample_has_variant.classification, sample_has_variant.tags, sample_has_variant.comment"
         header = ["Sample", "Sample status", "Sample tags", "Sample comment", "GT", "VAF", "Validation status", "Validation tags", "Validation comment"]
         tags_index = [2, 7]
+        classif_index = 6
     else:
         cmd = "SELECT samples.name, samples.classification, samples.tags, samples.comment, sample_has_variant.gt, sample_has_variant.classification, sample_has_variant.tags, sample_has_variant.comment"
         header = ["Sample", "Sample status", "Sample tags", "Sample comment", "GT", "Validation status", "Validation tags", "Validation comment"]
         tags_index = [2, 6]
+        classif_index = 5
 
     cmd += " FROM sample_has_variant INNER JOIN samples on samples.id = sample_has_variant.sample_id WHERE sample_has_variant.classification > " + str(threshold) + " AND variant_id = " + str(variant_id)
     c = conn.cursor()
     c.row_factory = lambda cursor, row: list(row)
     res = c.execute(cmd).fetchall()
 
+    #beautify tags
     for i in range(len(res)):
         for j in tags_index:
             if '&' in res[i][j]:
                 res[i][j] = ", ".join(res[i][j].split('&'))
+
+    #fetch classif names instead of number
+    genotypes_classif = get_classif_dict(Config("classifications")["genotypes"])
+    for r in res:
+        r[classif_index] = genotypes_classif[r[classif_index]]
+    samples_classif = get_classif_dict(Config("classifications")["samples"])
+    for r in res:
+        r[1] = samples_classif[r[1]]
     return res, header

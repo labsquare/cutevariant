@@ -1,10 +1,7 @@
 import operator
-import sqlite3
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
-
-from cutevariant.core import sql
 
 
 class EditBoxTableModel(QAbstractTableModel):
