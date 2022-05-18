@@ -66,9 +66,21 @@ class SampleModel(QAbstractTableModel):
 
         col = index.column()
 
-        if role == Qt.DisplayRole and col == SampleModel.NAME_COLUMN:
-            sample = self._samples[index.row()]
-            return sample.get("name")
+        if role == Qt.DisplayRole:
+            
+            if col == SampleModel.NAME_COLUMN:
+                sample = self._samples[index.row()]
+                return sample.get("name")
+
+            # if col == SampleModel.COMMENT_COLUMN:
+            #     sample = self._samples[index.row()]
+            #     sample_id=sample["id"]
+            #     nb_validated_genotype=dict (
+            #         self.conn.execute(
+            #             f"""SELECT count(sample_has_variant.variant_id) as nb_validated_genotype FROM sample_has_variant WHERE sample_has_variant.sample_id = '{sample_id}' and sample_has_variant.classification>0"""
+            #         ).fetchone()
+            #     )
+            #     return nb_validated_genotype["nb_validated_genotype"]
 
         if role == Qt.DecorationRole:
 
@@ -96,20 +108,43 @@ class SampleModel(QAbstractTableModel):
                     return QIcon(FIcon(0xF001A, color_alpha))
 
             if col == SampleModel.COMMENT_COLUMN:
+                sample = self._samples[index.row()]
+                sample_id=sample["id"]
+                nb_validated_genotype=dict (
+                    self.conn.execute(
+                        f"""SELECT count(sample_has_variant.variant_id) as nb_validated_genotype FROM sample_has_variant WHERE sample_has_variant.sample_id = '{sample_id}' and sample_has_variant.classification>0"""
+                    ).fetchone()
+                )
+                if nb_validated_genotype["nb_validated_genotype"]>0:
+                    return QIcon(FIcon(0xF017F, color))
                 if sample["comment"]:
                     return QIcon(FIcon(0xF017A, color))
                 else:
                     return QIcon(FIcon(0xF017A, color_alpha))
-                # return QIcon(FIcon(0xF02FD, color))
 
         if role == Qt.ToolTipRole:
 
             sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
+                sample = self._samples[index.row()]
+                sample_id=sample["id"]
+                sample_name=sample["name"]
+                nb_validated_genotype=dict (
+                    self.conn.execute(
+                        f"""SELECT count(sample_has_variant.variant_id) as nb_validated_genotype FROM sample_has_variant WHERE sample_has_variant.sample_id = '{sample_id}' and sample_has_variant.classification>0"""
+                    ).fetchone()
+                )
+                sample_comment=f"Comment on sample <b>{sample_name}</b><hr>"
                 comment = sample["comment"].replace("\n", "<br>")
                 if comment:
-                    return comment
+                    sample_comment+=""+comment+"<br>"
+                else:
+                    sample_comment+="<i>No comment</i><br>"
+                sample_comment+="<br>Number of validated variant: "+str(nb_validated_genotype["nb_validated_genotype"])+""
+                #if nb_validated_genotype["nb_validated_genotype"]>0:
+                    
+                return sample_comment
 
             if col == SampleModel.NAME_COLUMN:
                 return self.get_tooltip(index.row())
@@ -297,7 +332,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.view.doubleClicked.connect(self.on_edit)
-        # self.view.clicked.connect(self.on_run)
+        # self.view.clicked.connect(self.on_switch)
 
         self.view.setShowGrid(False)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -437,6 +472,21 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("favorite_samples", [])
         self.on_select()
         self.model.load()
+
+    def on_switch(self):
+        """This method is called to select only one sample as a favorite.
+
+        """
+        indexes = self.view.selectionModel().selectedRows()
+        favorite_samples = self.mainwindow.get_state_data("favorite_samples") or []
+        if indexes:
+            sample_name = indexes[0].siblingAtColumn(0).data()
+            if sample_name in favorite_samples:
+                self.on_unselect()
+            else:
+                self.on_select()
+
+        #self.model.load()
 
     def on_select_all(self):
         """This method is called to select all samples as a favorite.
