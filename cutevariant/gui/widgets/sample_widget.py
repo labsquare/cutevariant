@@ -17,9 +17,9 @@ from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 from cutevariant import LOGGER
 
-class MyTableModel(QAbstractTableModel):
+class EditTableModel(QAbstractTableModel):
     """
-    To be used in edit widgets : validated variants, 
+    To be used in edit widgets
     """
     def __init__(self, data, header):
         super().__init__()
@@ -67,6 +67,20 @@ class MyTableModel(QAbstractTableModel):
         if order == Qt.DescendingOrder:
             self._data.reverse()
         self.emit(SIGNAL("layoutChanged()"))
+
+class EditTableView(QTableView):
+    def __init__(self):
+        super().__init__()
+        self.setSortingEnabled(True)
+
+        h_header = self.horizontalHeader()
+        h_header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        h_header.setMaximumSectionSize(400)
+        # if platform.system() == "Windows" and platform.release() == "10":
+        #     h_header.setStyleSheet( "QHeaderView::section { border: 1px solid #D8D8D8; background-color: white; border-top: 0px; border-left: 0px;}")
+
+        v_header = self.verticalHeader()
+        v_header.setSectionResizeMode(QHeaderView.ResizeToContents)
 
 
 class HpoWidget(QWidget):
@@ -179,7 +193,7 @@ class SampleWidget(QWidget):
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
 
-        self.variant_view = QTableView()
+        self.variant_view = EditTableView()
         self.tab_widget.addTab(self.variant_view, "Validated variants")
 
         self.history_view = DictWidget()
@@ -233,17 +247,9 @@ class SampleWidget(QWidget):
 
         # Get validated variants
         validated_variants, header = get_validated_variants_table(self.conn, self.sample_id)
-        self.variant_model = MyTableModel(validated_variants, header)
+        self.variant_model = EditTableModel(validated_variants, header)
         self.variant_view.setModel(self.variant_model)
-        self.variant_view.setSortingEnabled(True)
 
-        h_header = self.variant_view.horizontalHeader()
-        h_header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        # if platform.system() == "Windows" and platform.release() == "10":
-        #     h_header.setStyleSheet( "QHeaderView::section { border: 1px solid #D8D8D8; background-color: white; border-top: 0px; border-left: 0px;}")
-        h_header.setMaximumSectionSize(400)
-        v_header = self.variant_view.verticalHeader()
-        v_header.setSectionResizeMode(QHeaderView.ResizeToContents)
 
     def save(self, sample_id: int):
         """
