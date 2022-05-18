@@ -316,12 +316,18 @@ class VariantModel(QAbstractTableModel):
                     return QColor("red")
 
             if role == Qt.BackgroundRole:
-                return QBrush(QColor("red"))
-                # classification = self.variant(index.row())["classification"]
-                # color = style.CLASSIFICATION[classification].get("color")
-                # return QBrush(QColor(style.CLASSIFICATION.get(color)))
+                class_number = self.variant(index.row())["classification"]
+                if class_number > 0:
+                    classification = self.classification_to_name(class_number)
+                    col = QColor(classification.get("color", "lightgray"))
+                    col.setAlpha(50)
+                    brush = QBrush(col)
+                    return brush
 
         return None
+
+    def classification_to_name(self, number: int):
+        return next(i for i in self.classifications if i["number"] == number)
 
     def headerData(self, section, orientation=Qt.Horizontal, role=Qt.DisplayRole):
         """Overrided: Return column name and display tooltips on headers
