@@ -232,11 +232,8 @@ class SampleWidget(QWidget):
         self.initial_state = self.get_gui_state()
 
         # Get validated variants
-        # sample_name = sql.get_sample(self.conn, sample_id)["name"]
-        # str_lists = []
-        # for v in sql.get_variants(self.conn, ["chr", "pos", "ref", "alt"], filters={"$and": [{f"samples.{sample_name}.classification": 2}]}):
-        #     str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
-        self.variant_model = MyTableModel(get_validated_variants_table(self.conn, self.sample_id), ["Variant", "gt", "Validation tags", "Validation comment", "Variant comment"])
+        validated_variants, header = get_validated_variants_table(self.conn, self.sample_id)
+        self.variant_model = MyTableModel(validated_variants, header)
         self.variant_view.setModel(self.variant_model)
         self.variant_view.setSortingEnabled(True)
 
@@ -247,8 +244,6 @@ class SampleWidget(QWidget):
         h_header.setMaximumSectionSize(400)
         v_header = self.variant_view.verticalHeader()
         v_header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        
-        # self.variant_model.setStringList(str_lists)
 
     def save(self, sample_id: int):
         """
@@ -331,28 +326,48 @@ class SampleWidget(QWidget):
         return results
 
 
-def get_validated_variants_table(conn, sample_id):
+def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
     """
+    Creates a table for all variants with classification > 1 for the current sample, with the columns:
+    variant_name (from config)
+    GT
+    VAF (if it exists)
+    sample_has_variant tag
+    sample_has_variant comment
+    variant comment
+
+    :return: the data as a list of tuples$
+    :return: header as a list of string
     """
-    cmd = "SELECT " + get_variant_name_select(conn) + " AS 'Variant name' , sample_has_variant.gt, sample_has_variant.tags , sample_has_variant.comment AS 'Validation comment', variants.comment AS 'Variant comment' FROM variants INNER JOIN sample_has_variant on variants.id = sample_has_variant.variant_id WHERE sample_has_variant.classification >1 AND sample_has_variant.sample_id = " + str(sample_id)
+    if "vaf" in sql.get_table_columns(conn, "sample_has_variant"):
+        select_fields = ", sample_has_variant.gt, sample_has_variant.vaf, sample_has_variant.tags, sample_has_variant.comment, variants.comment"
+        header = ["Variant name", "GT", "VAF", "Validation Tags", "Validation Comment", "Variant Comment"]
+        tags_index = [3]
+    else:
+        select_fields = ", sample_has_variant.gt, sample_has_variant.tags, sample_has_variant.comment, variants.comment"
+        header = ["Variant name", "GT", "Validation Tags", "Validation Comment", "Variant Comment"]
+        tags_index = [2]
+
+    cmd = "SELECT " + get_variant_name_select(conn) + select_fields + " FROM variants INNER JOIN sample_has_variant on variants.id = sample_has_variant.variant_id WHERE sample_has_variant.classification >1 AND sample_has_variant.sample_id = " + str(sample_id)
     print(cmd)
     c = conn.cursor()
     c.row_factory = lambda cursor, row: list(row)
     res = c.execute(cmd).fetchall()
     #beautify tags column
     for i in range(len(res)):
-        if '&' in res[i][2]:
-            res[i][2] = ", ".join(res[i][2].split('&'))
-    return res
+        for j in tags_index:
+            if '&' in res[i][j]:
+                res[i][j] = ", ".join(res[i][j].split('&'))
+    return res, header
 
-def get_variant_name_select(conn):
+def get_variant_name_select(conn: sqlite3.Connection):
     """
     :param conn: sqlite3.connect
     :param config: config file to fetch variant name pattern
     :return: a string containing the fields for a SELECT fetching variant name properly
 
     example:
-    input: {'tnomen':'cnomen'}
+    input: Config("variables")["variant_name_pattern"] = {'tnomen':'cnomen'}
     return: "`variants.tnomen`|| ":" || `variants.cnomen``"
     """
     pattern = Config("variables")["variant_name_pattern"]
