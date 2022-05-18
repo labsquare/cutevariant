@@ -6,6 +6,7 @@ from functools import cmp_to_key, partial
 import time
 import copy
 import re
+import sqlite3
 
 # Qt imports
 from PySide6.QtWidgets import *
@@ -33,13 +34,6 @@ from cutevariant.gui.widgets import (
 
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
-
-from cutevariant.gui.style import (
-    GENOTYPE,
-    CLASSIFICATION,
-    SAMPLE_CLASSIFICATION,
-    SAMPLE_VARIANT_CLASSIFICATION,
-)
 
 from cutevariant.gui import FormatterDelegate
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
@@ -72,39 +66,51 @@ class VariantVerticalHeader(QHeaderView):
         default_color = "lightgray"
 
         # sample
-        valid = self.model().item(section)["classification"]
-        sample_color = style.SAMPLE_CLASSIFICATION[valid].get("color")
-        sample_icon = style.SAMPLE_CLASSIFICATION[valid].get("icon")
-        sample_blurred = style.SAMPLE_CLASSIFICATION[valid].get("blurred")
+        classification = self.model().item(section)["classification"]
+        # sample_color = style.SAMPLE_CLASSIFICATION[valid].get("color")
+        # sample_icon = style.SAMPLE_CLASSIFICATION[valid].get("icon")
+        # sample_blurred = style.SAMPLE_CLASSIFICATION[valid].get("blurred")
 
-        # sample variant
-        classification = self.model().item(section)["classification"] or 0
-        sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("color")
-        sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("icon")
-        sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("blurred")
+        # # sample variant
+        # classification = self.model().item(section)["classification"] or 0
+        # sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("color")
+        # sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("icon")
+        # sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("blurred")
 
-        if sample_variant_color != "":
-            sample_color = sample_variant_color
+        # if sample_variant_color != "":
+        #     sample_color = sample_variant_color
 
-        if sample_blurred or sample_variant_blurred:
-            sample_variant_color = style.BLURRED_COLOR
-            sample_color = style.BLURRED_COLOR
+        # if sample_blurred or sample_variant_blurred:
+        #     sample_variant_color = style.BLURRED_COLOR
+        #     sample_color = style.BLURRED_COLOR
 
-        painter.restore()
-        pen = QPen(QColor(sample_variant_color))
-        pen.setWidth(6)
-        painter.setPen(pen)
-        painter.setBrush(QBrush(sample_variant_color))
-        painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+        # painter.restore()
+        # pen = QPen(QColor(sample_variant_color))
+        # pen.setWidth(6)
+        # painter.setPen(pen)
+        # painter.setBrush(QBrush(sample_variant_color))
+        # painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
-        pix = FIcon(0xF012F, sample_color).pixmap(16, 16)
+        # pix = FIcon(0xF012F, sample_color).pixmap(16, 16)
 
-        target = rect.center() - pix.rect().center() + QPoint(1, 0)
+        # target = rect.center() - pix.rect().center() + QPoint(1, 0)
 
-        painter.drawPixmap(target, pix)
+        # painter.drawPixmap(target, pix)
 
 
 class GenotypeModel(QAbstractTableModel):
+
+    """
+
+    model = GenotypeModel()
+
+    model.set_fields(["gt","dp","truc"])
+    model.set_samples(["boby","raymond"])
+    model.set_variant_id(324)
+
+    model.load()
+
+    """
 
     samples_are_loading = Signal(bool)
     error_raised = Signal(str)
@@ -112,13 +118,23 @@ class GenotypeModel(QAbstractTableModel):
     load_finished = Signal()
     interrupted = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, conn: sqlite3.Connection = None, parent=None):
         super().__init__(parent)
-        self.conn = None
-        self.items = []
-        self.fields = []
 
-        self.selected_samples = []
+        self.conn = conn
+
+        # Inner Data
+        self._genotypes = []
+
+        # Selected fields
+        self._fields = set()
+
+        # Selected samples
+        self._samples = set()
+
+        # Current variant
+        self._variant_id = 0
+
         self._headers = []
         self.fields_descriptions = {}
 
@@ -133,68 +149,51 @@ class GenotypeModel(QAbstractTableModel):
 
         self._user_has_interrupt = False
 
-    def rowCount(self, parent: QModelIndex = QModelIndex) -> int:
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """override"""
-        return len(self.items)
+        if parent == QModelIndex():
+            return len(self._genotypes)
+        else:
+            return 0
 
     def columnCount(self, parent: QModelIndex = QModelIndex) -> int:
         """override"""
-        return len(self._headers)
+        if parent == QModelIndex():
+            return len(self._headers)
+        else:
+            return 0
 
-    def item(self, row: int):
-        return self.items[row]
+    def get_genotype(self, row: int) -> dict:
+        return self._genotypes[row]
 
-    def get_samples(self):
-        return (i["name"] for i in self.items)
+    def get_samples(self) -> typing.List[str]:
+        return self._samples
+
+    def set_samples(self, samples: typing.List[str]):
+        self._samples = list(set(samples))
+
+    def get_fields(self) -> typing.List[str]:
+        return self._fields
+
+    def set_fields(self, fields: typing.List[str]):
+        self._fields = list(set(fields))
+
+    def set_variant_id(self, variant_id: int):
+        self._variant_id = variant_id
+
+    def get_variant_id(self) -> int:
+        return self._variant_id
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
         """override"""
         if not index.isValid():
             return None
 
-        item = self.items[index.row()]
+        item = self._genotypes[index.row()]
         key = self._headers[index.column()]
 
         if role == Qt.DisplayRole and key != "valid":
             return item[key]
-
-        if role == Qt.DecorationRole:
-            # if key == "valid":
-            #     hex_icon = 0xF139A if item[key] == 1 else 0xF0FC7
-            #     return QIcon(FIcon(hex_icon))
-
-            # return QIcon(FIcon(0xF139A)).toPixmap(20, 20)
-            return FIcon(0xF139A)
-
-            # classification = self.model().item(section)["classification"] or 0
-            # sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
-            #     "color"
-            # )
-            # sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
-            #     "icon"
-            # )
-            # sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[
-            #     classification
-            # ].get("blurred")
-
-        # if role == Qt.DecorationRole:
-        #     if index.column() == 0:
-        #         return QIcon(FIcon(SEX_ICON.get(item["sex"], 0xF02D6)))
-        #     if field == "gt":
-        #         icon = style.GENOTYPE.get(item[field], style.GENOTYPE[-1])["icon"]
-        #         return QIcon(FIcon(icon))
-
-        # if role == Qt.ToolTipRole:
-        #     if index.column() == 0:
-        #         return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
-
-        #     else:
-        #         description = self.fields_descriptions.get(field, "")
-        #         return f"<b>{field}</b><br/> {description} "
-
-        # if role == Qt.ForegroundRole and index.column() == 0:
-        #     phenotype = self.items[index.row()]["phenotype"]
-        #     return QColor(PHENOTYPE_COLOR.get(phenotype, "#FF00FF"))
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
 
@@ -205,46 +204,35 @@ class GenotypeModel(QAbstractTableModel):
             if section < len(self._headers):
                 return self._headers[section]
 
+        if orientation == Qt.Vertical and role == Qt.DisplayRole:
+            item = self.get_genotype(section)
+            if "classification" in item:
+                return item["classification"]
+
         return None
 
     def on_samples_loaded(self):
 
         self.beginResetModel()
-        self.items.clear()
 
-        self.items = self._load_samples_thread.results
+        self._genotypes = self._load_samples_thread.results
 
-        if len(self.items) > 0:
-            self._headers = [
-                i for i in self.items[0].keys() if i not in ("sample_id", "variant_id")
-            ]
+        # if len(self._items) > 0:
+        #     self._headers = [
+        #         i for i in self._items[0].keys() if i not in ("sample_id", "variant_id")
+        #     ]
 
-        if "classification" not in self.fields:
-            self._headers.remove("classification")
-
-        # if "valid" in self.fields:
-        #     self._headers.remove("valid")
-
-        if "valid" in self._headers:
-            self._headers.remove("valid")
-
-        if "classification" in self._headers:
-            self._headers.remove("classification")
-
-        print("Loaded", len(self.items), self.rowCount())
+        # if "classification" not in self._fields:
+        #     self._headers.remove("classification")
 
         self.endResetModel()
-
-        # # Save cache
-        # self._load_variant_cache[
-        #     self._sample_hash
-        # ] = self._load_variant_thread.results.copy()
+        print("LOADED ", len(self._genotypes), self.rowCount())
 
         self._end_timer = time.perf_counter()
         self.elapsed_time = self._end_timer - self._start_timer
         self.load_finished.emit()
 
-    def load(self, variant_id):
+    def load(self):
         """Start async queries to get sample fields for the selected variant
 
         Called by:
@@ -257,8 +245,7 @@ class GenotypeModel(QAbstractTableModel):
         if self.conn is None:
             return
 
-        # Hacky ..
-        if not self.selected_samples:
+        if not self.get_samples():
             self.clear()
             return
 
@@ -266,14 +253,15 @@ class GenotypeModel(QAbstractTableModel):
             LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
             self.interrupt()
 
-        if "classification" not in self.fields:
-            self.fields.append("classification")
+        # mandatory field
+        self._fields.append("classification")
 
         # Create load_func to run asynchronously: load samples
         load_samples_func = partial(
-            sql.get_sample_annotations_by_variant,
-            variant_id=variant_id,
-            samples=self.selected_samples,
+            sql.get_genotypes,
+            variant_id=self.get_variant_id(),
+            fields=self.get_fields(),
+            samples=self.get_samples(),
         )
 
         # Start the run
@@ -312,8 +300,8 @@ class GenotypeModel(QAbstractTableModel):
             else:
                 return 1
 
-        self.items = sorted(
-            self.items,
+        self._genotypes = sorted(
+            self._genotypes,
             key=cmp_to_key(field_sort),
             reverse=order == Qt.DescendingOrder,
         )
@@ -356,13 +344,13 @@ class GenotypeModel(QAbstractTableModel):
         """
 
         # change from memory
-        self.items[row].update(data)
+        self._genotypes[row].update(data)
 
         # print("EDIT", self.items[row])
 
         # Persist in SQL
-        data["variant_id"] = self.items[row]["variant_id"]
-        data["sample_id"] = self.items[row]["sample_id"]
+        data["variant_id"] = self._genotypes[row]["variant_id"]
+        data["sample_id"] = self._genotypes[row]["sample_id"]
         sql.update_sample_has_variant(self.conn, data)
         self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount()))
         self.headerDataChanged.emit(Qt.Vertical, row, row)
@@ -370,7 +358,7 @@ class GenotypeModel(QAbstractTableModel):
     def clear(self):
 
         self.beginResetModel()
-        self.items.clear()
+        self._genotypes.clear()
         self.endResetModel()
         self.load_finished.emit()
 
@@ -552,7 +540,7 @@ class GenotypesWidget(plugin.PluginWidget):
                 if ret == QMessageBox.No:
                     return
 
-            presets[name] = self.model.fields
+            presets[name] = self.model._fields
             config["presets"] = presets
 
             config.save()
@@ -583,7 +571,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
         # Validation
         row = self.view.selectionModel().currentIndex().row()
-        sample = self.model.item(row)
+        sample = self.model.get_genotype(row)
         valid_form = True
         valid_form_text = "Validation"
         if style.SAMPLE_CLASSIFICATION[sample["valid"]].get("lock"):
@@ -614,7 +602,7 @@ class GenotypesWidget(plugin.PluginWidget):
     def _show_sample_dialog(self):
 
         row = self.view.selectionModel().currentIndex().row()
-        sample = self.model.item(row)
+        sample = self.model.get_genotype(row)
         if sample:
 
             dialog = SampleDialog(self.conn, sample["sample_id"])
@@ -626,7 +614,7 @@ class GenotypesWidget(plugin.PluginWidget):
     def _show_sample_variant_dialog(self):
 
         row = self.view.selectionModel().currentIndex().row()
-        sample = self.model.item(row)
+        sample = self.model.get_genotype(row)
         if sample:
 
             dialog = SampleVariantDialog(self.conn, sample["sample_id"], self.current_variant["id"])

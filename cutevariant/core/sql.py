@@ -2705,17 +2705,7 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     )
 
 
-def get_sample_annotations_by_variant(
-    conn,
-    variant_id: int,
-    fields: List[str] = None,
-    samples: List[str] = None,
-    families: List[str] = None,
-    tags: List[str] = None,
-    genotypes: List[str] = None,
-    sample_classification: List[str] = None,
-    genotype_classification: List[str] = None,
-):
+def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List[str] = None):
     """Get samples annotation for a specific variant using different filters
 
     This function is used by the sample plugins.
@@ -2735,53 +2725,14 @@ def get_sample_annotations_by_variant(
 
     query = f"""SELECT sv.sample_id, sv.variant_id, samples.classification, samples.name , {sql_fields} FROM samples
     LEFT JOIN sample_has_variant sv 
-    ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}"""
+    ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}  """
 
     conditions = []
 
-    # Filter on samples
     if samples:
-        conditions.append("(samples.name IN " + "(" + ",".join([f"'{s}'" for s in samples]) + "))")
+        sample_clause = ",".join([f"'{s}'" for s in samples])
+        query += f"WHERE samples.name IN ({sample_clause})"
 
-    # Filter on family
-    if families:
-        conditions.append(
-            "(samples.family_id IN " + "(" + ",".join([f"'{s}'" for s in families]) + "))"
-        )
-
-    # Filter on tags
-    if tags:
-        tags_conditions = []
-        for t in tags:
-            tags_conditions.append("samples.tags LIKE '%" + t + "%'")
-        conditions.append("(" + " OR ".join(tags_conditions) + ")")
-
-    # Filter on genotypes
-    if genotypes:
-        conditions.append("(sv.gt IN " + "(" + ",".join([f"'{s}'" for s in genotypes]) + "))")
-
-    # Filter on valid
-    if sample_classification:
-        conditions.append(
-            "(samples.classification IN "
-            + "("
-            + ",".join([f"'{v}'" for v in sample_classification])
-            + "))"
-        )
-
-    # Filter on classification
-    if genotype_classification:
-        conditions.append(
-            "(sv.classification IN "
-            + "("
-            + ",".join([f"'{c}'" for c in genotype_classification])
-            + "))"
-        )
-
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-
-    LOGGER.debug(query)
     return (dict(data) for data in conn.execute(query))
 
 

@@ -613,18 +613,24 @@ def test_get_annotations(conn):
         assert read_tx == expected_tx
 
 
-def test_get_sample_annotations_by_variant(conn):
+def test_get_genotypes(conn):
 
     expected = [
         dict(i, classification=0, variant_id=1, sample_id=index + 1)
         for index, i in enumerate(VARIANTS[0]["samples"])
     ]
     observed = []
-    for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"]):
+    for i in sql.get_genotypes(conn, 1, fields=["gt", "dp"]):
         observed.append(i)
 
-    print("OBS", observed)
     assert expected == observed
+
+    observed.clear()
+    for i in sql.get_genotypes(conn, 1, fields=["gt", "dp"], samples=["sacha"]):
+        observed.append(i)
+
+    print(observed)
+    assert len(observed) == 1
 
 
 def test_get_histories(conn):
