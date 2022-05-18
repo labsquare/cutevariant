@@ -3424,3 +3424,28 @@ def get_variant_name_select(conn: sqlite3.Connection):
             name += " || '" + seps[i] + "' || "
     name += pattern.split("}")[-1]
     return name
+
+def get_deja_vu_table(conn: sqlite3.Connection, variant_id: int, threshold = 0):
+    """
+    :return: the data as a list of tuples
+    :return: header as a list of string
+    """
+    if "vaf" in get_table_columns(conn, "sample_has_variant"):
+        cmd = "SELECT samples.name, samples.classification, samples.tags, samples.comment, sample_has_variant.gt, sample_has_variant.vaf, sample_has_variant.classification, sample_has_variant.tags, sample_has_variant.comment"
+        header = ["Sample", "Sample status", "Sample tags", "Sample comment", "GT", "VAF", "Validation status", "Validation tags", "Validation comment"]
+        tags_index = [2, 7]
+    else:
+        cmd = "SELECT samples.name, samples.classification, samples.tags, samples.comment, sample_has_variant.gt, sample_has_variant.classification, sample_has_variant.tags, sample_has_variant.comment"
+        header = ["Sample", "Sample status", "Sample tags", "Sample comment", "GT", "Validation status", "Validation tags", "Validation comment"]
+        tags_index = [2, 6]
+
+    cmd += " FROM sample_has_variant INNER JOIN samples on samples.id = sample_has_variant.sample_id WHERE sample_has_variant.classification > " + str(threshold) + " AND variant_id = " + str(variant_id)
+    c = conn.cursor()
+    c.row_factory = lambda cursor, row: list(row)
+    res = c.execute(cmd).fetchall()
+
+    for i in range(len(res)):
+        for j in tags_index:
+            if '&' in res[i][j]:
+                res[i][j] = ", ".join(res[i][j].split('&'))
+    return res, header
