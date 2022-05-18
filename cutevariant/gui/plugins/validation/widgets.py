@@ -1,11 +1,9 @@
 """Plugin to Display genotypes variants 
 """
-from dataclasses import replace
 import typing
 from functools import cmp_to_key, partial
 import time
 import copy
-import re
 
 # Qt imports
 from PySide6.QtWidgets import *
@@ -14,8 +12,7 @@ from PySide6.QtGui import *
 
 
 # Custom imports
-from cutevariant.core import sql, command
-from cutevariant.core.reader import BedReader
+from cutevariant.core import sql
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.gui.style import SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.commons import DEFAULT_SELECTION_NAME
@@ -181,36 +178,6 @@ class SamplesModel(QAbstractTableModel):
 
             # return QIcon(FIcon(0xF139A)).toPixmap(20, 20)
             return FIcon(0xF139A)
-
-            # classification = self.model().item(section)["classification"] or 0
-            # sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
-            #     "color"
-            # )
-            # sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get(
-            #     "icon"
-            # )
-            # sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[
-            #     classification
-            # ].get("blurred")
-
-        # if role == Qt.DecorationRole:
-        #     if index.column() == 0:
-        #         return QIcon(FIcon(SEX_ICON.get(item["sex"], 0xF02D6)))
-        #     if field == "gt":
-        #         icon = style.GENOTYPE.get(item[field], style.GENOTYPE[-1])["icon"]
-        #         return QIcon(FIcon(icon))
-
-        # if role == Qt.ToolTipRole:
-        #     if index.column() == 0:
-        #         return f"""{item['name']} (<span style="color:{PHENOTYPE_COLOR.get(item['phenotype'],'lightgray')}";>{PHENOTYPE_STR.get(item['phenotype'],'Unknown phenotype')}</span>)"""
-
-        #     else:
-        #         description = self.fields_descriptions.get(field, "")
-        #         return f"<b>{field}</b><br/> {description} "
-
-        # if role == Qt.ForegroundRole and index.column() == 0:
-        #     phenotype = self.items[index.row()]["phenotype"]
-        #     return QColor(PHENOTYPE_COLOR.get(phenotype, "#FF00FF"))
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
 
@@ -406,8 +373,6 @@ class SamplesView(QTableView):
 
         self.delegate = FormatterDelegate()
         self.delegate.set_formatter(CutestyleFormatter())
-
-        # self.setItemDelegate(self.delegate)
 
         self.setVerticalHeader(VariantVerticalHeader())
 
@@ -881,12 +846,6 @@ class ValidationWidget(plugin.PluginWidget):
 
         self.model.load(variant_id)
 
-        # self.view.horizontalHeader().setSectionResizeMode(
-        #     0, QHeaderView.ResizeToContents
-        # )
-        # self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        # self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Minimum)
-        # self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
     def show_error(self, message):
         self.error_label.setText(message)
@@ -897,12 +856,6 @@ class ValidationWidget(plugin.PluginWidget):
 
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.stack_layout.setCurrentIndex(1 if self.model.rowCount() else 0)
-
-
-# self.view.horizontalHeader().setSectionResizeMode(
-#     0, QHeaderView.ResizeToContents
-# )
-# self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
 
 if __name__ == "__main__":
