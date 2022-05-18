@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
     QToolBar,
     QSplitter,
     QDialogButtonBox,
+    QPushButton,
+    QHBoxLayout,
 )
 from PySide6.QtCore import (
     QAbstractTableModel,
@@ -161,9 +163,6 @@ class SamplesWidget(QWidget):
 
         self.model = SamplesModel(conn)
 
-        self.selection_dialog = SelectionDialog()
-        self.selection_dialog.selection_changed.connect(self._update_count)
-
         self.view = QTableView()
         self.view.verticalHeader().hide()
         self.view.horizontalHeader().setStretchLastSection(True)
@@ -178,7 +177,9 @@ class SamplesWidget(QWidget):
 
         self._setup_actions()
 
-        self.view.doubleClicked.connect(self._on_add_selection)
+        self.selected_samples = set()
+
+        self.view.doubleClicked.connect(self.add_selection)
 
         # TODO : CHARGER QD ON OUVRE LE WIDGET
         config = Config("classifications")
@@ -216,14 +217,6 @@ class SamplesWidget(QWidget):
         sep = QWidget()
         sep.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(sep)
-        self.add_button = self.toolbar.addAction("Add To Selection")
-        self.add_button.setIcon(FIcon(0xF0415))
-        self.add_button.setToolTip(self.tr("Add selections to basket"))
-        self.add_button.triggered.connect(self._on_add_selection)
-        self.basket_button = self.toolbar.addAction("Selected samples")
-        self.basket_button.setToolTip(self.tr("Show selected samples"))
-        self.basket_button.setIcon(FIcon(0xF0076))
-        self.basket_button.triggered.connect(self._on_basket_clicked)
         # self.toolbar.widgetForAction(self.basket_button).setAutoRaise(False)
 
         self.toolbar.setIconSize(QSize(16, 16))
@@ -280,24 +273,13 @@ class SamplesWidget(QWidget):
         self.model.query = self.line.text()
         self.model.load()
 
-    def _on_add_selection(self):
+    def add_selection(self):
 
-        samples = [
+        # Add selected rows to selected samples
+        self.selected_samples = self.selected_samples.union(
             self.model.get_sample(i.row())["name"]
             for i in self.view.selectionModel().selectedRows()
-        ]
-
-        self.selection_dialog.set_samples(samples)
-
-    def _update_count(self):
-        count = len(self.selection_dialog.get_samples())
-        self.basket_button.setText(f"{count} Selected sample(s)")
-        font = self.basket_button.font()
-        font.setBold(count > 0)
-        self.basket_button.setFont(font)
-        # font = QFont()
-        # font.setBold(count > 0)
-        # self.basket_button.setFont(font)
+        )
 
     @property
     def conn(self):
@@ -309,10 +291,6 @@ class SamplesWidget(QWidget):
         self.model.load()
         self._load_filters()
 
-    def _on_basket_clicked(self):
-
-        self.selection_dialog.exec()
-
 
 class SamplesDialog(QDialog):
     def __init__(self, conn, parent=None):
@@ -321,9 +299,19 @@ class SamplesDialog(QDialog):
         self.w = SamplesWidget(conn)
         self.w.conn = conn
 
-        self.btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        self.btn_box.accepted.connect(self.accept)
-        self.btn_box.rejected.connect(self.reject)
+        self.btn_add = QPushButton(self.tr("Add selected sample"))
+        self.btn_close = QPushButton(self.tr("Close"))
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(self.btn_add)
+        hlayout.addWidget(self.btn_close)
+
+        # self.button_box = QDialogButtonBox(QDialogButtonBox. | QDialogButtonBox.Cancel)
+        vLayout = QVBoxLayout(self)
+        vLayout.addWidget(self.w)
+        vLayout.addLayout(hlayout)
+
+        self.btn_add.clicked.connect(self.add)
+        self.btn_close.clicked.connect(self.reject)
 
         self.btn_box.buttons()[0].setFlat(False)
 
@@ -333,6 +321,10 @@ class SamplesDialog(QDialog):
         self.resize(800, 400)
 
         self.setWindowTitle(self.tr("Select sample(s)"))
+
+    def add(self):
+        # self.w.
+        pass
 
     def set_samples(self, samples: list):
         self.w.set_selected_samples(samples)

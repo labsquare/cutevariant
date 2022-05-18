@@ -353,7 +353,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.clear_action = self.tool_bar.addAction(
             FIcon(0xF120A), "Clear sample(s)", self.on_clear_samples
         )
-        self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit  sample", self.on_edit)
+        self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit sample", self.on_edit)
 
         self.select_action = QAction(FIcon(0xF0FFB), "Add selected sample to filter variant")
         self.select_action.triggered.connect(self.on_select)
@@ -368,6 +368,7 @@ class SamplesWidget(plugin.PluginWidget):
         menu = QMenu(self)
 
         menu.addAction(self.edit_action)
+        menu.addAction(self.rem_action)
 
         menu.addMenu(self._create_classification_menu())
         menu.addSeparator()
