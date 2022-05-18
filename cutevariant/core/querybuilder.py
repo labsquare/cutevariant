@@ -734,14 +734,16 @@ def build_sql_query(
         for item in order_by:
             field, direction = item
 
-            field = fields_to_sql([field])[0]
+            if field in fields:
+                field = fields_to_sql([field])[0]
 
-            direction = "ASC" if direction else "DESC"
-            order_by_clause.append(f"{field} {direction}")
+                direction = "ASC" if direction else "DESC"
+                order_by_clause.append(f"{field} {direction}")
 
-        order_by_clause = ",".join(order_by_clause)
+        if order_by_clause:
+            order_by_clause = ",".join(order_by_clause)
 
-        sql_query += f" ORDER BY {order_by_clause}"
+            sql_query += f" ORDER BY {order_by_clause}"
 
     if limit:
         sql_query += f" LIMIT {limit} OFFSET {offset}"
