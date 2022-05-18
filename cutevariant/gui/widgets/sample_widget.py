@@ -44,7 +44,9 @@ class MyTableModel(QAbstractTableModel):
         elif role == Qt.TextAlignmentRole:
             value = self._data[index.row()][index.column()]
             if isinstance(value, int):
-                return Qt.AlignVCenter + Qt.AlignCenter
+                return Qt.AlignCenter
+            else:
+                return Qt.AlignVCenter
         elif role != Qt.DisplayRole:
             return None
         return self._data[index.row()][index.column()]
@@ -242,6 +244,7 @@ class SampleWidget(QWidget):
         h_header.setSectionResizeMode(QHeaderView.ResizeToContents)
         # if platform.system() == "Windows" and platform.release() == "10":
         #     h_header.setStyleSheet( "QHeaderView::section { border: 1px solid #D8D8D8; background-color: white; border-top: 0px; border-left: 0px;}")
+        h_header.setMaximumSectionSize(400)
         v_header = self.variant_view.verticalHeader()
         v_header.setSectionResizeMode(QHeaderView.ResizeToContents)
         
@@ -332,9 +335,15 @@ def get_validated_variants_table(conn, sample_id):
     """
     """
     cmd = "SELECT " + get_variant_name_select(conn) + " AS 'Variant name' , sample_has_variant.gt, sample_has_variant.tags , sample_has_variant.comment AS 'Validation comment', variants.comment AS 'Variant comment' FROM variants INNER JOIN sample_has_variant on variants.id = sample_has_variant.variant_id WHERE sample_has_variant.classification >1 AND sample_has_variant.sample_id = " + str(sample_id)
+    print(cmd)
     c = conn.cursor()
-    c.row_factory = lambda cursor, row: row
-    return c.execute(cmd).fetchall()
+    c.row_factory = lambda cursor, row: list(row)
+    res = c.execute(cmd).fetchall()
+    #beautify tags column
+    for i in range(len(res)):
+        if '&' in res[i][2]:
+            res[i][2] = ", ".join(res[i][2].split('&'))
+    return res
 
 def get_variant_name_select(conn):
     """
