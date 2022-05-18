@@ -324,9 +324,35 @@ class QueryListWidget(plugin.PluginWidget):
         query = self.model.data(index, Qt.UserRole)
         query_params = parse_one_vql(query)
 
-        self.mainwindow.set_state_data("fields", query_params.get("fields", []))
+        # Add favorite_samples to query
+
+        # fields and filters
+        fields = query_params.get("fields", [])
+        filters = query_params.get("filters", {})
+        if not filters:
+            root = "$or"
+            filters["$or"] = []
+        else:
+            root=list(filters.items())[0][0]
+        
+        # Favorite samples
+        favorite_samples = self.mainwindow.get_state_data("favorite_samples") or []
+        samples_filters = {}
+        samples_filters["$or"] = []
+        if favorite_samples:
+            for sample_name in favorite_samples:
+                if sample_name:
+                    fields += [f"samples.{sample_name}.gt"]
+                    key = f"samples.{sample_name}.gt"
+                    condition = {key: {"$gte": 1}}
+                    samples_filters["$or"].append(condition)
+            filters[root].append(samples_filters)
+
+        #self.mainwindow.set_state_data("fields", query_params.get("fields", []))
+        self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.set_state_data("source", query_params.get("source", "variants"))
-        self.mainwindow.set_state_data("filters", query_params.get("filters", []))
+        #self.mainwindow.set_state_data("filters", query_params.get("filters", []))
+        self.mainwindow.set_state_data("filters", filters)
         self.mainwindow.set_state_data("order_by", query_params.get("order_by", []))
 
         self.mainwindow.refresh_plugins(sender=self)
