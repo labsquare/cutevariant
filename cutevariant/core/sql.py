@@ -2026,22 +2026,31 @@ def get_samples_from_query(conn: sqlite3.Connection, query: str):
         conn (sqlite3.Connection)
         query (str): the query string
     """
-    filters_list = query.split()
 
-    # A list such as [('classification','3,4'), ('sex','1')]
-    field_filters = [tuple(cat.split(":")) for cat in filters_list]
+    if not query:
+        return get_samples(conn)
 
-    and_list = []
-    for field_name, field_values in field_filters:
-        if len(field_values.split(",")) > 1:
-            and_list.append(f"{field_name} in ({field_values})")
-        else:
-            and_list.append(f"{field_name}={field_values}")
+    or_list = []
+    for word in query.split():
+        if ":" not in word:
+            word = f"name:{word}"
+        for i in re.findall(r"(.+):(.+)", word):
+            if "," in i[1]:
+                key, val = i[0], f"{i[1]}"
+                val = ",".join([f"'{i}'" for i in val.split(",")])
+                or_list.append(f"{key} IN ({val})")
+            else:
+                key, val = i[0], i[1]
+                if key in ("name", "tags"):
+                    or_list.append(f"{key} LIKE '%{val}%'")
+                else:
+                    or_list.append(f"{key} = '{val}'")
 
-    sql_query = f"SELECT * FROM samples WHERE {' AND '.join(and_list)}"
-
+    sql_query = f"SELECT * FROM samples WHERE {' OR '.join(or_list)}"
     # Suppose conn.row_factory = sqlite3.Row
-    return tuple(dict(data) for data in conn.execute(sql_query))
+
+    print(sql_query)
+    return (dict(data) for data in conn.execute(sql_query))
 
 
 def get_variants(
@@ -2461,6 +2470,16 @@ def insert_tag(
 
     conn.commit()
     return cursor.lastrowid
+
+
+def get_tags_from_samples(conn: sqlite3.Connection, separator="&") -> typing.List[str]:
+    """TODO : pas optimal pou le moment"""
+    tags = set()
+    for record in conn.execute("SELECT tags FROM samples "):
+
+        tags = tags.union({t for t in record["tags"].split(separator) if t})
+
+    return tags
 
 
 def get_tags(conn: sqlite3.Connection) -> List[dict]:

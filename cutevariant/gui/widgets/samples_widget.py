@@ -23,12 +23,11 @@ from PySide6.QtCore import (
     QSize,
 )
 from PySide6.QtGui import QAction, QIcon, QFont
+from cutevariant import LOGGER
 
 from cutevariant.core import sql
-from cutevariant.gui.widgets import ChoiceWidget, create_widget_action
-from cutevariant.gui.style import (
-    SAMPLE_CLASSIFICATION,
-)
+from cutevariant.gui.widgets import ChoiceButton
+
 
 from cutevariant.config import Config
 from cutevariant.gui.ficon import FIcon
@@ -39,11 +38,7 @@ class SamplesModel(QAbstractTableModel):
         super().__init__(parent)
         self._data = []
         self._headers = ["name", "family", "Statut", "Tags"]
-        self.name_filter = ""
-        self.fam_filter = []
-        self.tag_filter = []
-        self.valid_filter = []
-
+        self.query = ""
         self.conn = conn
 
     def rowCount(self, parent=QModelIndex()):
@@ -86,15 +81,11 @@ class SamplesModel(QAbstractTableModel):
     def load(self):
         if self.conn:
             self.beginResetModel()
-            self._data = list(
-                sql.search_samples(
-                    self.conn,
-                    self.name_filter,
-                    families=self.fam_filter,
-                    tags=self.tag_filter,
-                    classifications=self.valid_filter,
-                )
-            )
+            try:
+                self._data = list(sql.get_samples_from_query(self.conn, self.query))
+            except:
+                pass
+
             self.endResetModel()
 
     def get_sample(self, row: int):
@@ -180,14 +171,6 @@ class SamplesWidget(QWidget):
         self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
         self.view.setModel(self.model)
 
-        # Filters
-        self.family_choice = ChoiceWidget()
-        self.family_choice.accepted.connect(self._on_search)
-        self.statut_choice = ChoiceWidget()
-        self.statut_choice.accepted.connect(self._on_search)
-        self.tag_choice = ChoiceWidget()
-        self.tag_choice.accepted.connect(self._on_search)
-
         v_layout = QVBoxLayout(self)
         v_layout.addWidget(self.toolbar)
         v_layout.addWidget(self.line)
@@ -196,6 +179,10 @@ class SamplesWidget(QWidget):
         self._setup_actions()
 
         self.view.doubleClicked.connect(self._on_add_selection)
+
+        # TODO : CHARGER QD ON OUVRE LE WIDGET
+        config = Config("classifications")
+        self.CLASSIFICATION = config.get("samples")
 
         self.conn = None
 
@@ -207,12 +194,21 @@ class SamplesWidget(QWidget):
 
     def _setup_actions(self):
 
-        family_action = create_widget_action(self.toolbar, self.family_choice)
-        family_action.setText("Family")
-        statut_action = create_widget_action(self.toolbar, self.statut_choice)
-        statut_action.setText("Statut")
-        tag_action = create_widget_action(self.toolbar, self.tag_choice)
-        tag_action.setText("Tags")
+        # Filters
+        self.family_choice = ChoiceButton()
+        self.family_choice.item_changed.connect(self._on_filter_changed)
+        self.family_choice.prefix = self.tr("Familly")
+        self.statut_choice = ChoiceButton()
+        self.statut_choice.item_changed.connect(self._on_filter_changed)
+        self.statut_choice.prefix = self.tr("Status")
+        self.tag_choice = ChoiceButton()
+        self.tag_choice.item_changed.connect(self._on_filter_changed)
+        self.tag_choice.prefix = self.tr("Tag")
+
+        self.toolbar.addWidget(self.family_choice)
+        self.toolbar.addWidget(self.statut_choice)
+        self.toolbar.addWidget(self.tag_choice)
+
         self.toolbar.addSeparator()
         clear_action = self.toolbar.addAction(QIcon(), "Clear filters", self.clear_filters)
 
@@ -242,15 +238,14 @@ class SamplesWidget(QWidget):
 
             # Load Status
             self.statut_choice.clear()
-            for key, value in SAMPLE_CLASSIFICATION.items():
-                self.statut_choice.add_item(QIcon(), value["name"], data=key)
+            for item in self.CLASSIFICATION:
+                self.statut_choice.add_item(QIcon(), item["name"], data=item["number"])
 
             # Load Tags
             self.tag_choice.clear()
-            config = Config("samples")
-            tags = config.get("tags", [])
+            tags = sql.get_tags_from_samples(self.conn)
             for tag in tags:
-                self.tag_choice.add_item(QIcon(), tag["name"], data=tag["name"])
+                self.tag_choice.add_item(QIcon(), tag, data=tag)
 
     def clear_filters(self):
         self.tag_choice.uncheck_all()
@@ -258,18 +253,31 @@ class SamplesWidget(QWidget):
         self.statut_choice.uncheck_all()
         self._on_search()
 
+    def _on_filter_changed(self):
+        tag_list = self.tag_choice._model.get_checked()
+        fam_list = self.family_choice._model.get_checked()
+        class_list = [str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]]
+
+        query = []
+        if tag_list:
+            query += ["tags:" + ",".join(tag_list)]
+
+        if fam_list:
+            query += ["family:" + ",".join(fam_list)]
+
+        if class_list:
+            query += ["classification:" + ",".join(class_list)]
+
+        query = " ".join(query)
+
+        if not self.line.text():
+            self.line.setText(query)
+        else:
+            self.line.setText(self.line.text() + " " + query)
+
     def _on_search(self):
         """Start a search query"""
-        self.model.name_filter = self.line.text()
-
-        tags = [i["data"] for i in self.tag_choice.selected_items()]
-        fam = [i["data"] for i in self.family_choice.selected_items()]
-        val = [i["data"] for i in self.statut_choice.selected_items()]
-
-        self.model.tag_filter = tags
-        self.model.fam_filter = fam
-        self.model.valid_filter = val
-
+        self.model.query = self.line.text()
         self.model.load()
 
     def _on_add_selection(self):

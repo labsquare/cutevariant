@@ -16,8 +16,6 @@ from cutevariant import constants as cst
 
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets import (
-    ChoiceWidget,
-    create_widget_action,
     SampleDialog,
     SamplesDialog,
 )
@@ -361,6 +359,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.select_action.triggered.connect(self.on_select)
         self.unselect_action = QAction(FIcon(0xF0FFB), "Remove selected sample to filter variant")
         self.unselect_action.triggered.connect(self.on_unselect)
+
         self.source_action = QAction(FIcon(0xF0FFB), "Create source from selected sample")
         self.source_action.triggered.connect(self.on_create_source)
 

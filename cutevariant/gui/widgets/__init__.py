@@ -12,7 +12,7 @@ from .field_editor_widget import FieldsEditorWidget
 
 from .searchable_table_widget import LoadingTableView, SearchableTableWidget
 
-from .choice_widget import ChoiceWidget, create_widget_action
+from .choice_button import ChoiceButton
 
 from .sample_widget import SampleWidget, SampleDialog
 

@@ -2,7 +2,7 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 
-from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
+from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.gui.widgets import TagEdit
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.config import Config
@@ -80,9 +80,7 @@ class VariantWidget(QWidget):
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
 
-        self.tag_choice = ChoiceWidget()
-        self.tag_choice_action = QWidgetAction(self)
-        self.tag_choice_action.setDefaultWidget(self.tag_choice)
+        self.tag_choice = TagEdit()
 
         self.edit_comment_btn = QPushButton("Edit comment")
         self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
@@ -168,7 +166,9 @@ class VariantWidget(QWidget):
         if current_state == self.initial_state:
             return
 
-        current_db_data = sql.get_variant(self._conn, variant_id, with_annotations=True, with_samples=True)
+        current_db_data = sql.get_variant(
+            self._conn, variant_id, with_annotations=True, with_samples=True
+        )
         current_db_validation = self.get_validation_from_data(current_db_data)
         if current_db_validation != self.initial_db_validation:
             ret = QMessageBox.warning(
@@ -194,7 +194,9 @@ class VariantWidget(QWidget):
     def load(self, variant_id: int):
 
         # Get variant data
-        self.data = sql.get_variant(self._conn, variant_id, with_annotations=True, with_samples=True)
+        self.data = sql.get_variant(
+            self._conn, variant_id, with_annotations=True, with_samples=True
+        )
         self.initial_db_validation = self.get_validation_from_data(self.data)
 
         # Set name
@@ -218,7 +220,11 @@ class VariantWidget(QWidget):
         #     )
         # replaced by validation status instead of genotype
         if "samples" in self.data:
-            sdata = {i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]["name"] for i in self.data["samples"] if i["classification"] > 0}
+            sdata = {
+                i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]["name"]
+                for i in self.data["samples"]
+                if i["classification"] > 0
+            }
             self.sample_view.set_dict(sdata)
             # self.sample_tab_model.update(
             #     [
