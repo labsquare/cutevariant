@@ -205,7 +205,7 @@ class VariantWidget(QWidget):
 
         # avoid losing tags who exist in DB but not in config.yml
         update_data = {"id": self.data["id"]}
-        if self.favorite.isChecked:
+        if self.favorite.isChecked():
             update_data["favorite"] = 1
         else:
             update_data["favorite"] = 0
