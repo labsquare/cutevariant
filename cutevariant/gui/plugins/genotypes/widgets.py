@@ -72,10 +72,13 @@ class VariantVerticalHeader(QHeaderView):
         default_color = "lightgray"
 
         # sample
-        valid = self.model().item(section)["classification"]
-        sample_color = style.SAMPLE_CLASSIFICATION[valid].get("color")
-        sample_icon = style.SAMPLE_CLASSIFICATION[valid].get("icon")
-        sample_blurred = style.SAMPLE_CLASSIFICATION[valid].get("blurred")
+        # valid = self.model().item(section)["classification"]
+        # sample_color = style.SAMPLE_CLASSIFICATION[valid].get("color")
+        # sample_icon = style.SAMPLE_CLASSIFICATION[valid].get("icon")
+        # sample_blurred = style.SAMPLE_CLASSIFICATION[valid].get("blurred")
+        sample_color = "red"
+        sample_icon = ""
+        sample_blurred = 0
 
         # sample variant
         classification = self.model().item(section)["classification"] or 0
@@ -586,7 +589,7 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.item(row)
         valid_form = True
         valid_form_text = "Validation"
-        if style.SAMPLE_CLASSIFICATION[sample["valid"]].get("lock"):
+        if style.SAMPLE_CLASSIFICATION[sample["classification"]].get("lock"):
             valid_form = False
             valid_form_text = "Validation locked"
 
