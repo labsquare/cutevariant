@@ -1102,6 +1102,7 @@ class MainWindow(QMainWindow):
     def quick_search(self, query: str):
 
         additionnal_filter = quicksearch(query)
+        self.quick_search_edit.clear()
 
         if additionnal_filter:
             previous_filter = copy.deepcopy(self.get_state_data("filters"))
