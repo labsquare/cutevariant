@@ -1,5 +1,3 @@
-import operator
-import re
 import sqlite3
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
@@ -8,7 +6,6 @@ from PySide6.QtGui import *
 from cutevariant.gui.widgets import MarkdownEditor
 from cutevariant.core import sql
 from cutevariant.config import Config
-from cutevariant.core.querybuilder import fields_to_sql
 
 from cutevariant.gui.ficon import FIcon
 

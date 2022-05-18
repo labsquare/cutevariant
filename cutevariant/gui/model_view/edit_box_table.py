@@ -11,6 +11,7 @@ from cutevariant.core.querybuilder import fields_to_sql
 
 from cutevariant import LOGGER
 
+
 class EditBoxTableModel(QAbstractTableModel):
     """
     To be used in edit widgets
@@ -62,6 +63,7 @@ class EditBoxTableModel(QAbstractTableModel):
             self._data.reverse()
         self.emit(SIGNAL("layoutChanged()"))
 
+
 class EditBoxTableView(QTableView):
     def __init__(self):
         super().__init__()
@@ -110,6 +112,7 @@ def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
             if '&' in res[i][j]:
                 res[i][j] = ", ".join(res[i][j].split('&'))
     return res, header
+
 
 def get_variant_name_select(conn: sqlite3.Connection):
     """
