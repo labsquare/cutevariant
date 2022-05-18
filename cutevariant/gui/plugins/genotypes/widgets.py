@@ -403,6 +403,8 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
+        self.delegate = FormatterDelegate()
+        self.delegate.set_formatter(CutestyleFormatter())
         self.model = GenotypeModel()
         self.view = QTableView()
         self.view.setShowGrid(False)
@@ -412,6 +414,7 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view.horizontalHeader().setHighlightSections(False)
         self.view.setModel(self.model)
         self.view.setVerticalHeader(GenotypeVerticalHeader())
+        self.view.setItemDelegate(self.delegate)
 
         self.add_sample_button = QPushButton(self.tr("Add samples ..."))
         self.add_sample_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)

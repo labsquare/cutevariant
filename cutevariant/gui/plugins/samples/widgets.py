@@ -279,6 +279,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.view = QTableView()
         self.add_button = QPushButton(self.tr("Add sample(s)"))
         self.sample_editor = SamplesEditor()
+        self.sample_editor.setWindowModality(Qt.ApplicationModal)
         self.add_button.clicked.connect(self.sample_editor.show)
         # Empty widget
         self.empty_widget = QWidget()
