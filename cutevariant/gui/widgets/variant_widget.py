@@ -62,11 +62,6 @@ class VariantWidget(QWidget):
         self.REVERSE_CLASSIF = {v["name"]: k for k, v in CLASSIFICATION.items()}
         self._conn = conn
 
-        # self.name_edit = QLabel()
-        # self.name_edit.setAlignment(Qt.AlignCenter)
-        # self.name_edit.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum)
-        # info_layout.addWidget(self.name_edit)
-
         # Title
         self.title = QLabel()
         self.title.setTextFormat(Qt.RichText)
@@ -87,12 +82,8 @@ class VariantWidget(QWidget):
 
         self.classification = QComboBox()
 
-        # self.tag_model = QStringListModel(["arefaire", "refactoring des tags", "attention"])
-        # self.tag_completer = QCompleter()
-        # self.tag_completer.setModel(self.tag_model)
         self.tag_edit = TagEdit()
         self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma ..."))
-        # self.tag_edit.setCompleter(self.tag_completer)
 
         self.tag_layout = QHBoxLayout()
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
@@ -132,14 +123,7 @@ class VariantWidget(QWidget):
         self.tab_widget.addTab(self.ann_widget, "Annotations")
         self.tab_widget.addTab(self.sample_view, "Validated samples")
         self.tab_widget.addTab(self.history_view, "History")
-        # self.tab_widget.addTab(self.comment, "Comments")
         ### </othertabs block> ###
-
-        # self.sample_tab_model = TableModel()
-        # self.proxy_model = QSortFilterProxyModel()
-        # self.proxy_model.setFilterKeyColumn(-1)  # Search all columns.
-        # self.proxy_model.setSourceModel(self.sample_tab_model)
-        # self.proxy_model.sort(0, Qt.AscendingOrder)
 
         ### <sample tab block> ###
         self.table = QTableView()
@@ -169,8 +153,6 @@ class VariantWidget(QWidget):
         main_layout.addLayout(title_layout)
         main_layout.addWidget(QHLine())
 
-        # central_layout = QHBoxLayout()
-        # splitter = QSplitter(Qt.Horizontal)
         main_layout.addWidget(self.tab_widget)
 
         # main_layout.addWidget(splitter)
@@ -226,9 +208,6 @@ class VariantWidget(QWidget):
 
         self.ann_combo.clear()
 
-        # Set name
-        #name = "{chr}-{pos}-{ref}-{alt}".format(**self.data)
-
         # Config
         config = Config("variables") or {}
 
@@ -267,27 +246,13 @@ class VariantWidget(QWidget):
                 else:
                     self.ann_combo.addItem(f"Annotation {i}")
 
-        # if "samples" in self.data:
-        #     sdata = {i["name"]: i["gt"] for i in self.data["samples"] if i["gt"] > 0}
-        #     self.sample_view.set_dict(sdata)
-        #     self.sample_tab_model.update(
-        #         [[i["name"], i["gt"]] for i in self.data["samples"] if i["gt"] > 0]
-        #     )
-        # replaced by validation status instead of genotype
         if "samples" in self.data:
             sdata = {
                 i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]["name"]
                 for i in self.data["samples"]
                 if i["classification"] > 0
             }
-            # self.sample_view.set_dict(sdata)
-            # self.sample_tab_model.update(
-            #     [
-            #         [i["name"], SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]]
-            #         for i in self.data["samples"]
-            #         if i["classification"] > 0
-            #     ]
-            # )
+
         deja_vu, header = sql.get_deja_vu_table(self._conn, variant_id)
         self.deja_vu_model = EditBoxTableModel(deja_vu, header)
         self.sample_view.setModel(self.deja_vu_model)
