@@ -6,7 +6,6 @@ from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.gui.widgets import TagEdit
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.config import Config
-from cutevariant.gui import FIcon
 from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView, get_deja_vu_table
 
 from cutevariant.core import sql

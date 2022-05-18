@@ -15,7 +15,6 @@ from PySide6.QtGui import *
 from cutevariant.core import sql
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.gui.style import SAMPLE_VARIANT_CLASSIFICATION
-from cutevariant.commons import DEFAULT_SELECTION_NAME
 from cutevariant.config import Config
 
 import math

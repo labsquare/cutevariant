@@ -10,8 +10,6 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.widgets.multi_combobox import MultiComboBox
-
 from cutevariant.gui.widgets import TagEdit
 
 
