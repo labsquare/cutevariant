@@ -181,6 +181,7 @@ class SamplesEditor(QWidget):
         self.tag_choice.uncheck_all()
         self.family_choice.uncheck_all()
         self.statut_choice.uncheck_all()
+        self.line.clear()
         self._on_search()
 
     def _on_filter_changed(self):
