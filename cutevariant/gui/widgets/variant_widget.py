@@ -389,7 +389,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     # conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
-    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
+    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/may2022.db")
     w = VariantDialog(conn, 1)
 
     w.show()

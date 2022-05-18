@@ -370,7 +370,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/edit_sample_update.db")
+    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/may2022.db")
 
     w = SampleVariantDialog(conn, 1, 1)
 
