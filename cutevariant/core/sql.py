@@ -3377,7 +3377,7 @@ def get_variants_valid_stats(conn: sqlite3.Connection, sample_id: int):
     :return: header as a list of string
     """
     cmd = "SELECT sample_has_variant.classification, COUNT(id) from variants INNER JOIN sample_has_variant ON variants.id = sample_has_variant.variant_id WHERE sample_id = " + str(sample_id) + " GROUP BY sample_has_variant.classification"
-    header = ["Variant validation", "Total"]
+    header = ["Validation status", "Total"]
     c = conn.cursor()
     c.row_factory = lambda cursor, row: list(row)
     res = c.execute(cmd).fetchall()

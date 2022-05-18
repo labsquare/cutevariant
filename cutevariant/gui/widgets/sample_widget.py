@@ -13,12 +13,6 @@ from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBox
 from cutevariant.gui.widgets import ChoiceButton, DictWidget, TagEdit
 
 
-class QVline(QFrame):
-    def __init__(self):
-        super().__init__()
-        self.setFrameShape(QFrame.VLine)
-        self.setFrameShadow(QFrame.Sunken)
-
 class HpoWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__()
@@ -102,8 +96,6 @@ class SampleWidget(QWidget):
         self.phenotype_combo.addItems(["Missing", "Unaffected", "Affected"])
 
         # comment
-        # self.tag_edit = QLineEdit()
-        # self.tag_edit.setPlaceholderText("Tags separated by comma ")
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
@@ -123,9 +115,20 @@ class SampleWidget(QWidget):
         self.variants_stats_view = EditBoxTableView()
         self.valid_stats_view = EditBoxTableView()
         stats_layout = QHBoxLayout()
-        stats_layout.addWidget(self.variants_stats_view)
-        stats_layout.addWidget(QVline())
-        stats_layout.addWidget(self.valid_stats_view)
+
+        variant_box = QGroupBox("Variants")
+        variant_box_layout = QHBoxLayout()
+        variant_box_layout.addWidget(self.variants_stats_view)
+        variant_box.setLayout(variant_box_layout)
+        stats_layout.addWidget(variant_box)
+
+        # stats_layout.addWidget(QVline())
+
+        genotypes_box = QGroupBox("Genotypes")
+        genotypes_box_layout = QHBoxLayout()
+        genotypes_box_layout.addWidget(self.valid_stats_view)
+        genotypes_box.setLayout(genotypes_box_layout)
+        stats_layout.addWidget(genotypes_box)
         stats_widget.setLayout(stats_layout)
         self.tab_widget.addTab(stats_widget, "Variants stats")
 
