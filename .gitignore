@@ -113,6 +113,10 @@ mkdocs/site
 *.sublime-project
 *.sublime-workspace
 
+# VS Code
+.vs/
+.vscode/
+
 *.db
 *.db-journal
 
@@ -127,7 +131,6 @@ mkdocs/site
 *.ped
 test.py
 .tags
-.vscode/
 build/
 cov_html/
 
