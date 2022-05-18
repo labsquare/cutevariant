@@ -231,11 +231,11 @@ class SampleVerticalHeader(QHeaderView):
 
             style = next(i for i in self.model().classifications if i["number"] == classification)
             color = style.get("color", "white")
-            # selected_samples = self.mainwindow.get_state_data("selected_samples") or []
-            # if name in selected_samples:
-            #     icon = 0xF0133
-            # else:
-            icon = 0xF012F
+            favorite_samples=self.mainwindow.get_state_data("favorite_samples") or []
+            if name in favorite_samples:
+                icon = 0xF0133
+            else:
+                icon = 0xF0130
 
             pen = QPen(QColor(color))
             pen.setWidth(6)
@@ -353,14 +353,21 @@ class SamplesWidget(plugin.PluginWidget):
         self.clear_action = self.tool_bar.addAction(
             FIcon(0xF120A), "Clear sample(s)", self.on_clear_samples
         )
-        self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit  sample", self.on_edit)
 
-        self.select_action = QAction(FIcon(0xF0FFB), "Add selected sample to filter variant")
+        self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit sample", self.on_edit)
+
+        self.select_only_action = QAction(FIcon(0xF0899), "Select sample as favorite")
+        self.select_only_action.triggered.connect(self.on_select_only)
+        self.select_action = QAction(FIcon(0xF0010), "Add sample to favorite")
         self.select_action.triggered.connect(self.on_select)
-        self.unselect_action = QAction(FIcon(0xF0FFB), "Remove selected sample to filter variant")
+        self.unselect_action = QAction(FIcon(0xF05D3), "Remove sample from favorite")
         self.unselect_action.triggered.connect(self.on_unselect)
-
-        self.source_action = QAction(FIcon(0xF0FFB), "Create source from selected sample")
+        self.select_all_action = QAction(FIcon(0xF0849), "Select all samples as favorite")
+        self.select_all_action.triggered.connect(self.on_select_all)
+        self.unselect_all_action = QAction(FIcon(0xF0B58), "Unselect all samples from favorite")
+        self.unselect_all_action.triggered.connect(self.on_unselect_all)
+        
+        self.source_action = QAction(FIcon(0xF0934), "Create source from selected sample")
         self.source_action.triggered.connect(self.on_create_source)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
@@ -371,8 +378,13 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu.addMenu(self._create_classification_menu())
         menu.addSeparator()
+        menu.addAction(self.select_only_action)
         menu.addAction(self.select_action)
         menu.addAction(self.unselect_action)
+        menu.addSeparator()
+        menu.addAction(self.select_all_action)
+        menu.addAction(self.unselect_all_action)
+        menu.addSeparator()
         menu.addAction(self.source_action)
 
         menu.exec(event.globalPos())
@@ -418,51 +430,75 @@ class SamplesWidget(plugin.PluginWidget):
 
             LOGGER.debug(sample)
 
-    def on_select(self):
+    def on_select_only(self):
+        """This method is called to select only one sample as a favorite.
 
+        """
+        self.mainwindow.set_state_data("favorite_samples", [])
+        self.on_select()
+        self.model.load()
+
+    def on_select_all(self):
+        """This method is called to select all samples as a favorite.
+
+        """
+        self.mainwindow.set_state_data("favorite_samples", self.model.get_samples())
+        self.on_select()
+        self.model.load()
+
+    def on_unselect_all(self):
+        """This method is called to unselect all samples as a favorite.
+
+        """
+        self.mainwindow.set_state_data("favorite_samples", [])
+        self.on_unselect()
+        self.model.load()
+
+    def on_select(self):
+        """This method is called to select sample as a favorite.
+
+        """
         fields = self.mainwindow.get_state_data("fields")
         fields = [f for f in fields if not f.startswith("samples")]
 
         # hugly : Create genotype fields
         indexes = self.view.selectionModel().selectedRows()
-        selected_samples = self.mainwindow.get_state_data("selected_samples") or []
+        favorite_samples = self.mainwindow.get_state_data("favorite_samples") or []
         if indexes:
             sample_name = indexes[0].siblingAtColumn(0).data()
-            if sample_name not in selected_samples:
-                selected_samples.append(sample_name)
-        for sample_name in selected_samples:
+            if sample_name not in favorite_samples:
+                favorite_samples.append(sample_name)
+        for sample_name in favorite_samples:
             fields += [f"samples.{sample_name}.gt"]
 
-        self.mainwindow.set_state_data("selected_samples", selected_samples)
+        self.mainwindow.set_state_data("favorite_samples", favorite_samples)
         self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
-        # self.mainwindow.refresh_plugins("samples")
-        self.on_model_reset()
-        # print("selected_samples:")
-        # print(self.mainwindow.get_state_data("selected_samples"))
+        self.model.load()
 
     def on_unselect(self):
+        """This method is called to unselect sample as a favorite.
 
+        """
         fields = self.mainwindow.get_state_data("fields")
         fields = [f for f in fields if not f.startswith("samples")]
 
         # hugly : Create genotype fields
         indexes = self.view.selectionModel().selectedRows()
-        selected_samples = self.mainwindow.get_state_data("selected_samples") or []
+        favorite_samples = self.mainwindow.get_state_data("favorite_samples") or []
         if indexes:
             sample_name = indexes[0].siblingAtColumn(0).data()
-            if sample_name in selected_samples:
-                selected_samples.remove(sample_name)
-        for sample_name in selected_samples:
+            if sample_name in favorite_samples:
+                favorite_samples.remove(sample_name)
+        for sample_name in favorite_samples:
             fields += [f"samples.{sample_name}.gt"]
 
-        self.mainwindow.set_state_data("selected_samples", selected_samples)
+        self.mainwindow.set_state_data("favorite_samples", favorite_samples)
         self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
-        # print("selected_samples:")
-        # print(self.mainwindow.get_state_data("selected_samples"))
+        self.model.load()
 
     def on_create_source(self):
         name, success = QInputDialog.getText(
@@ -553,13 +589,13 @@ class SamplesWidget(plugin.PluginWidget):
                 if i == previous_samples_filters:
                     filters[root].remove(i)
 
-        selected_samples = self.mainwindow.get_state_data("selected_samples") or []
+        favorite_samples = self.mainwindow.get_state_data("favorite_samples") or []
 
         # for index in indexes:
-        if selected_samples:
+        if favorite_samples:
             samples_filters = {}
             samples_filters["$or"] = []
-            for sample_name in selected_samples:
+            for sample_name in favorite_samples:
                 if sample_name:
                     key = f"samples.{sample_name}.gt"
                     condition = {key: {"$gte": 1}}
