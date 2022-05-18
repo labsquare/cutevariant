@@ -59,7 +59,8 @@ class GenotypeVerticalHeader(QHeaderView):
         painter.setBrush(QBrush(QColor("red")))
 
         painter.save()
-
+        super().paintSection(painter, rect, section)
+        painter.restore()
         # default color
         default_color = "lightgray"
 

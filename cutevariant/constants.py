@@ -70,6 +70,10 @@ SEX_DESC = {1: "Male", 2: "Female"}
 # Paths
 DIR_LOGS = tempfile.gettempdir() + "/"
 
+SAMPLE_ICON = 0xF0C0B
+VARIANT_ICON = 0xF0C2B
+GENOTYPE_ICON = 0xF0BFE
+
 DIR_ASSETS = resource_filename(__name__, "assets/")  # current package name
 DIR_TRANSLATIONS = DIR_ASSETS + "i18n/"
 DIR_FONTS = DIR_ASSETS + "fonts/"
