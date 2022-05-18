@@ -7,7 +7,7 @@ from cutevariant.gui.widgets import TagEdit
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.config import Config
 from cutevariant.gui import FIcon
-
+from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView, get_deja_vu_table
 
 from cutevariant.core import sql
 import sqlite3
@@ -114,7 +114,7 @@ class VariantWidget(QWidget):
 
         self.variant_view = DictWidget()
         self.ann_view = DictWidget()
-        self.sample_view = DictWidget()
+        self.sample_view = EditBoxTableView()
         self.history_view = DictWidget()
 
         self.tab_widget = QTabWidget()
@@ -281,7 +281,7 @@ class VariantWidget(QWidget):
                 for i in self.data["samples"]
                 if i["classification"] > 0
             }
-            self.sample_view.set_dict(sdata)
+            # self.sample_view.set_dict(sdata)
             # self.sample_tab_model.update(
             #     [
             #         [i["name"], SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]]
@@ -289,6 +289,9 @@ class VariantWidget(QWidget):
             #         if i["classification"] > 0
             #     ]
             # )
+        deja_vu, header = get_deja_vu_table(self._conn, variant_id)
+        self.deja_vu_model = EditBoxTableModel(deja_vu, header)
+        self.sample_view.setModel(self.deja_vu_model)
 
         if self.data["favorite"] == 1:
             self.favorite.setCheckState(Qt.CheckState(2))
