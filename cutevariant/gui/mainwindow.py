@@ -154,6 +154,15 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
+        self.fields_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.fields_info_label)
+        self.filters_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.filters_info_label)
+        self.samples_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.samples_info_label)
+        self.source_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.source_info_label)
+
         # setup omnibar
         self.quick_search_edit = QLineEdit()
         self.quick_search_edit.setPlaceholderText("Type a gene or coordinate ...")
@@ -378,6 +387,8 @@ class MainWindow(QMainWindow):
         self._state_data.clear_changed()
         for plugin in plugin_to_refresh:
             plugin.on_refresh()
+
+        self.update_status_bar()
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a widget plugin identified by plugin_name
@@ -1066,6 +1077,27 @@ class MainWindow(QMainWindow):
         self.create_plugin_action.triggered.connect(plugin_form.create_dialog_plugin)
 
         return self.developers_menu
+
+    def update_status_bar(self):
+
+        source = self.get_state_data("source")
+        self.source_info_label.setText(f"<b>Source:</b> {source}   ")
+
+        fields = self.get_state_data("fields")
+        msg = "Selected Fields <hr/>" + "<br>".join([f"{f}" for f in fields])
+        self.fields_info_label.setText(f"<b>Fields:</b> {len(fields)}")
+        self.fields_info_label.setToolTip(msg)
+
+        filters = self.get_state_data("filters")
+        msg = json.dumps(filters, indent=2)
+        filter_size = len(querybuilder.filters_to_flat(filters))
+        self.filters_info_label.setText(f"<b>Filters:</b> {filter_size}")
+        self.filters_info_label.setToolTip(msg)
+
+        samples = self.get_state_data("samples")
+        msg = "\n".join(samples)
+        self.samples_info_label.setText(f"<b>Samples:</b> {len(samples)}    ")
+        self.samples_info_label.setToolTip(msg)
 
     def quick_search(self, query: str):
 

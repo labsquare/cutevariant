@@ -487,9 +487,12 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.fields_button = ChoiceButton()
         self.fields_button.prefix = "Fields"
+        self.fields_button.empty_message = "gt"
         self.fields_button.setFixedWidth(100)
         self.fields_button.item_changed.connect(self.on_refresh)
         self.toolbar.addWidget(self.fields_button)
+
+        self.toolbar.addAction(QIcon(), "Clear Fields", self.fields_button.uncheck_all)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
