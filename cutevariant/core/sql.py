@@ -3339,7 +3339,10 @@ def import_pedfile(conn: sqlite3.Connection, filename: str):
 
 def get_variants_classif_stats(conn: sqlite3.Connection, sample_id: int):
     """
-    :return: the data as a list of tuples
+    For a given sample
+        for each variant classification in DB
+            display total number of variants
+    :return: data table as a list of tuples
     :return: header as a list of string
     """
     cmd = "SELECT variants.classification, COUNT(id) from variants INNER JOIN sample_has_variant ON variants.id = sample_has_variant.variant_id WHERE sample_id = " + str(sample_id) + " GROUP BY variants.classification"
@@ -3351,7 +3354,10 @@ def get_variants_classif_stats(conn: sqlite3.Connection, sample_id: int):
 
 def get_variants_valid_stats(conn: sqlite3.Connection, sample_id: int):
     """
-    :return: the data as a list of tuples
+    For a given sample
+        for each variant validation status in DB (genotype.classification, previously sample_has_variant.classification) 
+            display total number of variants
+    :return: data table as a list of tuples
     :return: header as a list of string
     """
     cmd = "SELECT sample_has_variant.classification, COUNT(id) from variants INNER JOIN sample_has_variant ON variants.id = sample_has_variant.variant_id WHERE sample_id = " + str(sample_id) + " GROUP BY sample_has_variant.classification"
@@ -3371,7 +3377,7 @@ def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
     sample_has_variant comment
     variant comment
 
-    :return: the data as a list of tuples
+    :return: data table as a list of tuples
     :return: header as a list of string
     """
     if "vaf" in get_table_columns(conn, "sample_has_variant"):
@@ -3427,6 +3433,7 @@ def get_variant_name_select(conn: sqlite3.Connection):
 
 def get_deja_vu_table(conn: sqlite3.Connection, variant_id: int, threshold = 0):
     """
+    For a given variant, return the list of all samples (+ some info) with validation status above threshold
     :return: the data as a list of tuples
     :return: header as a list of string
     """
