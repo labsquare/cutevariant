@@ -5,7 +5,6 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 from cutevariant.core import sql
-from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.config import Config
 
@@ -32,7 +31,6 @@ class SampleVariantWidget(QWidget):
         else:
             self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
-        self.REVERSE_CLASSIF = {v["name"]: k for k, v in SAMPLE_VARIANT_CLASSIFICATION.items()}
 
         # Title
         self.title = QLabel()
@@ -49,7 +47,7 @@ class SampleVariantWidget(QWidget):
         # Validation
         self.classification = QComboBox()
         self.tab_widget = QTabWidget()
-        self.tag_edit = MultiComboBox()
+        self.tag_edit = TagEdit()
         self.tag_button = QToolButton()
         self.tag_button.setAutoRaise(True)
         self.tag_button.setIcon(FIcon(0xF0349))
@@ -67,8 +65,6 @@ class SampleVariantWidget(QWidget):
 
         self.tag_button.setMenu(self.menu)
         self.tag_button.setPopupMode(QToolButton.InstantPopup)
-
-        self.tag_edit.addItems(self.TAG_LIST)
 
         # validation
         # val_layout = QFormLayout()
@@ -163,60 +159,60 @@ class SampleVariantWidget(QWidget):
         self.title_variant.setText(var_name)
         self.title_sample.setText(sample["name"])
 
-        # self.classification.addItems([v for v in SAMPLE_VARIANT_CLASSIFICATION.values()])
-        # self.classification.setCurrentIndex(self.sample_has_var_data["classification"])
-        for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-            self.classification.addItem(v["name"], k)
+        config = Config("classifications")
+        classifications = config.get("genotypes", [])
+
+        for item in classifications:
+            self.classification.addItem(FIcon(0xF012F, item["color"]), item["name"], item["number"])
 
         index = self.classification.findData(self.sample_has_var_data["classification"])
-        print(index)
         self.classification.setCurrentIndex(index)
 
-        if self.sample_has_var_data.get("tags") is not None:
-            for tag in self.sample_has_var_data.get("tags", "").split(self.TAG_SEPARATOR):
-                if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
-                        Qt.Checked, Qt.CheckStateRole
-                    )
+        # if self.sample_has_var_data.get("tags") is not None:
+        #     for tag in self.sample_has_var_data.get("tags", "").split(self.TAG_SEPARATOR):
+        #         if tag in self.TAG_LIST:
+        #             self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
+        #                 Qt.Checked, Qt.CheckStateRole
+        #             )
 
         self.comment.setPlainText(self.sample_has_var_data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
 
-        # self.var_title.setText(var_name)
-        # tabs stuff
-        self.sample_has_var_info.set_dict(
-            {
-                k: v
-                for k, v in self.sample_has_var_data.items()
-                if k not in ("variant_id", "sample_id", "classification", "tags", "comment")
-            }
-        )
-        self.var_info.set_dict({k: v for k, v in var.items() if k not in ("id")})
+        # # self.var_title.setText(var_name)
+        # # tabs stuff
+        # self.sample_has_var_info.set_dict(
+        #     {
+        #         k: v
+        #         for k, v in self.sample_has_var_data.items()
+        #         if k not in ("variant_id", "sample_id", "classification", "tags", "comment")
+        #     }
+        # )
+        # self.var_info.set_dict({k: v for k, v in var.items() if k not in ("id")})
 
-        sample_info_dict = {k: v for k, v in sample.items() if k not in ("id")}
-        for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-            sample_info_dict[v["name"]] = sql.get_sample_variant_classification_count(
-                self.conn, sample["id"], k
-            )
-        self.sample_info.set_dict(sample_info_dict)
-        self.sample_info.view.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
-        )
+        # sample_info_dict = {k: v for k, v in sample.items() if k not in ("id")}
+        # for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
+        #     sample_info_dict[v["name"]] = sql.get_sample_variant_classification_count(
+        #         self.conn, sample["id"], k
+        #     )
+        # self.sample_info.set_dict(sample_info_dict)
+        # self.sample_info.view.horizontalHeader().setSectionResizeMode(
+        #     0, QHeaderView.ResizeToContents
+        # )
 
-        # req = get_sample_variant_classification_count(self.conn, sample["id"], 2)
-        # self.info_var.setText("Total of validated variants for this sample: 0")
-        valid_dict = {}
+        # # req = get_sample_variant_classification_count(self.conn, sample["id"], 2)
+        # # self.info_var.setText("Total of validated variants for this sample: 0")
+        # valid_dict = {}
 
-        # self.general_info.set_dict(valid_dict)
-        # self.general_info.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        # # self.general_info.set_dict(valid_dict)
+        # # self.general_info.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
-        if sample["valid"] in (None, 0):
-            self.info_lock.hide()
-        else:
-            self.info_lock.setText("Sample status: Locked (variant validation can't be edited)")
-            self.classification.setDisabled(True)
-            self.tag_edit.setDisabled(True)
-            self.comment.preview_btn.setDisabled(True)
+        # if sample["classification"] in (None, 0):
+        #     self.info_lock.hide()
+        # else:
+        #     self.info_lock.setText("Sample status: Locked (variant validation can't be edited)")
+        #     self.classification.setDisabled(True)
+        #     self.tag_edit.setDisabled(True)
+        #     self.comment.preview_btn.setDisabled(True)
 
         self.history_view.set_dict(self.get_history_sample_has_variant())
 
@@ -259,7 +255,7 @@ class SampleVariantWidget(QWidget):
             "variant_id": self.sample_has_var_data["variant_id"],
             "sample_id": self.sample_has_var_data["sample_id"],
             "classification": self.classification.currentData(),
-            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags),
+            "tags": self.TAG_SEPARATOR.join(self.tag_edit.text()),
             "comment": self.comment.toPlainText(),
         }
         sql.update_sample_has_variant(self.conn, update_data)
@@ -277,7 +273,7 @@ class SampleVariantWidget(QWidget):
         """
         values = []
         values.append(self.classification.currentIndex())
-        values.append(self.tag_edit.currentData())
+        values.append(self.tag_edit.text())
         values.append(self.comment.toPlainText())
         return values
 

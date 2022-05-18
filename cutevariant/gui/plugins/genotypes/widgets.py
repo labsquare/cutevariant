@@ -44,7 +44,7 @@ import sys
 from functools import partial
 
 
-class VariantVerticalHeader(QHeaderView):
+class GenotypeVerticalHeader(QHeaderView):
 
     # COLOR = {0: "gray", 1: "orange", 2: "green"}
 
@@ -56,46 +56,30 @@ class VariantVerticalHeader(QHeaderView):
 
     def paintSection(self, painter: QPainter, rect: QRect, section: int):
 
-        if painter is None:
-            return
+        painter.setBrush(QBrush(QColor("red")))
 
         painter.save()
-        super().paintSection(painter, rect, section)
 
         # default color
         default_color = "lightgray"
 
         # sample
-        classification = self.model().item(section)["classification"]
-        # sample_color = style.SAMPLE_CLASSIFICATION[valid].get("color")
-        # sample_icon = style.SAMPLE_CLASSIFICATION[valid].get("icon")
-        # sample_blurred = style.SAMPLE_CLASSIFICATION[valid].get("blurred")
+        number = self.model().get_genotype(section)["classification"]
+        classification = next(i for i in self.model().classifications if i["number"] == number)
+        color = classification.get("color", "gray")
+        icon = 0xF012F
 
-        # # sample variant
-        # classification = self.model().item(section)["classification"] or 0
-        # sample_variant_color = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("color")
-        # sample_variant_icon = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("icon")
-        # sample_variant_blurred = style.SAMPLE_VARIANT_CLASSIFICATION[classification].get("blurred")
+        pen = QPen(QColor(color))
+        pen.setWidth(6)
+        painter.setPen(pen)
+        painter.setBrush(QBrush(color))
+        painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
-        # if sample_variant_color != "":
-        #     sample_color = sample_variant_color
+        target = QRect(0, 0, 20, 20)
+        pix = FIcon(icon, color).pixmap(target.size())
+        target.moveCenter(rect.center() + QPoint(1, 1))
 
-        # if sample_blurred or sample_variant_blurred:
-        #     sample_variant_color = style.BLURRED_COLOR
-        #     sample_color = style.BLURRED_COLOR
-
-        # painter.restore()
-        # pen = QPen(QColor(sample_variant_color))
-        # pen.setWidth(6)
-        # painter.setPen(pen)
-        # painter.setBrush(QBrush(sample_variant_color))
-        # painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
-
-        # pix = FIcon(0xF012F, sample_color).pixmap(16, 16)
-
-        # target = rect.center() - pix.rect().center() + QPoint(1, 0)
-
-        # painter.drawPixmap(target, pix)
+        painter.drawPixmap(target, pix)
 
 
 class GenotypeModel(QAbstractTableModel):
@@ -138,6 +122,9 @@ class GenotypeModel(QAbstractTableModel):
         self._headers = []
         self.fields_descriptions = {}
 
+        # FROM config("classification"), see on_project_data
+        self.classifications = []
+
         # Creates the samples loading thread
         self._load_samples_thread = SqlThread(self.conn)
 
@@ -156,7 +143,7 @@ class GenotypeModel(QAbstractTableModel):
         else:
             return 0
 
-    def columnCount(self, parent: QModelIndex = QModelIndex) -> int:
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """override"""
         if parent == QModelIndex():
             return len(self._headers)
@@ -192,22 +179,44 @@ class GenotypeModel(QAbstractTableModel):
         item = self._genotypes[index.row()]
         key = self._headers[index.column()]
 
-        if role == Qt.DisplayRole and key != "valid":
+        if role == Qt.DisplayRole:
             return item[key]
+
+        if role == Qt.ToolTipRole:
+            return self.get_tooltip(index.row())
+
+    def get_tooltip(self, row: int):
+
+        fields = [f["name"] for f in sql.get_field_by_category(self.conn, "samples")]
+        sample = self.get_genotype(row)["name"]
+        variant_id = self.get_variant_id()
+
+        # extract all info for one sample
+        genotype = next(sql.get_genotypes(self.conn, variant_id, fields, [sample]))
+
+        message = """
+        {name} <br>
+
+        gt: {gt} 
+        classification: {classification} <br> <br>
+        A completer par anthony
+
+        """.format(
+            **genotype
+        )
+
+        return message
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
 
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            if section == 0:
-                return "Sample"
-
             if section < len(self._headers):
                 return self._headers[section]
 
-        if orientation == Qt.Vertical and role == Qt.DisplayRole:
-            item = self.get_genotype(section)
-            if "classification" in item:
-                return item["classification"]
+        # if orientation == Qt.Vertical and role == Qt.DisplayRole:
+        #     item = self.get_genotype(section)
+        #     if "classification" in item:
+        #         return item["classification"]
 
         return None
 
@@ -217,16 +226,15 @@ class GenotypeModel(QAbstractTableModel):
 
         self._genotypes = self._load_samples_thread.results
 
-        # if len(self._items) > 0:
-        #     self._headers = [
-        #         i for i in self._items[0].keys() if i not in ("sample_id", "variant_id")
-        #     ]
+        if len(self._genotypes) > 0:
+            self._headers = [
+                i for i in self._genotypes[0].keys() if i not in ("sample_id", "variant_id")
+            ]
 
-        # if "classification" not in self._fields:
-        #     self._headers.remove("classification")
+        if "classification" not in self._fields:
+            self._headers.remove("classification")
 
         self.endResetModel()
-        print("LOADED ", len(self._genotypes), self.rowCount())
 
         self._end_timer = time.perf_counter()
         self.elapsed_time = self._end_timer - self._start_timer
@@ -254,13 +262,17 @@ class GenotypeModel(QAbstractTableModel):
             self.interrupt()
 
         # mandatory field
-        self._fields.append("classification")
 
         # Create load_func to run asynchronously: load samples
+
+        used_fields = copy.deepcopy(self.get_fields()) or ["gt"]
+        if "classification" not in used_fields:
+            used_fields.append("classification")
+
         load_samples_func = partial(
             sql.get_genotypes,
             variant_id=self.get_variant_id(),
-            fields=self.get_fields(),
+            fields=used_fields,
             samples=self.get_samples(),
         )
 
@@ -363,16 +375,14 @@ class GenotypeModel(QAbstractTableModel):
         self.load_finished.emit()
 
 
-class SamplesView(QTableView):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+# class SamplesView(QTableView):
+#     def __init__(self, parent=None):
+#         super().__init__(parent)
 
-        self.delegate = FormatterDelegate()
-        self.delegate.set_formatter(CutestyleFormatter())
+#         self.delegate = FormatterDelegate()
+#         self.delegate.set_formatter(CutestyleFormatter())
 
-        # self.setItemDelegate(self.delegate)
-
-        self.setVerticalHeader(VariantVerticalHeader())
+#         # self.setItemDelegate(self.delegate)
 
 
 class GenotypesWidget(plugin.PluginWidget):
@@ -394,14 +404,14 @@ class GenotypesWidget(plugin.PluginWidget):
         self.toolbar = QToolBar()
         self.toolbar.setIconSize(QSize(16, 16))
         self.model = GenotypeModel()
-        self.view = SamplesView()
+        self.view = QTableView()
         self.view.setShowGrid(False)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSortingEnabled(True)
-        self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setIconSize(QSize(16, 16))
         self.view.horizontalHeader().setHighlightSections(False)
         self.view.setModel(self.model)
+        self.view.setVerticalHeader(GenotypeVerticalHeader())
 
         self.add_sample_button = QPushButton(self.tr("Add samples ..."))
         self.add_sample_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -413,7 +423,7 @@ class GenotypesWidget(plugin.PluginWidget):
         empty_layout = QVBoxLayout(empty_widget)
         empty_layout.setAlignment(Qt.AlignCenter)
 
-        empty_layout.addWidget(self.add_sample_button)
+        empty_layout.addWidget(QLabel("Add samples to display genotypes ..."))
 
         self.label = QLabel()
         self.label.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
@@ -432,16 +442,17 @@ class GenotypesWidget(plugin.PluginWidget):
             )
         )
 
-        self.field_selector = ChoiceButton()
-        # self.field_selector.accepted.connect(self.on_refresh)
-
         self.setWindowIcon(FIcon(0xF0A8C))
+
+        self.stack_layout = QStackedLayout()
+        self.stack_layout.addWidget(empty_widget)
+        self.stack_layout.addWidget(self.view)
 
         vlayout = QVBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.toolbar)
         vlayout.addWidget(self.label)
-        vlayout.addWidget(self.view)
+        vlayout.addLayout(self.stack_layout)
         vlayout.addWidget(self.error_label)
         vlayout.setSpacing(0)
         self.setLayout(vlayout)
@@ -449,8 +460,18 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view.doubleClicked.connect(self._on_double_clicked)
         self.model.error_raised.connect(self.show_error)
         self.model.load_finished.connect(self.on_load_finished)
-
+        self.model.modelReset.connect(self.on_model_reset)
         self.setup_actions()
+
+    def on_model_reset(self):
+        if self.model.rowCount() > 0:
+            self.stack_layout.setCurrentIndex(1)
+            self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+            self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        else:
+            self.stack_layout.setCurrentIndex(0)
+
+        # self.view.horizontalHeader().setSectionResizeMode(QHeaderView.AdjustToContents)
 
     def setup_actions(self):
 
@@ -460,6 +481,13 @@ class GenotypesWidget(plugin.PluginWidget):
         # field_action.setText("Fields")
         # field_action.setToolTip("Select fields to display")
         # Spacer
+
+        self.fields_button = ChoiceButton()
+        self.fields_button.prefix = "Fields"
+        self.fields_button.setFixedWidth(100)
+        self.fields_button.item_changed.connect(self.on_refresh)
+        self.toolbar.addWidget(self.fields_button)
+
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
@@ -552,7 +580,7 @@ class GenotypesWidget(plugin.PluginWidget):
         presets = config["presets"]
         key = self.sender().data()
         if key in presets:
-            self.field_selector.set_checked(presets[key])
+            self.fields_button.set_checked(presets[key])
 
         self.on_refresh()
 
@@ -572,30 +600,15 @@ class GenotypesWidget(plugin.PluginWidget):
         # Validation
         row = self.view.selectionModel().currentIndex().row()
         sample = self.model.get_genotype(row)
-        valid_form = True
-        valid_form_text = "Validation"
-        if style.SAMPLE_CLASSIFICATION[sample["valid"]].get("lock"):
-            valid_form = False
-            valid_form_text = "Validation locked"
-
-        cat_menu = menu.addMenu(valid_form_text)
-        cat_menu.setEnabled(valid_form)
-
-        for key, value in SAMPLE_VARIANT_CLASSIFICATION.items():
-            # action = cat_menu.addAction(value["name"])
-            action = cat_menu.addAction(FIcon(value["icon"], value["color"]), value["name"])
-            action.setData(key)
-            action.triggered.connect(self._on_classification_changed)
-
-        menu.addMenu(cat_menu)
         menu.addAction("Edit variant validation ...", self._show_sample_variant_dialog)
 
-        menu.addSection("Sample")
-        menu.addAction(QIcon(), "Edit sample ...", self._show_sample_dialog)
+        cat_menu = menu.addMenu("Classifications")
 
-        menu.addAction(QIcon(), "Add a filter based on selected sample(s)", self.on_add_filter)
-
-        menu.addAction(QIcon(), "Create a source from selected sample(s)", self.on_add_source)
+        for item in self.model.classifications:
+            # action = cat_menu.addAction(value["name"])
+            action = cat_menu.addAction(FIcon(0xF012F, item["color"]), item["name"])
+            action.setData(item["number"])
+            action.triggered.connect(self._on_classification_changed)
 
         menu.exec_(event.globalPos())
 
@@ -721,6 +734,9 @@ class GenotypesWidget(plugin.PluginWidget):
         self.model.clear()
         self.load_all_filters()
 
+        config = Config("classifications")
+        self.model.classifications = config.get("genotypes", [])
+
     def _is_selectors_checked(self):
         """Return False if selectors is not checked"""
 
@@ -740,15 +756,14 @@ class GenotypesWidget(plugin.PluginWidget):
             self.sample_selector.add_item(FIcon(0xF0B55), sample["name"], data=sample["name"])
 
     def load_fields(self):
-        self.field_selector.clear()
+        self.fields_button.clear()
         for field in sql.get_field_by_category(self.conn, "samples"):
-            if field["name"] != "classification":
-                self.field_selector.add_item(
-                    FIcon(0xF0835),
-                    field["name"],
-                    field["description"],
-                    data=field["name"],
-                )
+            self.fields_button.add_item(
+                FIcon(0xF0835),
+                field["name"],
+                field["description"],
+                data=field["name"],
+            )
 
     def find_variant_name(self, troncate=False):
 
@@ -787,16 +802,18 @@ class GenotypesWidget(plugin.PluginWidget):
 
         # variant id
         self.current_variant = self.mainwindow.get_state_data("current_variant")
-        self.model.selected_samples = self.mainwindow.get_state_data("samples")
 
         variant_id = self.current_variant["id"]
+        fields = self.fields_button.get_checked()
+        samples = self.mainwindow.get_state_data("samples")
 
         # Change variant name
         self.label.setText(variant_name)
 
-        # self.model.fields = [i["name"] for i in self.field_selector.items()]
-
-        self.model.load(variant_id)
+        self.model.set_fields(fields)
+        self.model.set_variant_id(variant_id)
+        self.model.set_samples(samples)
+        self.model.load()
 
         # self.view.horizontalHeader().setSectionResizeMode(
         #     0, QHeaderView.ResizeToContents
@@ -811,8 +828,6 @@ class GenotypesWidget(plugin.PluginWidget):
 
     def on_load_finished(self):
         self.show_error("")
-
-        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
 
 
 # self.view.horizontalHeader().setSectionResizeMode(

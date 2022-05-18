@@ -2723,7 +2723,7 @@ def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List
 
     sql_fields = ",".join([f"sv.{f}" for f in fields])
 
-    query = f"""SELECT sv.sample_id, sv.variant_id, samples.classification, samples.name , {sql_fields} FROM samples
+    query = f"""SELECT sv.sample_id, sv.variant_id, samples.name , {sql_fields} FROM samples
     LEFT JOIN sample_has_variant sv 
     ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}  """
 
