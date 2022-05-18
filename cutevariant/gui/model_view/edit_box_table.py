@@ -79,6 +79,30 @@ class EditBoxTableView(QTableView):
         v_header.setSectionResizeMode(QHeaderView.ResizeToContents)
 
 
+def get_variants_classif_stats(conn: sqlite3.Connection, sample_id: int):
+    """
+    :return: the data as a list of tuples
+    :return: header as a list of string
+    """
+    cmd = "SELECT variants.classification, COUNT(id) from variants INNER JOIN sample_has_variant ON variants.id = sample_has_variant.variant_id WHERE sample_id = " + str(sample_id) + " GROUP BY variants.classification"
+    header = ["Variant classification", "Total"]
+    c = conn.cursor()
+    c.row_factory = lambda cursor, row: list(row)
+    res = c.execute(cmd).fetchall()
+    return res, header
+
+def get_variants_valid_stats(conn: sqlite3.Connection, sample_id: int):
+    """
+    :return: the data as a list of tuples
+    :return: header as a list of string
+    """
+    cmd = "SELECT sample_has_variant.classification, COUNT(id) from variants INNER JOIN sample_has_variant ON variants.id = sample_has_variant.variant_id WHERE sample_id = " + str(sample_id) + " GROUP BY sample_has_variant.classification"
+    header = ["Variant validation", "Total"]
+    c = conn.cursor()
+    c.row_factory = lambda cursor, row: list(row)
+    res = c.execute(cmd).fetchall()
+    return res, header
+
 def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
     """
     Creates a table for all variants with classification > 1 for the current sample, with the columns:
@@ -89,7 +113,7 @@ def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
     sample_has_variant comment
     variant comment
 
-    :return: the data as a list of tuples$
+    :return: the data as a list of tuples
     :return: header as a list of string
     """
     if "vaf" in sql.get_table_columns(conn, "sample_has_variant"):

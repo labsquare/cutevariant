@@ -9,12 +9,18 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView, get_validated_variants_table
+from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView, get_variants_classif_stats, get_variants_valid_stats, get_validated_variants_table
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 from cutevariant import LOGGER
 
+
+class QVline(QFrame):
+    def __init__(self):
+        super().__init__()
+        self.setFrameShape(QFrame.VLine)
+        self.setFrameShadow(QFrame.Sunken)
 
 class HpoWidget(QWidget):
     def __init__(self, parent=None):
@@ -126,12 +132,21 @@ class SampleWidget(QWidget):
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
 
-        self.variant_view = EditBoxTableView()
-        self.tab_widget.addTab(self.variant_view, "Validated variants")
+        stats_widget = QWidget()
+        self.variants_stats_view = EditBoxTableView()
+        self.valid_stats_view = EditBoxTableView()
+        stats_layout = QHBoxLayout()
+        stats_layout.addWidget(self.variants_stats_view)
+        stats_layout.addWidget(QVline())
+        stats_layout.addWidget(self.valid_stats_view)
+        stats_widget.setLayout(stats_layout)
+        self.tab_widget.addTab(stats_widget, "Variants stats")
+
+        self.validated_view = EditBoxTableView()
+        self.tab_widget.addTab(self.validated_view, "Validated variants")
 
         self.history_view = DictWidget()
         self.tab_widget.addTab(self.history_view, "History")
-        # self.tab_widget.currentChanged.connect(self.on_tab_change)
 
         header_layout = QHBoxLayout()
         header_layout.addLayout(val_layout)
@@ -178,10 +193,21 @@ class SampleWidget(QWidget):
         self.setWindowTitle("Sample edition: " + data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
 
-        # Get validated variants
+        variants_stats, header = get_variants_classif_stats(self.conn, self.sample_id)
+        self.variants_stats_model = EditBoxTableModel(variants_stats, header)
+        self.variants_stats_view.setModel(self.variants_stats_model)
+
+        valid_stats, header = get_variants_valid_stats(self.conn, self.sample_id)
+        self.valid_stats_model = EditBoxTableModel(valid_stats, header)
+        self.valid_stats_view.setModel(self.valid_stats_model)
+
+        for view in (self.variants_stats_view, self.valid_stats_view):
+            h_header = view.horizontalHeader()
+            h_header.setStretchLastSection(True)
+
         validated_variants, header = get_validated_variants_table(self.conn, self.sample_id)
         self.variant_model = EditBoxTableModel(validated_variants, header)
-        self.variant_view.setModel(self.variant_model)
+        self.validated_view.setModel(self.variant_model)
 
 
     def save(self, sample_id: int):
