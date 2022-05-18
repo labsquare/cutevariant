@@ -1,5 +1,5 @@
 import operator
-import platform
+import re
 import sqlite3
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
@@ -8,17 +8,18 @@ from PySide6.QtGui import *
 from cutevariant.gui.widgets import MarkdownEditor
 from cutevariant.core import sql
 from cutevariant.config import Config
+from cutevariant.core.querybuilder import fields_to_sql
 
 from cutevariant.gui.ficon import FIcon
 
 from cutevariant.gui.widgets import ChoiceWidget, DictWidget
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
-
+from cutevariant import LOGGER
 
 class MyTableModel(QAbstractTableModel):
     """
-    Why is this so hard
+    To be used in edit widgets : validated variants, 
     """
     def __init__(self, data, header):
         super().__init__()
@@ -64,7 +65,6 @@ class MyTableModel(QAbstractTableModel):
         if order == Qt.DescendingOrder:
             self._data.reverse()
         self.emit(SIGNAL("layoutChanged()"))
-
 
 
 class HpoWidget(QWidget):
@@ -164,10 +164,6 @@ class SampleWidget(QWidget):
         # self.tag_edit.setPlaceholderText("Tags separated by comma ")
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
-        # comm_widget = QWidget()
-        # comm_layout = QVBoxLayout(comm_widget)
-        # comm_layout.addWidget(self.tag_edit)
-        # comm_layout.addWidget(self.comment)
 
         identity_layout.addRow("Comment", self.comment)
 
@@ -234,11 +230,11 @@ class SampleWidget(QWidget):
         self.initial_state = self.get_gui_state()
 
         # Get validated variants
-        sample_name = sql.get_sample(self.conn, sample_id)["name"]
-        str_lists = []
-        for v in sql.get_variants(self.conn, ["chr", "pos", "ref", "alt"], filters={"$and": [{f"samples.{sample_name}.classification": 2}]}):
-            str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
-        self.variant_model = MyTableModel(self.get_validated_variants_table(self.sample_id), ["Variant", "gt", "Validation tags", "Validation comment", "Variant comment"])
+        # sample_name = sql.get_sample(self.conn, sample_id)["name"]
+        # str_lists = []
+        # for v in sql.get_variants(self.conn, ["chr", "pos", "ref", "alt"], filters={"$and": [{f"samples.{sample_name}.classification": 2}]}):
+        #     str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
+        self.variant_model = MyTableModel(get_validated_variants_table(self.conn, self.sample_id), ["Variant", "gt", "Validation tags", "Validation comment", "Variant comment"])
         self.variant_view.setModel(self.variant_model)
         self.variant_view.setSortingEnabled(True)
 
@@ -248,7 +244,7 @@ class SampleWidget(QWidget):
         #     h_header.setStyleSheet( "QHeaderView::section { border: 1px solid #D8D8D8; background-color: white; border-top: 0px; border-left: 0px;}")
         v_header = self.variant_view.verticalHeader()
         v_header.setSectionResizeMode(QHeaderView.ResizeToContents)
-
+        
         # self.variant_model.setStringList(str_lists)
 
     def save(self, sample_id: int):
@@ -316,14 +312,6 @@ class SampleWidget(QWidget):
         values.append(self.phenotype_combo.currentIndex())
         return values
 
-    def get_validated_variants_table(self, sample_id):
-        """
-        """
-        cmd = "SELECT variants.chr || ':' || variants.pos || '-' || variants.ref || '>' || variants.alt AS 'Variant name' , sample_has_variant.gt, sample_has_variant.tags , sample_has_variant.comment AS 'Validation comment', variants.comment AS 'Variant comment' FROM variants INNER JOIN sample_has_variant on variants.id = sample_has_variant.variant_id WHERE sample_has_variant.classification >1 AND sample_has_variant.sample_id = 1;"
-        c = self.conn.cursor()
-        c.row_factory = lambda cursor, row: row
-        return c.execute(cmd).fetchall()
-
     def get_history_samples(self):
         """Get the history of samples"""
         results = {}
@@ -339,6 +327,43 @@ class SampleWidget(QWidget):
 
         return results
 
+
+def get_validated_variants_table(conn, sample_id):
+    """
+    """
+    cmd = "SELECT " + get_variant_name_select(conn) + " AS 'Variant name' , sample_has_variant.gt, sample_has_variant.tags , sample_has_variant.comment AS 'Validation comment', variants.comment AS 'Variant comment' FROM variants INNER JOIN sample_has_variant on variants.id = sample_has_variant.variant_id WHERE sample_has_variant.classification >1 AND sample_has_variant.sample_id = " + str(sample_id)
+    c = conn.cursor()
+    c.row_factory = lambda cursor, row: row
+    return c.execute(cmd).fetchall()
+
+def get_variant_name_select(conn):
+    """
+    :param conn: sqlite3.connect
+    :param config: config file to fetch variant name pattern
+    :return: a string containing the fields for a SELECT fetching variant name properly
+
+    example:
+    input: {'tnomen':'cnomen'}
+    return: "`variants.tnomen`|| ":" || `variants.cnomen``"
+    """
+    pattern = Config("variables")["variant_name_pattern"]
+    if pattern == None:
+        pattern = "{chr}:{pos}-{ref}>{alt}"
+    if "{" not in pattern:
+        LOGGER.warning(
+            "Variants are named without using any data column. All variants are going to be named the same. You should edit Settings > Variables > variant_name_pattern"
+        )
+    cols = re.findall("\{(.*?)\}", pattern)
+    seps = re.findall("\}(.*?)\{", pattern)
+    assert len(seps) == len(cols) - 1, "Unexpected error in get_variant_name_select(args)"
+    imax = len(cols)
+    name = pattern.split("{")[0]
+    for i in range(imax):
+        name += "ifnull(" + fields_to_sql([cols[i]])[0] + ", '')"
+        if i < imax - 1:
+            name += " || '" + seps[i] + "' || "
+    name += pattern.split("}")[-1]
+    return name
 
 class SampleDialog(QDialog):
     def __init__(self, conn, sample_id, parent=None):
