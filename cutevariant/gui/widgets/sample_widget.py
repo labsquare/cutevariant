@@ -9,11 +9,15 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.widgets import DictWidget, TagEdit
-from cutevariant.gui.widgets.multi_combobox import MultiComboBox
+from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView, get_variants_classif_stats, get_variants_valid_stats, get_validated_variants_table
+from cutevariant.gui.widgets import ChoiceButton, DictWidget, TagEdit
 
-from cutevariant.gui.widgets import ChoiceButton
 
+class QVline(QFrame):
+    def __init__(self):
+        super().__init__()
+        self.setFrameShape(QFrame.VLine)
+        self.setFrameShadow(QFrame.Sunken)
 
 class HpoWidget(QWidget):
     def __init__(self, parent=None):
@@ -102,10 +106,6 @@ class SampleWidget(QWidget):
         # self.tag_edit.setPlaceholderText("Tags separated by comma ")
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
-        # comm_widget = QWidget()
-        # comm_layout = QVBoxLayout(comm_widget)
-        # comm_layout.addWidget(self.tag_edit)
-        # comm_layout.addWidget(self.comment)
 
         identity_layout.addRow("Comment", self.comment)
 
@@ -118,13 +118,19 @@ class SampleWidget(QWidget):
         # pheno_layout.addRow("HPO", self.hpo_widget) #hidden for now
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
-        # Validated variant
 
-        self.variant_model = QStringListModel()
-        self.variant_view = QListView()
-        self.variant_view.setModel(self.variant_model)
+        stats_widget = QWidget()
+        self.variants_stats_view = EditBoxTableView()
+        self.valid_stats_view = EditBoxTableView()
+        stats_layout = QHBoxLayout()
+        stats_layout.addWidget(self.variants_stats_view)
+        stats_layout.addWidget(QVline())
+        stats_layout.addWidget(self.valid_stats_view)
+        stats_widget.setLayout(stats_layout)
+        self.tab_widget.addTab(stats_widget, "Variants stats")
 
-        # self.tab_widget.addTab(self.variant_view, "Validated variants")
+        self.validated_view = EditBoxTableView()
+        self.tab_widget.addTab(self.validated_view, "Validated variants")
 
         self.history_view = DictWidget()
         self.history_view.view.horizontalHeader().setSectionResizeMode(
@@ -145,6 +151,9 @@ class SampleWidget(QWidget):
         vLayout.addLayout(button_layout)
 
         self.setLayout(vLayout)
+
+    # def on_tab_change(self):
+    #     self.adjustSize()
 
     def load(self, sample_id: int):
 
@@ -175,17 +184,22 @@ class SampleWidget(QWidget):
         self.setWindowTitle("Sample edition: " + data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
 
-        # Get validated variants
-        sample_name = sql.get_sample(self.conn, sample_id)["name"]
-        str_lists = []
-        for v in sql.get_variants(
-            self.conn,
-            ["chr", "pos", "ref", "alt"],
-            filters={"$and": [{f"samples.{sample_name}.classification": 2}]},
-        ):
-            str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
+        variants_stats, header = get_variants_classif_stats(self.conn, self.sample_id)
+        self.variants_stats_model = EditBoxTableModel(variants_stats, header)
+        self.variants_stats_view.setModel(self.variants_stats_model)
 
-        self.variant_model.setStringList(str_lists)
+        valid_stats, header = get_variants_valid_stats(self.conn, self.sample_id)
+        self.valid_stats_model = EditBoxTableModel(valid_stats, header)
+        self.valid_stats_view.setModel(self.valid_stats_model)
+
+        for view in (self.variants_stats_view, self.valid_stats_view):
+            h_header = view.horizontalHeader()
+            h_header.setStretchLastSection(True)
+
+        validated_variants, header = get_validated_variants_table(self.conn, self.sample_id)
+        self.variant_model = EditBoxTableModel(validated_variants, header)
+        self.validated_view.setModel(self.variant_model)
+
 
     def save(self, sample_id: int):
         """
@@ -293,7 +307,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     # conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
-    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
+    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/edit_sample_update.db")
 
     w = SampleDialog(conn, 1)
 

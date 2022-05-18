@@ -1255,20 +1255,49 @@ class VariantView(QWidget):
         # Update variant with currently displayed fields (not in variants table)
         full_variant.update(current_variant)
 
-        menu.addAction(
-            QIcon(),
-            "Edit variant ...",
-            self._show_variant_dialog,
-        )
+        
+        #menu.addSeparator()
 
-        menu.addSeparator()
-        # Copy action: Copy the variant reference ID in to the clipboard
-        formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
+        # Config
+        config = Config("variables") or {}
+
+        # Get variant_name_pattern
+        variant_name_pattern="{chr}:{pos} - {ref}>{alt}"
+        if "variant_name_pattern" in config:
+            variant_name_pattern=config["variant_name_pattern"]
+        else:
+            config["variant_name_pattern"]=variant_name_pattern
+            config.save()
+
+        # Get variant_name_pattern_length
+        variant_name_pattern_length=40
+        if "variant_name_pattern_length" in config:
+            variant_name_pattern_length = int(config["variant_name_pattern_length"])
+        else:
+            config["variant_name_pattern_length"]=variant_name_pattern_length
+            config.save()
+
+        #formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
+        # Get fields
+        variant_id = full_variant["id"]
+        variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
+        if len(variant["annotations"]):
+            for ann in variant["annotations"][0]:
+                variant["annotations___"+str(ann)]=variant["annotations"][0][ann]
+        variant_name_pattern=variant_name_pattern.replace("ann.","annotations___")
+        formatted_variant = variant_name_pattern.format(**variant)
         menu.addAction(
             FIcon(0xF014C),
             formatted_variant,
             functools.partial(QApplication.instance().clipboard().setText, formatted_variant),
         )
+
+        menu.addAction(
+            QIcon(),
+            "Edit variant...",
+            self._show_variant_dialog,
+        )
+
 
         # action menu
 
@@ -1586,7 +1615,7 @@ class VariantView(QWidget):
         return class_menu
 
     def create_external_links_menu(self):
-        menu = QMenu(self.tr("Browse to ..."))
+        menu = QMenu(self.tr("Browse to"))
         for link in self._get_links():
             func_slot = functools.partial(self._open_url, link["url"], link["is_browser"])
             action = menu.addAction(link["name"], func_slot)
