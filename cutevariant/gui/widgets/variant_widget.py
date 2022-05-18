@@ -6,7 +6,7 @@ from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.gui.widgets import TagEdit
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.config import Config
-from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView, get_deja_vu_table
+from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView
 
 from cutevariant.core import sql
 import sqlite3
@@ -288,7 +288,7 @@ class VariantWidget(QWidget):
             #         if i["classification"] > 0
             #     ]
             # )
-        deja_vu, header = get_deja_vu_table(self._conn, variant_id)
+        deja_vu, header = sql.get_deja_vu_table(self._conn, variant_id)
         self.deja_vu_model = EditBoxTableModel(deja_vu, header)
         self.sample_view.setModel(self.deja_vu_model)
 

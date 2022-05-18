@@ -9,7 +9,7 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView, get_variants_classif_stats, get_variants_valid_stats, get_validated_variants_table
+from cutevariant.gui.model_view.edit_box_table import EditBoxTableModel, EditBoxTableView
 from cutevariant.gui.widgets import ChoiceButton, DictWidget, TagEdit
 
 
@@ -184,11 +184,11 @@ class SampleWidget(QWidget):
         self.setWindowTitle("Sample edition: " + data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
 
-        variants_stats, header = get_variants_classif_stats(self.conn, self.sample_id)
+        variants_stats, header = sql.get_variants_classif_stats(self.conn, self.sample_id)
         self.variants_stats_model = EditBoxTableModel(variants_stats, header)
         self.variants_stats_view.setModel(self.variants_stats_model)
 
-        valid_stats, header = get_variants_valid_stats(self.conn, self.sample_id)
+        valid_stats, header = sql.get_variants_valid_stats(self.conn, self.sample_id)
         self.valid_stats_model = EditBoxTableModel(valid_stats, header)
         self.valid_stats_view.setModel(self.valid_stats_model)
 
@@ -196,7 +196,7 @@ class SampleWidget(QWidget):
             h_header = view.horizontalHeader()
             h_header.setStretchLastSection(True)
 
-        validated_variants, header = get_validated_variants_table(self.conn, self.sample_id)
+        validated_variants, header = sql.get_validated_variants_table(self.conn, self.sample_id)
         self.variant_model = EditBoxTableModel(validated_variants, header)
         self.validated_view.setModel(self.variant_model)
 
