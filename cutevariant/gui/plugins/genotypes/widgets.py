@@ -28,7 +28,6 @@ from cutevariant.gui.widgets import (
     SampleDialog,
     SampleVariantDialog,
     PresetAction,
-    SamplesDialog,
 )
 
 

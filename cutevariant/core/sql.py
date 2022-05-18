@@ -2049,7 +2049,6 @@ def get_samples_from_query(conn: sqlite3.Connection, query: str):
     sql_query = f"SELECT * FROM samples WHERE {' OR '.join(or_list)}"
     # Suppose conn.row_factory = sqlite3.Row
 
-    print(sql_query)
     return (dict(data) for data in conn.execute(sql_query))
 
 

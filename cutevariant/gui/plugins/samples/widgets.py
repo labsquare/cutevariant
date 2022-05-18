@@ -17,7 +17,7 @@ from cutevariant import constants as cst
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets import (
     SampleDialog,
-    SamplesDialog,
+    SamplesEditor,
 )
 
 # from gui.style import SAMPLE_CLASSIFICATION
@@ -163,7 +163,11 @@ class SampleModel(QAbstractTableModel):
         self.load()
 
     def get_samples(self) -> list:
-        return self._selected_samples
+        return [i["name"] for i in self._samples]
+
+    def add_samples(self, samples: list):
+        self._selected_samples.extend(samples)
+        self.load()
 
     def rowCount(self, index: QModelIndex = QModelIndex()):
         if index == QModelIndex():
@@ -195,7 +199,8 @@ class SampleModel(QAbstractTableModel):
         rows = sorted(rows, reverse=True)
         self.beginResetModel()
         for row in rows:
-            print(len(self._samples), row, rows)
+            name = self._samples[row]["name"]
+            self._selected_samples.remove(name)
             del self._samples[row]
 
         self.endResetModel()
@@ -273,7 +278,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.tool_bar.setIconSize(QSize(16, 16))
         self.view = QTableView()
         self.add_button = QPushButton(self.tr("Add sample(s)"))
-        self.add_button.clicked.connect(self.on_add_samples)
+        self.sample_editor = SamplesEditor()
+        self.add_button.clicked.connect(self.sample_editor.show)
         # Empty widget
         self.empty_widget = QWidget()
         self.empty_widget.setBackgroundRole(QPalette.Base)
@@ -303,7 +309,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setVerticalHeader(SampleVerticalHeader(parent))
-        self.model.modelReset.connect(self.on_model_reset)
+        self.model.modelReset.connect(self.on_model_changed)
+        self.sample_editor.sample_selected.connect(self.model.add_samples)
 
         self.stack_layout = QStackedLayout()
         self.stack_layout.addWidget(self.empty_widget)
@@ -315,7 +322,7 @@ class SamplesWidget(plugin.PluginWidget):
         main_layout.addLayout(self.stack_layout)
         main_layout.setSpacing(0)
 
-    def on_model_reset(self):
+    def on_model_changed(self):
 
         if self.model.rowCount() > 0:
             self.stack_layout.setCurrentIndex(1)
@@ -343,9 +350,8 @@ class SamplesWidget(plugin.PluginWidget):
         # self.action_next = self.tool_bar.addAction(FIcon(0xF0142), "Next")
 
         self.add_action = self.tool_bar.addAction(
-            FIcon(0xF0010), "Add Sample(s)", self.on_add_samples
+            FIcon(0xF0010), "Add Sample(s)", self.sample_editor.show
         )
-
         self.rem_action = self.tool_bar.addAction(
             FIcon(0xF0BE5), "Remove selection", self.on_remove
         )
@@ -438,7 +444,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("filters", self._create_filters())
         self.mainwindow.refresh_plugins(sender=self)
         # self.mainwindow.refresh_plugins("samples")
-        self.on_model_reset()
+        self.on_model_changed()
         # print("selected_samples:")
         # print(self.mainwindow.get_state_data("selected_samples"))
 
@@ -502,6 +508,8 @@ class SamplesWidget(plugin.PluginWidget):
         """
         self.model.clear()
         self.model.conn = conn
+        self.sample_editor.conn = conn
+        self.sample_editor.load()
 
         # Chargement des classification
 
@@ -516,13 +524,6 @@ class SamplesWidget(plugin.PluginWidget):
         when query changed
         """
         pass
-
-    def on_add_samples(self):
-
-        dialog = SamplesDialog(self.model.conn)
-        dialog.set_samples(self.model.get_samples())
-        if dialog.exec():
-            self.model.set_samples(dialog.get_samples())
 
     def _create_filters(self, copy_existing_filters: bool = True) -> dict:
         """
@@ -576,11 +577,10 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("/home/sacha/Dev/cutevariant/examples/test.db")
+    conn = sql.get_sql_connection("/home/sacha/exome.db")
 
     w = SamplesWidget()
-    w.model.conn = conn
-    w.model.load()
+    w.on_open_project(conn)
 
     w.show()
 

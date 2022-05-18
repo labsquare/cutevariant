@@ -207,7 +207,7 @@ class ChoiceButton(QPushButton):
         self.widget_action = QWidgetAction(self)
 
         self.widget = QWidget()
-        self.setFixedWidth(150)
+        self.setFixedWidth(100)
         self.setFlat(True)
 
         vlayout = QVBoxLayout(self.widget)

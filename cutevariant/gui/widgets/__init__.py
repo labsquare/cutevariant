@@ -24,10 +24,9 @@ from .preset_action import PresetAction
 
 from .classification_editor import ClassificationEditor, ClassificationDialog, ClassificationModel
 
-from .samples_widget import (
-    SamplesWidget,
-    SamplesDialog,
-    SamplesModel,
+from .samples_editor import (
+    SamplesEditor,
+    SamplesEditorModel,
 )
 
 from .filters_widget import (
