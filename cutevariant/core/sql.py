@@ -3337,6 +3337,23 @@ def import_pedfile(conn: sqlite3.Connection, filename: str):
 
 ### EDIT BOXES
 
+def get_classification_stats(conn: sqlite3.Connection, sample_id: int, field: str):
+    """Used in sample edit boxes
+
+    Args:
+        conn (sqlite3.Connection):
+        sample_id (int): selected sample
+        field (string): classification of interest. Ex: variants.classification
+
+    Returns:
+        list: list of tuples, each row containing (<classification value>, <sum of variants with classification>)
+    """
+    cmd = f"SELECT {field}, COUNT(id) from variants INNER JOIN sample_has_variant ON variants.id = sample_has_variant.variant_id WHERE sample_id = {sample_id} GROUP BY {field}"
+    c = conn.cursor()
+    c.row_factory = lambda cursor, row: list(row)
+    return c.execute(cmd).fetchall()
+
+
 def get_classif_dict(classif_config):
     """
     >>> get_classif_dict([{'color': '#ff5500', 'description': '', 'name': 'Likely Pathogenic', 'number': 4}, {'color': '#b7b7b8', 'description': '', 'name': 'VSI', 'number': 3}])
@@ -3349,43 +3366,6 @@ def get_classif_dict(classif_config):
         dic[0] = "Unassigned (0)"
     return dic
 
-def get_variants_classif_stats(conn: sqlite3.Connection, sample_id: int):
-    """
-    For a given sample
-        for each variant classification in DB
-            display total number of variants
-    :return: data table as a list of tuples
-    :return: header as a list of string
-    """
-    cmd = "SELECT variants.classification, COUNT(id) from variants INNER JOIN sample_has_variant ON variants.id = sample_has_variant.variant_id WHERE sample_id = " + str(sample_id) + " GROUP BY variants.classification"
-    header = ["Variant classification", "Total"]
-    c = conn.cursor()
-    c.row_factory = lambda cursor, row: list(row)
-    res = c.execute(cmd).fetchall()
-
-    classif_dict = get_classif_dict(Config("classifications")["variants"])
-    for r in res:
-        r[0] = classif_dict[r[0]]
-    return res, header
-
-def get_variants_valid_stats(conn: sqlite3.Connection, sample_id: int):
-    """
-    For a given sample
-        for each variant validation status in DB (genotype.classification, previously sample_has_variant.classification) 
-            display total number of variants
-    :return: data table as a list of tuples
-    :return: header as a list of string
-    """
-    cmd = "SELECT sample_has_variant.classification, COUNT(id) from variants INNER JOIN sample_has_variant ON variants.id = sample_has_variant.variant_id WHERE sample_id = " + str(sample_id) + " GROUP BY sample_has_variant.classification"
-    header = ["Validation status", "Total"]
-    c = conn.cursor()
-    c.row_factory = lambda cursor, row: list(row)
-    res = c.execute(cmd).fetchall()
-
-    classif_dict = get_classif_dict(Config("classifications")["genotypes"])
-    for r in res:
-        r[0] = classif_dict[r[0]]
-    return res, header
 
 def get_validated_variants_table(conn: sqlite3.Connection, sample_id: int):
     """

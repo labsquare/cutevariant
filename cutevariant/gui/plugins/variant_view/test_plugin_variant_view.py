@@ -56,7 +56,7 @@ def test_model_pagination(qtbot, conn):
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # Load asynchronously
-    with qtbot.waitSignals([model.variant_loaded, model.count_loaded], timeout=5000) as blocker:
+    with qtbot.waitSignals([model.variant_loaded, model.count_loaded], timeout=15000) as blocker:
         model.load()
 
     # Test default variants !
@@ -131,7 +131,7 @@ def test_model_sort(qtbot, conn):
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # First load data
-    with qtbot.waitSignal(model.load_finished, timeout=5000):
+    with qtbot.waitSignal(model.load_finished, timeout=15000):
         model.load()
 
     # Then Sort position ( colonne 2 )
