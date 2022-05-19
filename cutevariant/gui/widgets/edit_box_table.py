@@ -77,14 +77,14 @@ class EditBoxTableView(QTableView):
 
 
 def classif_number_to_label(classif_config):
-    """Create a dic to convert easily from classification number to label, based on Config values
+    """Create a dic to convert from classification number to label, based on Config values
 
     Args:
         classif_config (list): classification of interest in config. Ex: Config("classifications")["variants"]
 
     Returns:
         dict: {<classif number1> : <classif label1>, ...}
-    
+
     Examples:
     >>> get_classif_dict([{'color': '#ff5500', 'description': '', 'name': 'Likely Pathogenic', 'number': 4}, {'color': '#b7b7b8', 'description': '', 'name': 'VSI', 'number': 3}])
     {"4": "Likely Pathogenic", "3": "VSI"}
@@ -102,8 +102,8 @@ def get_variants_classif_stats(conn: sqlite3.Connection, sample_id: int):
                 display total number of variants
 
     Args:
-        conn (sqlite3.Connection): _description_
-        sample_id (int): _description_
+        conn (sqlite3.Connection): 
+        sample_id (int): 
 
     Returns:
         list: data table as a list of tuples
@@ -123,8 +123,8 @@ def get_variants_valid_stats(conn: sqlite3.Connection, sample_id: int):
                 display total number of variants
 
     Args:
-        conn (sqlite3.Connection): _description_
-        sample_id (int): _description_
+        conn (sqlite3.Connection): 
+        sample_id (int): 
 
     Returns:
         list: data table as a list of tuples
@@ -137,3 +137,28 @@ def get_variants_valid_stats(conn: sqlite3.Connection, sample_id: int):
     for v in data:
         v[0] = classif_dict[v[0]]
     return data, header
+
+
+def get_deja_vu(conn: sqlite3.Connection, variant_id: int, threshold = 0):
+    """For a given variant, return the list of all samples with validation status above threshold
+    + some infos associated to that validation
+
+    Args:
+        conn (sqlite3.Connection):
+        variant_id (int):
+        threshold (int, optional):
+
+    Returns:
+        list: data table as a list of tuples
+        list: header as a list of string
+    """
+    res, header, classif_index = sql.get_deja_vu_table(conn,variant_id, threshold)
+
+    #fetch classif names instead of number
+    genotypes_classif = classif_number_to_label(Config("classifications")["genotypes"])
+    for r in res:
+        r[classif_index] = genotypes_classif[r[classif_index]]
+    samples_classif = classif_number_to_label(Config("classifications")["samples"])
+    for r in res:
+        r[1] = samples_classif[r[1]]
+    return res, header

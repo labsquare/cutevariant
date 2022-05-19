@@ -3432,23 +3432,33 @@ def get_variant_name_select():
     return name
 
 def get_deja_vu_table(conn: sqlite3.Connection, variant_id: int, threshold = 0):
-    """
-    For a given variant, return the list of all samples (+ some info) with validation status above threshold
-    :return: the data as a list of tuples
-    :return: header as a list of string
+    """For a given variant, return the list of all samples (+ some info) with validation status above threshold
+    
+    Note:
+        Biologists want this to have `sample_has_variant.vaf`, but its presence can't be guaranteed.
+
+    Args:
+        conn (sqlite3.Connection): _description_
+        variant_id (int): _description_
+        threshold (int, optional): _description_. Defaults to 0.
+
+    Returns:
+        list: data as a list of tuples
+        list: header as a list of string
+        list: list of header index containing classifications for later treatment
     """
     if "vaf" in get_table_columns(conn, "sample_has_variant"):
-        cmd = "SELECT samples.name, samples.classification, samples.tags, samples.comment, sample_has_variant.gt, sample_has_variant.vaf, sample_has_variant.classification, sample_has_variant.tags, sample_has_variant.comment"
+        fields = "samples.name, samples.classification, samples.tags, samples.comment, sample_has_variant.gt, sample_has_variant.vaf, sample_has_variant.classification, sample_has_variant.tags, sample_has_variant.comment"
         header = ["Sample", "Sample status", "Sample tags", "Sample comment", "GT", "VAF", "Validation status", "Validation tags", "Validation comment"]
         tags_index = [2, 7]
         classif_index = 6
     else:
-        cmd = "SELECT samples.name, samples.classification, samples.tags, samples.comment, sample_has_variant.gt, sample_has_variant.classification, sample_has_variant.tags, sample_has_variant.comment"
+        fields = "samples.name, samples.classification, samples.tags, samples.comment, sample_has_variant.gt, sample_has_variant.classification, sample_has_variant.tags, sample_has_variant.comment"
         header = ["Sample", "Sample status", "Sample tags", "Sample comment", "GT", "Validation status", "Validation tags", "Validation comment"]
         tags_index = [2, 6]
         classif_index = 5
 
-    cmd += " FROM sample_has_variant INNER JOIN samples on samples.id = sample_has_variant.sample_id WHERE sample_has_variant.classification > " + str(threshold) + " AND variant_id = " + str(variant_id)
+    cmd = f"SELECT {fields} FROM sample_has_variant INNER JOIN samples on samples.id = sample_has_variant.sample_id WHERE sample_has_variant.classification > {threshold} AND variant_id = {variant_id}"
     c = conn.cursor()
     c.row_factory = lambda cursor, row: list(row)
     res = c.execute(cmd).fetchall()
@@ -3458,12 +3468,4 @@ def get_deja_vu_table(conn: sqlite3.Connection, variant_id: int, threshold = 0):
         for j in tags_index:
             if '&' in res[i][j]:
                 res[i][j] = ", ".join(res[i][j].split('&'))
-
-    #fetch classif names instead of number
-    genotypes_classif = get_classif_dict(Config("classifications")["genotypes"])
-    for r in res:
-        r[classif_index] = genotypes_classif[r[classif_index]]
-    samples_classif = get_classif_dict(Config("classifications")["samples"])
-    for r in res:
-        r[1] = samples_classif[r[1]]
-    return res, header
+    return res, header, classif_index
