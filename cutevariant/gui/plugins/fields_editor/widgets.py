@@ -609,17 +609,10 @@ class FieldsWidget(QWidget):
 
         # Setup actions
 
-        # Setup the filter field action. Will filter out NULL values (thus the broom icon)
-        filter_field_action = QAction(self.tr("Create filter on null values"), view)
-        filter_field_action.triggered.connect(
-            functools.partial(self._on_filter_field_clicked, view, custom_filter=False)
-        )
-        filter_field_action.setIcon(FIcon(0xF00E2))
-
         # Setup the filter field action that will apply custom filter
-        custom_filter_field_action = QAction(self.tr("Create filter for this field"), view)
+        custom_filter_field_action = QAction(self.tr("Create filter ..."), view)
         custom_filter_field_action.triggered.connect(
-            functools.partial(self._on_filter_field_clicked, view, custom_filter=True)
+            functools.partial(self._on_filter_field_clicked, view)
         )
         custom_filter_field_action.setIcon(FIcon(0xF0232))
 
@@ -635,7 +628,7 @@ class FieldsWidget(QWidget):
         # )
         # remove_index_action.setIcon(FIcon(0xF0A97))
 
-        view.addActions([filter_field_action, custom_filter_field_action])
+        view.addAction(custom_filter_field_action)
 
         # Update even if the index didn't change
         # view.pressed.connect(self._update_actions)
@@ -741,11 +734,7 @@ class FieldsWidget(QWidget):
     #             ),
     #         )
 
-    def _on_filter_field_clicked(
-        self,
-        view: QTableView,
-        custom_filter: bool = False,
-    ):
+    def _on_filter_field_clicked(self, view: QTableView):
         """When the user triggers the "filter not null" field action.
         Applies immediately a filter on this field, with a not-null condition
 
@@ -765,18 +754,15 @@ class FieldsWidget(QWidget):
 
         if "$and" in filters:
             # Quickly filter using a dialog
-            if custom_filter:
-                dialog = FilterDialog(self.conn)
-                dialog.set_field(field_name)
+            dialog = FilterDialog(self.conn)
+            dialog.set_field(field_name)
 
-                if dialog.exec() == QDialog.Accepted:
-                    one_filter = dialog.get_filter()
-                    filters["$and"].append(one_filter)
-            # Defaults to filtering on non-null values
-            else:
-                filters["$and"].append({field_name: {"$ne": None}})
-            mainwindow.set_state_data("filters", filters)
-            mainwindow.refresh_plugins(sender=self)
+            if dialog.exec() == QDialog.Accepted:
+                one_filter = dialog.get_filter()
+                filters["$and"].append(one_filter)
+                # Defaults to filtering on non-null values
+                mainwindow.set_state_data("filters", filters)
+                mainwindow.refresh_plugins(sender=self)
 
     def on_field_changed(self, field: str, checked: bool):
 
