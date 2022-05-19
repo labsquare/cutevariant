@@ -418,9 +418,10 @@ class FieldsModel(QStandardItemModel):
         Returns:
             QMimeData
         """
+        res = super().mimeData(indexes)
+
         fields = [idx.data(Qt.UserRole + 1) for idx in indexes if idx.column() == 0]
         fields = [(f["name"], f["type"]) for f in fields]
-        res = QMimeData("cutevariant/typed-json")
         res.setData(
             "cutevariant/typed-json",
             bytes(json.dumps({"type": "fields", "fields": fields}), "utf-8"),
@@ -435,6 +436,7 @@ class FieldsModel(QStandardItemModel):
         Returns:
             typing.List[str]
         """
+
         return ["cutevariant/typed-json"]
 
     def to_file(self, filename: str):
