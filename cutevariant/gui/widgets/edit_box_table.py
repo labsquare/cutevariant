@@ -1,3 +1,8 @@
+"""
+Table widget, model, and functions to create the associated data
+Used in the edit boxes of sample_widget and variant_widget
+"""
+
 import operator
 import re
 import sqlite3
