@@ -9,7 +9,8 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.widgets.edit_box_table import EditBoxTableModel, EditBoxTableView, get_variants_classif_stats, get_variants_valid_stats
+from cutevariant.gui.widgets.edit_box_table import EditBoxTableModel, EditBoxTableView
+from cutevariant.gui.widgets.edit_box_table import get_variants_classif_stats, get_variants_valid_stats, get_variant_name_select
 from cutevariant.gui.widgets import ChoiceButton, DictWidget, TagEdit
 
 
@@ -200,7 +201,7 @@ class SampleWidget(QWidget):
             h_header.setStretchLastSection(True)
             view.setSortingEnabled(False)
 
-        validated_variants, header = sql.get_validated_variants_table(self.conn, self.sample_id)
+        validated_variants, header = sql.get_validated_variants_table(self.conn, self.sample_id, get_variant_name_select())
         self.variant_model = EditBoxTableModel(validated_variants, header)
         self.validated_view.setModel(self.variant_model)
 

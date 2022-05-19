@@ -1,4 +1,5 @@
 import operator
+import re
 import sqlite3
 
 from PySide6.QtWidgets import *
@@ -6,8 +7,10 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 from cutevariant.config import Config
+from cutevariant.core import querybuilder
 from cutevariant.core import sql
 
+from cutevariant import LOGGER
 
 class EditBoxTableModel(QAbstractTableModel):
     """
@@ -162,3 +165,33 @@ def get_deja_vu(conn: sqlite3.Connection, variant_id: int, threshold = 0):
     for r in res:
         r[1] = samples_classif[r[1]]
     return res, header
+
+
+def get_variant_name_select():
+    """
+    :param conn: sqlite3.connect
+    :param config: config file to fetch variant name pattern
+    :return: a string containing the fields for a SELECT fetching variant name properly
+
+    example:
+    input: Config("variables")["variant_name_pattern"] = {'tnomen':'cnomen'}
+    return: "`variants.tnomen`|| ":" || `variants.cnomen``"
+    """
+    pattern = Config("variables")["variant_name_pattern"]
+    if pattern == None:
+        pattern = "{chr}:{pos}-{ref}>{alt}"
+    if "{" not in pattern:
+        LOGGER.warning(
+            "Variants are named without using any data column. All variants are going to be named the same. You should edit Settings > Variables > variant_name_pattern"
+        )
+    cols = re.findall("\{(.*?)\}", pattern)
+    seps = re.findall("\}(.*?)\{", pattern)
+    assert len(seps) == len(cols) - 1, "Unexpected error in get_variant_name_select()"
+    imax = len(cols)
+    name = pattern.split("{")[0]
+    for i in range(imax):
+        name += "ifnull(" + querybuilder.fields_to_sql([cols[i]])[0] + ", '')"
+        if i < imax - 1:
+            name += " || '" + seps[i] + "' || "
+    name += pattern.split("}")[-1]
+    return name
