@@ -107,7 +107,7 @@ def filters_to_flat(filters: dict):
     return flatten
 
 
-def is_annotation_join_required(fields, filters, order_by) -> bool:
+def is_annotation_join_required(fields, filters, order_by = None) -> bool:
     """Return True if SQL join annotation is required
 
     Args:
@@ -122,10 +122,11 @@ def is_annotation_join_required(fields, filters, order_by) -> bool:
         if field.startswith("ann."):
             return True
 
-    for by in order_by:
-        field, direction = by
-        if field.startswith("ann."):
-            return True
+    if order_by:
+        for by in order_by:
+            field, direction = by
+            if field.startswith("ann."):
+                return True
 
     for condition in filters_to_flat(filters):
 
@@ -136,7 +137,7 @@ def is_annotation_join_required(fields, filters, order_by) -> bool:
     return False
 
 
-def samples_join_required(fields, filters, order_by) -> list:
+def samples_join_required(fields, filters, order_by = None) -> list:
     """Return sample list of sql join is required
 
     Args:
@@ -154,12 +155,13 @@ def samples_join_required(fields, filters, order_by) -> list:
             sample = ".".join(sample)
             samples.add(sample)
 
-    for by in order_by:
-        field, direction = by
-        if field.startswith("samples"):
-            _, *sample, _ = field.split(".")
-            sample = ".".join(sample)
-            samples.add(sample)
+    if order_by:
+        for by in order_by:
+            field, direction = by
+            if field.startswith("samples"):
+                _, *sample, _ = field.split(".")
+                sample = ".".join(sample)
+                samples.add(sample)
 
     for condition in filters_to_flat(filters):
         key = list(condition.keys())[0]
