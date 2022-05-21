@@ -121,6 +121,11 @@ def test_import_new_variants():
 
 
 def test_import_update_info_variants():
+    """
+    Import 5 variants
+    Import one same variant with qual = 999
+
+    """
 
     conn = sql.get_sql_connection(":memory:")
     variants = []
@@ -142,8 +147,8 @@ def test_import_update_info_variants():
     import_data(conn, new_variants, FIELDS, SAMPLES)
     assert utils.table_count(conn, "variants") == variant_count
 
-    # to fix
-    assert len(list(conn.execute("SELECT * FROM variants WHERE qual = 999"))) == 1
+    # check if the first variant has been updated
+    assert sql.get_variant(conn, 1)["qual"] == 999
 
 
 def test_import_update_annotation_variants():
@@ -162,6 +167,12 @@ def test_import_update_annotation_variants():
 
     import_data(conn, new_variants, FIELDS, SAMPLES)
     assert utils.table_count(conn, "variants") == variant_count
+
+    variant = sql.get_variant(conn, 1, with_annotations=True)
+
+    annotations = variant["annotations"]
+    assert len(annotations) == 1
+    assert annotations[0]["transcript"] == new_variants[0]["annotations"][0]["transcript"]
 
 
 def test_import_new_samples():
@@ -189,8 +200,7 @@ def test_import_new_samples():
 
     # Check if genotype is defined for variants
     new_variant = sql.get_variant(conn, 3, with_samples=True)
-    # To Fix , on doit voir tous les samples ( ou option )
-    assert len(new_variants["samples"]) == 3
+    assert len(new_variant["samples"]) == 1
 
 
 def test_import_new_samples_with_null_genotype():
@@ -198,9 +208,9 @@ def test_import_new_samples_with_null_genotype():
     conn = sql.get_sql_connection(":memory:")
     variants = []
     new_variants = []
-
+    variant_count = 2
     # Create 2 variants and first import
-    for i in range(2):
+    for i in range(variant_count):
         variants.append(VARIANT.copy())
         variants[i]["pos"] = i
 
@@ -214,15 +224,10 @@ def test_import_new_samples_with_null_genotype():
 
     # Check if new samples
     assert utils.table_count(conn, "variants") == 2 + 1
+    # 2 variant for 2 samples in genotype tables ! Not for boby
+    assert utils.table_count(conn, "sample_has_variant") == variant_count * 2
+
     assert {i["name"] for i in sql.get_samples(conn)} == {"sacha", "charles", "boby"}
-
-    # TO FIX : ON doit pas avoir le sample 3 dans la table genotype
-    assert len(list(conn.execute("SELECT * FROM sample_has_variant WHERE sample_id = 3"))) == 0
-
-    # Check if genotype is defined for variants
-    new_variant = sql.get_variant(conn, 3, with_samples=True)
-    # To Fix , on doit voir tous les samples ( ou option )
-    assert len(new_variants["samples"]) == 3
 
 
 def test_import_update_genotype_variants():

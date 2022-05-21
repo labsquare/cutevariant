@@ -69,6 +69,12 @@ class CutestyleFormatter(Formatter):
 
     def format(self, field: str, value: str, option, is_selected):
 
+        if re.match(r"samples\..+\.gt", field) or field == "gt":
+            if value == "NULL":
+                value = -1
+            icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
+            return {"text": "", "icon": icon}
+
         if value == "NULL":
             font = QFont()
             font.setItalic(True)
@@ -118,12 +124,6 @@ class CutestyleFormatter(Formatter):
             if m:
                 value = m.group(1)
                 return {"text": value}
-
-        if re.match(r"samples\..+\.gt", field) or field == "gt":
-            if value == None:
-                value = -1
-            icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
-            return {"text": "", "icon": icon}
 
         if field == "ann.consequence":
             values = str(value).split("&")

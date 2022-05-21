@@ -1891,10 +1891,7 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
 
 
 def get_variant(
-    conn: sqlite3.Connection,
-    variant_id: int,
-    with_annotations=False,
-    with_samples=False,
+    conn: sqlite3.Connection, variant_id: int, with_annotations=False, with_samples=False
 ):
     r"""Get the variant with the given id
 
@@ -1942,9 +1939,9 @@ def get_variant(
         variant["samples"] = [
             dict(sample)
             for sample in conn.execute(
-                f"""SELECT samples.name, sample_has_variant.* FROM sample_has_variant
-                LEFT JOIN samples on samples.id = sample_has_variant.sample_id
-                WHERE variant_id = {variant_id}"""
+                f"""SELECT samples.name, sample_has_variant.* FROM samples
+                LEFT JOIN sample_has_variant on samples.id = sample_has_variant.sample_id
+                WHERE variant_id = {variant_id} """
             )
         ]
 
@@ -2293,10 +2290,12 @@ def insert_variants(
 
         # INSERT VARIANTS
 
-        query = f"INSERT OR REPLACE INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) DO NOTHING"
+        query = f"""INSERT INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) 
+        DO UPDATE SET ({query_fields}) = ({query_values})
+        """
 
         # Use execute many and get last rowS inserted ?
-        cursor.execute(query, query_datas)
+        cursor.execute(query, query_datas * 2)
 
         total += 1
 
@@ -2323,6 +2322,8 @@ def insert_variants(
 
         # INSERT ANNOTATIONS
         if "annotations" in variant:
+            # Delete previous annotations
+            cursor.execute(f"DELETE FROM annotations WHERE variant_id ={variant_id}")
             for ann in variant["annotations"]:
 
                 ann["variant_id"] = variant_id
@@ -2333,6 +2334,7 @@ def insert_variants(
                 query = (
                     f"INSERT OR REPLACE INTO annotations ({query_fields}) VALUES ({query_values})"
                 )
+
                 cursor.execute(query, query_datas)
 
         # INSERT SAMPLES
@@ -2340,16 +2342,24 @@ def insert_variants(
         if "samples" in variant:
             for sample in variant["samples"]:
                 if sample["name"] in samples_map:
+
                     sample["variant_id"] = int(variant_id)
                     sample["sample_id"] = int(samples_map[sample["name"]])
 
-                    common_fields = samples_local_fields & sample.keys()
-                    query_fields = ",".join((f"`{i}`" for i in common_fields))
-                    query_values = ",".join((f"?" for i in common_fields))
-                    query_datas = [sample[i] for i in common_fields]
-                    # query = f"INSERT OR REPLACE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
-                    query = f"INSERT OR IGNORE INTO sample_has_variant ({query_fields}) VALUES ({query_values})"
-                    cursor.execute(query, query_datas)
+                    sample["gt"] = sample.get("gt", -1)
+                    if sample["gt"] < 0:  # Allow genotype 1,2,3,4,5,... ( for other species )
+                        # remove gt if exists
+                        query_remove = f"""DELETE FROM sample_has_variant WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
+                        cursor.execute(query_remove)
+                    else:
+                        common_fields = samples_local_fields & sample.keys()
+                        query_fields = ",".join((f"`{i}`" for i in common_fields))
+                        query_values = ",".join((f"?" for i in common_fields))
+                        query_datas = [sample[i] for i in common_fields]
+                        query = f"""INSERT INTO sample_has_variant ({query_fields}) VALUES ({query_values}) ON CONFLICT (variant_id, sample_id)
+                        DO UPDATE SET ({query_fields}) = ({query_values})
+                        """
+                        cursor.execute(query, query_datas * 2)
 
         # Commit every batch_size
         if progress_callback and variant_count != 0 and variant_count % progress_every == 0:
@@ -2366,12 +2376,6 @@ def insert_variants(
 
     true_total = conn.execute("SELECT COUNT(*) FROM variants").fetchone()[0]
     insert_selection(conn, "", name=cst.DEFAULT_SELECTION_NAME, count=true_total)
-
-
-def update_variants(conn, data, **kwargs):
-    """Wrapper for debugging purpose"""
-    for _, _ in update_variants_async(conn, data, kwargs):
-        pass
 
 
 def get_variant_as_group(

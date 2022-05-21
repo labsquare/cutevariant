@@ -469,7 +469,7 @@ QUERY_TESTS = [
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `samples.TUMOR.gt` FROM variants"
-            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LEFT JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " LIMIT 50 OFFSET 0"
         ),
         "SELECT chr,pos,samples['TUMOR'].gt FROM variants",
@@ -483,7 +483,7 @@ QUERY_TESTS = [
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants"
-            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LEFT JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1) LIMIT 50 OFFSET 0"
         ),
         "SELECT chr,pos FROM variants WHERE samples['TUMOR'].gt = 1",
@@ -502,7 +502,7 @@ QUERY_TESTS = [
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants"
-            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LEFT JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1 AND `sample_TUMOR`.`dp` > 10)"
             " LIMIT 50 OFFSET 0"
         ),
@@ -521,7 +521,7 @@ QUERY_TESTS = [
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `samples.TUMOR.gt` FROM variants"
-            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LEFT JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1)"
             " LIMIT 50 OFFSET 0"
         ),
@@ -586,7 +586,7 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {"$and": [{"samples.$any.gt": 1}]},
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1 INNER JOIN sample_has_variant `sample_NORMAL` ON `sample_NORMAL`.variant_id = variants.id AND `sample_NORMAL`.sample_id = 2 WHERE ((`sample_TUMOR`.`gt` = 1 OR `sample_NORMAL`.`gt` = 1)) LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LEFT JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1 LEFT JOIN sample_has_variant `sample_NORMAL` ON `sample_NORMAL`.variant_id = variants.id AND `sample_NORMAL`.sample_id = 2 WHERE ((`sample_TUMOR`.`gt` = 1 OR `sample_NORMAL`.`gt` = 1)) LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants WHERE samples[ANY].gt = 1",
     ),
     # ORDER BY
