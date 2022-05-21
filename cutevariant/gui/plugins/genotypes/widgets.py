@@ -64,10 +64,14 @@ class GenotypeVerticalHeader(QHeaderView):
         default_color = "lightgray"
 
         # sample
-        number = self.model().get_genotype(section)["classification"]
-        classification = next(i for i in self.model().classifications if i["number"] == number)
-        color = classification.get("color", "gray")
-        icon = 0xF012F
+        number = self.model().get_genotype(section).get("classification")
+        if number:
+            classification = next(i for i in self.model().classifications if i["number"] == number)
+            color = classification.get("color", "gray")
+            icon = 0xF012F
+        else:
+            icon = 0xF012F
+            color = "gray"
 
         pen = QPen(QColor(color))
         pen.setWidth(6)
@@ -606,17 +610,19 @@ class GenotypesWidget(plugin.PluginWidget):
         # Validation
         row = self.view.selectionModel().currentIndex().row()
         sample = self.model.get_genotype(row)
-        menu.addAction("Edit variant validation ...", self._show_sample_variant_dialog)
 
-        cat_menu = menu.addMenu("Classifications")
+        if sample["gt"]:
+            menu.addAction("Edit variant validation ...", self._show_sample_variant_dialog)
 
-        for item in self.model.classifications:
-            # action = cat_menu.addAction(value["name"])
-            action = cat_menu.addAction(FIcon(0xF012F, item["color"]), item["name"])
-            action.setData(item["number"])
-            action.triggered.connect(self._on_classification_changed)
+            cat_menu = menu.addMenu("Classifications")
 
-        menu.exec_(event.globalPos())
+            for item in self.model.classifications:
+                # action = cat_menu.addAction(value["name"])
+                action = cat_menu.addAction(FIcon(0xF012F, item["color"]), item["name"])
+                action.setData(item["number"])
+                action.triggered.connect(self._on_classification_changed)
+
+            menu.exec_(event.globalPos())
 
     def _show_sample_dialog(self):
 
