@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QTabWidget,
     QTableView,
+    QApplication,
     QPlainTextEdit,
     QDialog,
     QHeaderView,
