@@ -75,10 +75,12 @@ class CutestyleFormatter(Formatter):
             icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
             return {"text": "", "icon": icon}
 
-        if value == "NULL":
+        if value == "NULL" or value == "None":
             font = QFont()
             font.setItalic(True)
-            return {"font": font, "color": "lightgray"}
+            color = option.palette.color(QPalette.BrightText if is_selected else QPalette.Text)
+            color = cm.contrast_color(color, factor=300)
+            return {"font": font, "color": color }
 
         if field == "ann.impact" and not is_selected:
             font = QFont()
