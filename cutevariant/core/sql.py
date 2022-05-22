@@ -2707,6 +2707,15 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
         ).fetchone()
     )
 
+def get_sample_nb_genotype_by_classification(conn, sample_id: int):
+    """Get number of genotype by classification for given sample id"""
+    conn.row_factory = sqlite3.Row
+    return dict(
+        conn.execute(
+            f"SELECT sample_has_variant.classification as classification, count(sample_has_variant.variant_id) as nb_genotype FROM sample_has_variant WHERE sample_has_variant.sample_id = '{sample_id}' GROUP BY sample_has_variant.classification"
+        )
+    )
+
 
 def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List[str] = None):
     """Get samples annotation for a specific variant using different filters

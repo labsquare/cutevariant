@@ -96,11 +96,20 @@ class SampleModel(QAbstractTableModel):
                     return QIcon(FIcon(0xF001A, color_alpha))
 
             if col == SampleModel.COMMENT_COLUMN:
+                sample = self._samples[index.row()]
+                sample_id=sample["id"]
+                sample_nb_genotype_by_classification=sql.get_sample_nb_genotype_by_classification(self.conn, sample_id)
+                nb_validated_genotype=0
+                for classification in sample_nb_genotype_by_classification:
+                    nb_genotype_by_classification=sample_nb_genotype_by_classification[classification]
+                    if classification>0:
+                        nb_validated_genotype+=nb_genotype_by_classification
+                if nb_validated_genotype>0:
+                    return QIcon(FIcon(0xF017F, color))
                 if sample["comment"]:
                     return QIcon(FIcon(0xF017A, color))
                 else:
                     return QIcon(FIcon(0xF017A, color_alpha))
-                # return QIcon(FIcon(0xF02FD, color))
 
         if role == Qt.ToolTipRole:
 
