@@ -37,6 +37,7 @@ from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui import FormatterDelegate
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
+import cutevariant.constants as cst
 
 from PySide6.QtWidgets import *
 import sys
@@ -63,15 +64,27 @@ class GenotypeVerticalHeader(QHeaderView):
         # default color
         default_color = "lightgray"
 
-        # sample
+        # classification color
         number = self.model().get_genotype(section).get("classification")
         if number:
             classification = next(i for i in self.model().classifications if i["number"] == number)
             color = classification.get("color", "gray")
-            icon = 0xF012F
+            #icon = 0xF012F
         else:
-            icon = 0xF012F
+            #icon = 0xF012F
             color = "gray"
+
+        #pix_icon=FIcon(icon, color)
+
+        # genotype
+        GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
+        genotype=self.model().get_genotype(section)["gt"]
+        if genotype:
+            genotype_int=int(genotype)
+        else:
+            genotype_int=-1
+        pix_icon = GENOTYPE_ICONS.get(genotype_int) #, GENOTYPE_ICONS[-1])
+        pix_icon.engine.setColor(color)
 
         pen = QPen(QColor(color))
         pen.setWidth(6)
@@ -80,7 +93,8 @@ class GenotypeVerticalHeader(QHeaderView):
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
         target = QRect(0, 0, 20, 20)
-        pix = FIcon(icon, color).pixmap(target.size())
+        #pix = FIcon(icon, color).pixmap(target.size())
+        pix = pix_icon.pixmap(target.size())
         target.moveCenter(rect.center() + QPoint(1, 1))
 
         painter.drawPixmap(target, pix)
@@ -249,7 +263,6 @@ class GenotypeModel(QAbstractTableModel):
         genotype["variant_name"]=variant_name
 
         # tags text
-        genotype["tags"]="test#tag,test#tag2,tag3"
         if genotype["tags"]:
             tags_text=genotype["tags"].replace(","," ")
         else:
