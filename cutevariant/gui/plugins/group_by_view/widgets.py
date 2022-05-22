@@ -43,7 +43,7 @@ from cutevariant.gui.plugin import PluginWidget
 from cutevariant.core import sql
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import LoadingTableView
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 
 from cutevariant.gui import plugin, FIcon, style, MainWindow
 
@@ -64,7 +64,7 @@ class GroupbyModel(QAbstractTableModel):
     groubpby_finished = Signal()
     groupby_error = Signal()
 
-    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
+    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
 
     def __init__(self, parent: QObject = None, conn: sqlite3.Connection = None) -> None:
         super().__init__(parent)
@@ -151,12 +151,7 @@ class GroupbyModel(QAbstractTableModel):
 
         if role == Qt.ForegroundRole:
             if index.column() == 1:
-                return (
-                    QApplication.instance()
-                    .style()
-                    .standardPalette()
-                    .color(QPalette.Shadow)
-                )
+                return QApplication.instance().style().standardPalette().color(QPalette.Shadow)
 
         if role == Qt.TextAlignmentRole:
 
@@ -227,9 +222,7 @@ class GroupbyModel(QAbstractTableModel):
         QMessageBox.critical(
             None,
             self.tr("Error!"),
-            self.tr(
-                f"Group by thread returned error {self.load_groupby_thread.last_error}"
-            ),
+            self.tr(f"Group by thread returned error {self.load_groupby_thread.last_error}"),
         )
         self.clear()
         self.groupby_error.emit()
@@ -304,9 +297,7 @@ class GroupbyTable(QWidget):
         self.tableview.stop_loading()
         self.tableview.horizontalHeader().setStretchLastSection(False)
         self.tableview.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.tableview.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.tableview.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
 
 class GroupByViewWidget(PluginWidget):
@@ -327,9 +318,7 @@ class GroupByViewWidget(PluginWidget):
         # Create QCombobox
         self.field_select_combo = QComboBox(self)
         self.field_select_combo.currentTextChanged.connect(self._load_groupby)
-        self.field_select_combo.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Preferred
-        )
+        self.field_select_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         # Create actions
         # self.apply_action = QAction(self)
@@ -372,13 +361,16 @@ class GroupByViewWidget(PluginWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setWindowTitle(self.tr("Group By"))
-        self.setWindowIcon(FIcon(0xF126F))
+        self.setWindowIcon(FIcon(0xF1860))
 
     def on_open_project(self, conn: sqlite3.Connection):
         """override"""
         self.conn = conn
         self.view.conn = conn
         self.on_refresh()
+
+    def on_close_project(self):
+        self.view.groupby_model.clear()
 
     def on_refresh(self):
         """Overrided from PluginWidget"""
@@ -433,8 +425,7 @@ class GroupByViewWidget(PluginWidget):
 
     def on_apply(self):
         selected_values = [
-            idx.data(Qt.DisplayRole)
-            for idx in self.view.tableview.selectionModel().selectedRows(0)
+            idx.data(Qt.DisplayRole) for idx in self.view.tableview.selectionModel().selectedRows(0)
         ]
         if selected_values:
             self.add_condition_to_filters(

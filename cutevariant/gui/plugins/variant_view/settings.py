@@ -9,10 +9,10 @@ from PySide6.QtWidgets import *
 from cutevariant.gui.plugin import PluginSettingsWidget
 from cutevariant.gui.settings import AbstractSettingsWidget
 from cutevariant.gui import FIcon
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 from cutevariant.config import Config
 
-from cutevariant.gui.widgets import TagEditor, ClassificationEditor
+from cutevariant.gui.widgets import ClassificationEditor
 
 
 import typing
@@ -168,28 +168,6 @@ class LinksModel(QAbstractListModel):
             return QIcon(FIcon(0xF0866))
 
 
-class TagsSettings(AbstractSettingsWidget):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("Variant tags")
-        v_layout = QVBoxLayout(self)
-        self.w = TagEditor()
-        v_layout.addWidget(self.w)
-
-    def save(self):
-        """override"""
-        config = self.section_widget.create_config()
-        config["tags"] = self.w.get_tags()
-        config.save()
-
-    def load(self):
-        """override"""
-        config = self.section_widget.create_config()
-        tags = config.get("tags", "")
-        self.w.set_tags(tags)
-
-
 class GeneralSettings(AbstractSettingsWidget):
     def __init__(self):
         super().__init__()
@@ -244,9 +222,7 @@ class LinkSettings(AbstractSettingsWidget):
         self.set_default_button.setToolTip(self.tr("Double click will open this link"))
         self.remove_button = QPushButton(self.tr("Remove"))
 
-        self.batch_open_cb = QCheckBox(
-            self.tr("Allow batch opening of all selected variants")
-        )
+        self.batch_open_cb = QCheckBox(self.tr("Allow batch opening of all selected variants"))
 
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.add_button)
@@ -342,9 +318,7 @@ class LinkSettings(AbstractSettingsWidget):
             # Fill forms with item data
             name.setText(index.data(Qt.DisplayRole))
             url.setText(index.data(Qt.ToolTipRole))
-            is_browser = (
-                Qt.Checked if bool(index.data(Qt.UserRole + 1)) else Qt.Unchecked
-            )
+            is_browser = Qt.Checked if bool(index.data(Qt.UserRole + 1)) else Qt.Unchecked
             browser.setChecked(is_browser)
 
         # Also do a minimal check on the data inserted
@@ -352,14 +326,10 @@ class LinkSettings(AbstractSettingsWidget):
 
             if index:
                 # Edit the current item in the list
-                self.link_model.edit_link(
-                    index, name.text(), url.text(), bool(browser.checkState()), False
-                )
+                self.link_model.edit_link(index, name.text(), url.text(), bool(browser.checkState()), False)
             else:
                 # Add the item to the list
-                self.link_model.add_link(
-                    name.text(), url.text(), bool(browser.checkState()), False
-                )
+                self.link_model.add_link(name.text(), url.text(), bool(browser.checkState()), False)
 
             # Save the item in settings
             # (Here to limit the friction with Save all button)
@@ -449,5 +419,4 @@ class VariantViewSettingsWidget(PluginSettingsWidget):
         self.setWindowTitle("Variant view")
         self.add_page(GeneralSettings())
         self.add_page(LinkSettings())
-        self.add_page(TagsSettings())
         self.add_page(ClassificationSettings())

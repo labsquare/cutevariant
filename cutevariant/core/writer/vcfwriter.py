@@ -23,7 +23,7 @@ class VcfWriter(AbstractWriter):
     VCF_TYPE = {"int": "Integer", "float": "Float", "str": "String"}
 
     # TEMPORARY BECAUSE CUTEVARIANT MUST STORE PHASE GENOTYPE
-    GENOTYPE_MAP = {"": ".", -1: ".", 0: "0/0", 1: "0/1", 2: "1/1"}
+    GENOTYPE_MAP = {None: "./.", "": "./.", -1: "./.", 0: "0/0", 1: "0/1", 2: "1/1"}
 
     def __init__(
         self,
@@ -55,15 +55,16 @@ class VcfWriter(AbstractWriter):
             # Only keep info if they have been asked for by the user
         ]
 
+        # INFO fields
         for field in self.info_fields:
 
             name = field["name"]
-
             # These fields will be created when cutevariant loads the VCF back in
             if name in (
                 "favorite",
-                "comment",
                 "classification",
+                "tags",
+                "comment",
                 "count_hom",
                 "count_het",
             ):
@@ -76,13 +77,18 @@ class VcfWriter(AbstractWriter):
                 f'##INFO=<ID={name}, Number=1, Type={vcf_type}, Description="{descr}">\n',
             )
 
-        # save format
-        self.format_fields = [
-            format_field
-            for format_field in sql.get_field_by_category(self.conn, "samples")
-        ]
+        # FORMAT fields
         for field in sql.get_field_by_category(self.conn, "samples"):
+
             name = field["name"]
+            # These fields will be created when cutevariant loads the VCF back in
+            if name in (
+                "classification",
+                "tags",
+                "comment",
+            ):
+                continue
+
             descr = field["description"]
             vcf_type = VcfWriter.VCF_TYPE.get(field["type"], "String")
 
@@ -97,12 +103,24 @@ class VcfWriter(AbstractWriter):
         if not fields:
             fields = []
 
-        return ";".join(
-            [
-                f"{info_field['name']}={variant[info_field['name']]}"
-                for info_field in self.info_fields  # Only export allowed info fields (self.info_fields has been filtered)
-                if info_field["name"] in fields
-            ]
+        return (
+            ";".join(
+                [
+                    f"{info_field['name']}={variant[info_field['name']]}"
+                    for info_field in self.info_fields  # Only export allowed info fields (self.info_fields has been filtered)
+                    if info_field["name"] in fields
+                    and info_field["name"]
+                    not in (
+                        "favorite",
+                        "classification",
+                        "tags",
+                        "comment",
+                        "count_hom",
+                        "count_het",
+                    )
+                ]
+            )
+            or "."
         )
 
     def get_format_column(self, variant_id: int):
@@ -111,14 +129,23 @@ class VcfWriter(AbstractWriter):
         """
         return "GT"
 
-    def get_samples_column(self, variant_id: int):
+    def get_samples_column(self, variant_id: int, fields=None):
         ssample = []
-        sample_annotations = sql.get_sample_annotations_by_variant(
-            self.conn, variant_id
-        )
+        sample_annotations = sql.get_genotypes(self.conn, variant_id, fields=fields)
 
-        for ann in sample_annotations:
-            ssample.append(VcfWriter.GENOTYPE_MAP[ann.get("gt", "")])
+        for annotations in sample_annotations:
+            sssample = []
+            for ann in annotations:
+                if ann in fields:
+                    if ann == "gt":
+                        # ssample.append(VcfWriter.GENOTYPE_MAP[ann.get("gt", "")])
+                        sssample.append(self.GENOTYPE_MAP[annotations.get("gt", "./.")])
+                    else:
+                        if annotations[ann] == None:
+                            sssample.append(".")
+                        else:
+                            sssample.append(str(annotations[ann]))
+            ssample.append(":".join(sssample))
 
         return "\t".join(ssample)
 
@@ -153,11 +180,26 @@ class VcfWriter(AbstractWriter):
         # Out of all the fields asked by the user, ignore those that are mandatory for the VCF
         custom_fields = list(
             filter(
-                lambda name: name.lower()
-                not in {"chr", "pos", "rsid", "ref", "alt", "qual"},
+                lambda name: name.lower() not in {"chr", "pos", "rsid", "ref", "alt", "qual"},
                 self.fields,
             )
         )
+
+        # FORMAT fields
+        format_fields = []
+        for format_field in dict(
+            self.conn.execute(f"""SELECT * FROM genotypes LIMIT 1""").fetchone()
+        ):
+            if format_field not in (
+                "variant_id",
+                "sample_id",
+                "name",
+                "valid",
+                "classification",
+                "tags",
+                "comment",
+            ):
+                format_fields.append(format_field)
 
         # Start the actual variant writing loop
         for index, variant in enumerate(
@@ -180,8 +222,10 @@ class VcfWriter(AbstractWriter):
             ffilter = "PASS"
 
             info = self.get_info_column(variant, custom_fields)
-            fformat = self.get_format_column(variant)
-            ssample = self.get_samples_column(variant["id"])
+            # fformat = self.get_format_column(variant)
+            fformat = ":".join(format_fields)
+            # ssample = self.get_samples_column(variant_id=variant["id"], fields=["gt","vaf"])
+            ssample = self.get_samples_column(variant_id=variant["id"], fields=format_fields)
 
             device.write(
                 "\t".join(

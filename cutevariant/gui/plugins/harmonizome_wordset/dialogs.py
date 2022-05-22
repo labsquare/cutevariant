@@ -42,7 +42,7 @@ from cutevariant.gui.ficon import FIcon
 from cutevariant.core.sql import get_sql_connection, get_wordsets
 from cutevariant.core.command import import_cmd
 from cutevariant.gui.plugin import PluginDialog
-from cutevariant.commons import GENOTYPE_DESC
+from cutevariant.constants import GENOTYPE_DESC
 
 from cutevariant.gui.widgets import SearchableTableWidget
 
@@ -319,9 +319,7 @@ class HZGeneModel(QAbstractListModel):
 
 
 class GeneSelectionDialog(QDialog):
-    def __init__(
-        self, initial_selection: typing.List[str] = None, parent: QWidget = None
-    ):
+    def __init__(self, initial_selection: typing.List[str] = None, parent: QWidget = None):
         super().__init__(parent)
 
         self.view = SearchableTableWidget(self)
@@ -331,9 +329,7 @@ class GeneSelectionDialog(QDialog):
         self.view.set_model(self.model)
 
         self.clear_selection_btn = QPushButton(self.tr("Clear list"), self)
-        self.remove_selection_item_btn = QPushButton(
-            self.tr("Remove selected gene(s)"), self
-        )
+        self.remove_selection_item_btn = QPushButton(self.tr("Remove selected gene(s)"), self)
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         self.buttons_layout = QHBoxLayout()
@@ -341,9 +337,7 @@ class GeneSelectionDialog(QDialog):
         self.buttons_layout.addWidget(self.remove_selection_item_btn)
 
         self.exit_btn_box = QDialogButtonBox(self)
-        self.exit_btn_box.setStandardButtons(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
+        self.exit_btn_box.setStandardButtons(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.exit_btn_box.rejected.connect(self.reject)
         self.exit_btn_box.accepted.connect(self.accept)
 
@@ -356,9 +350,7 @@ class GeneSelectionDialog(QDialog):
         self.gene_selection = initial_selection
 
         self.clear_selection_btn.clicked.connect(self.on_clear_selectiion_clicked)
-        self.remove_selection_item_btn.clicked.connect(
-            self.on_remove_selection_items_clicked
-        )
+        self.remove_selection_item_btn.clicked.connect(self.on_remove_selection_items_clicked)
 
     def on_remove_selection_items_clicked(self):
         selected_genes = [
@@ -513,17 +505,13 @@ class HarmonizomeWordsetDialog(PluginDialog):
 
         self.cancel_btn.clicked.connect(self.reject)
 
-        self.selection_add_button.clicked.connect(
-            self.on_add_genes_to_selection_pressed
-        )
+        self.selection_add_button.clicked.connect(self.on_add_genes_to_selection_pressed)
         self.selection_info_button.clicked.connect(self.on_selection_info_pressed)
         self.add_wordset_btn.clicked.connect(self.create_wordset)
 
         self.buttons_layout = QHBoxLayout()
         self.buttons_layout.addWidget(self.cancel_btn)
-        self.buttons_layout.addItem(
-            QSpacerItem(30, 0, QSizePolicy.Expanding, QSizePolicy.Fixed)
-        )
+        self.buttons_layout.addItem(QSpacerItem(30, 0, QSizePolicy.Expanding, QSizePolicy.Fixed))
         self.buttons_layout.addWidget(self.selection_add_button)
         self.buttons_layout.addWidget(self.selection_info_button)
         self.buttons_layout.addWidget(self.add_wordset_btn)
@@ -607,23 +595,18 @@ class HarmonizomeWordsetDialog(PluginDialog):
                 QMessageBox.critical(
                     self,
                     self.tr("Error while creating set"),
-                    self.tr("Error while creating set '%s'; Name is already used")
-                    % wordset_name,
+                    self.tr("Error while creating set '%s'; Name is already used") % wordset_name,
                 )
                 wordset_name = None
 
         # Import and close dialog
-        if self.import_wordset(
-            self.harmonizome_widget.get_selected_genes(), wordset_name
-        ):
+        if self.import_wordset(self.harmonizome_widget.get_selected_genes(), wordset_name):
             QMessageBox.information(
                 self,
                 self.tr("Success!"),
                 self.tr(f"Successfully imported wordset {wordset_name}"),
             )
-            filter_with_wordset = {
-                "$and": [{"ann.gene": {"$in": {"$wordset": wordset_name}}}]
-            }
+            filter_with_wordset = {"$and": [{"ann.gene": {"$in": {"$wordset": wordset_name}}}]}
 
             self.mainwindow.set_state_data("filters", filter_with_wordset)
             self.mainwindow.refresh_plugins()

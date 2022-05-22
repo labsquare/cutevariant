@@ -3,6 +3,8 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 import typing
 
+from cutevariant.gui.ficon import FIcon
+
 # Tags {
 #     "name":"tags name",
 #     "color":"color",
@@ -75,26 +77,24 @@ class ClassificationDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-    def paint(
-        self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
-    ):
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
 
-        if index.column() == 0:
+        # if index.column() == 0:
 
-            text = str(index.data(Qt.DisplayRole))
-            color = index.model().classification(index)["color"]
-            metrics = QFontMetrics(painter.font())
-            rect = metrics.boundingRect(text)
-            rect.moveCenter(option.rect.center())
-            rect = rect.adjusted(-3, -3, 3, 3)
-            painter.setBrush(QBrush(color))
-            painter.setPen(Qt.NoPen)
-            painter.drawRoundedRect(rect, 2, 2)
-            painter.setPen(QPen("white"))
-            painter.drawText(rect, Qt.AlignCenter, text)
+        #     text = str(index.data(Qt.DisplayRole))
+        #     color = index.model().classification(index)["color"]
+        #     metrics = QFontMetrics(painter.font())
+        #     rect = metrics.boundingRect(text)
+        #     rect.moveCenter(option.rect.center())
+        #     rect = rect.adjusted(-3, -3, 3, 3)
+        #     painter.setBrush(QBrush(color))
+        #     painter.setPen(Qt.NoPen)
+        #     painter.drawRoundedRect(rect, 2, 2)
+        #     painter.setPen(QPen("white"))
+        #     painter.drawText(rect, Qt.AlignCenter, text)
 
-        else:
-            return super().paint(painter, option, index)
+        #        else:
+        return super().paint(painter, option, index)
 
 
 class ClassificationModel(QAbstractTableModel):
@@ -104,10 +104,14 @@ class ClassificationModel(QAbstractTableModel):
         self._headers = ["Number", "Name"]
 
     def rowCount(self, parent=QModelIndex()):
-        return len(self._data)
+        if parent == QModelIndex():
+            return len(self._data)
+        return 0
 
     def columnCount(self, parent=QModelIndex()):
-        return 2
+        if parent == QModelIndex():
+            return 2
+        return 0
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
 
@@ -115,16 +119,18 @@ class ClassificationModel(QAbstractTableModel):
             return None
 
         if role == Qt.DisplayRole:
-            if index.column() == 0:
-                return self._data[index.row()]["number"]
             if index.column() == 1:
                 return self._data[index.row()]["name"]
 
+            if index.column() == 0:
+                return self._data[index.row()]["number"]
+
+        if role == Qt.DecorationRole and index.column() == 0:
+            return QIcon(FIcon(0xF012F, self._data[index.row()]["color"]))
+
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
 
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
@@ -180,7 +186,10 @@ class ClassificationEditor(QWidget):
         self.view.setItemDelegate(self.delegate)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setShowGrid(False)
         self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.horizontalHeader().hide()
+        self.view.setAlternatingRowColors(True)
         self.view.verticalHeader().hide()
         # self.view.selectionModel().selectionChanged.connect(self._on_selection_changed)
 
@@ -231,6 +240,7 @@ class ClassificationEditor(QWidget):
 
     def set_classifications(self, classifications: typing.List[dict]):
         self.model.set_classifications(classifications)
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
     def get_classifications(self):
         return self.model.get_classifications()

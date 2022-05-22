@@ -37,9 +37,7 @@ class ProjectPage(QWizardPage):
         self.setLayout(form_layout)
 
     def _browse(self):
-        path = QFileDialog.getExistingDirectory(
-            self, self.tr("Select a folder"), QDir.homePath()
-        )
+        path = QFileDialog.getExistingDirectory(self, self.tr("Select a folder"), QDir.homePath())
         if path:
             self.path_edit.setText(path)
 
@@ -54,10 +52,7 @@ class ProjectPage(QWizardPage):
             reply = QMessageBox.warning(
                 self,
                 self.tr("Overwrite ?"),
-                self.tr(
-                    f"a <b>{name}.db</b> project already exists in this directory. <br>"
-                    "Would you like to overwrite it ? All data will be lost."
-                ),
+                self.tr(f"a <b>{name}.db</b> project already exists in this directory. <br>" "Would you like to overwrite it ? All data will be lost."),
                 QMessageBox.Yes | QMessageBox.No,
             )
 
@@ -78,15 +73,7 @@ class ProjectPage(QWizardPage):
     def isComplete(self):
         """Conditions to unlock next button"""
 
-        return (
-            True
-            if (
-                QDir(self.path_edit.text()).exists()
-                and self.path_edit.text()
-                and self.name_edit.text()
-            )
-            else False
-        )
+        return True if (QDir(self.path_edit.text()).exists() and self.path_edit.text() and self.name_edit.text()) else False
 
 
 class FilePage(QWizardPage):
@@ -106,13 +93,14 @@ class FilePage(QWizardPage):
 
 
 class ImportPage(QWizardPage):
+
+    completeChanged = Signal()
+
     def __init__(self, parent=None):
         super().__init__()
 
         self.setTitle(self.tr("Import file"))
-        self.setSubTitle(
-            self.tr("Please click on Import/Stop to start or stop the process.")
-        )
+        self.setSubTitle(self.tr("Please click on Import/Stop to start or stop the process."))
 
         # Async stuff
         self.thread_finished = False  # True if import process is correctly finished
@@ -135,6 +123,8 @@ class ImportPage(QWizardPage):
         m_layout.addWidget(self.tab_widget)
         self.setLayout(m_layout)
 
+        self.timer = QElapsedTimer()
+
         # self.db_filename = None
 
         # # Ignored field from previous page; see initializePage()
@@ -142,7 +132,7 @@ class ImportPage(QWizardPage):
 
         # self.annotation_parser = None
 
-        self.thread.started.connect(lambda: self.show_log(self.tr("Started")))
+        self.thread.started.connect(self.timer.start)
 
         self.thread.progress_changed.connect(self.show_progress)
         self.thread.finished_status.connect(self.import_thread_finished)
@@ -168,16 +158,17 @@ class ImportPage(QWizardPage):
         # try:
 
         self.thread_finished = self.thread.isFinished()
-        self.completeChanged.emit()
-        # except RuntimeError:
-        #     # When closing the wizard, the thread is stopped via cleanupPage()
-        #     # and finished signal is emitted after the deletion of the wizard.
-        #     pass
+
+        if status:
+            self.completeChanged.emit()
 
     def show_log(self, message: str):
 
-        timestamp = QDateTime.currentDateTime().toString("hh:MM:ss")
-        self.log_edit.appendPlainText(f"[{timestamp}] {message}")
+        timestamp = int(self.timer.elapsed() * 0.001)
+
+        time_str = f"{timestamp//3600:02d}:{timestamp//60:02d}:{timestamp%60:02d}"
+
+        self.log_edit.appendPlainText(f"[{time_str}] {message}")
 
     def show_progress(self, percent: float, message: str):
         self.progress.setValue(percent)

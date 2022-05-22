@@ -21,6 +21,7 @@ def conn():
 
 def test_plugin(conn, qtbot):
     plugin = widgets.FieldsEditorWidget()
+    plugin.mainwindow = utils.create_mainwindow()
     plugin.on_open_project(conn)
 
     assert plugin.widget_fields.views[0]["model"].rowCount() == len(
@@ -46,57 +47,55 @@ def test_plugin(conn, qtbot):
     assert len(plugin.widget_fields.views[1]["model"].checked_fields()) == 2
     assert len(plugin.widget_fields.views[2]["model"].checked_fields()) == 2
 
+    # def test_presets_model(qtmodeltester):
+    #     filename = tempfile.mktemp()
+    #     model = widgets.FieldsPresetModel(config_path=filename)
 
-def test_presets_model(qtmodeltester):
-    filename = tempfile.mktemp()
-    model = widgets.FieldsPresetModel(config_path=filename)
+    #     model.add_preset("preset A", ["chr", "pos", "ref"])
+    #     model.add_preset("preset B", ["chr", "rs", "ann.gene"])
+    #     model.add_preset("preset C", ["chr", "rs", "ann.gene", "rsid", "af"])
 
-    model.add_preset("preset A", ["chr", "pos", "ref"])
-    model.add_preset("preset B", ["chr", "rs", "ann.gene"])
-    model.add_preset("preset C", ["chr", "rs", "ann.gene", "rsid", "af"])
+    #     assert model.rowCount() == 3
 
-    assert model.rowCount() == 3
+    #     model.rem_presets([1])
+    #     assert model.rowCount() == 2
 
-    model.rem_presets([1])
-    assert model.rowCount() == 2
+    #     model.save()
 
-    model.save()
+    #     model.clear()
 
-    model.clear()
+    #     assert model.rowCount() == 0
 
-    assert model.rowCount() == 0
+    #     model.load()
 
-    model.load()
+    #     print("ICI", model._presets)
+    #     assert model.rowCount() == 2
 
-    print("ICI", model._presets)
-    assert model.rowCount() == 2
+    #     qtmodeltester.check(model)
 
-    qtmodeltester.check(model)
+    #     os.remove(filename)
 
-    os.remove(filename)
+    # def test_preset_dialog(conn, qtbot):
 
+    #     w = widgets.PresetsDialog("test_preset")
 
-def test_preset_dialog(conn, qtbot):
+    #     qtbot.addWidget(w)
 
-    w = widgets.PresetsDialog("test_preset")
+    #     fields = ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"]
+    #     w.fields = fields
 
-    qtbot.addWidget(w)
+    #     # Test moving fields ...
+    #     w.view.setCurrentRow(0)
+    #     w.move_down()
+    #     assert w.fields == ["pos", "chr", "ref", "alt", "ann.gene", "ann.impact"]
 
-    fields = ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"]
-    w.fields = fields
+    #     w.view.setCurrentRow(1)
+    #     w.move_up()
+    #     assert w.fields == ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"]
 
-    # Test moving fields ...
-    w.view.setCurrentRow(0)
-    w.move_down()
-    assert w.fields == ["pos", "chr", "ref", "alt", "ann.gene", "ann.impact"]
-
-    w.view.setCurrentRow(1)
-    w.move_up()
-    assert w.fields == ["chr", "pos", "ref", "alt", "ann.gene", "ann.impact"]
-
-    w.view.setCurrentRow(5)
-    [w.move_up() for i in range(5)]
-    assert w.fields == ["ann.impact", "chr", "pos", "ref", "alt", "ann.gene"]
+    #     w.view.setCurrentRow(5)
+    #     [w.move_up() for i in range(5)]
+    #     assert w.fields == ["ann.impact", "chr", "pos", "ref", "alt", "ann.gene"]
 
 
 def test_fields_model(qtmodeltester, conn, qtbot):
@@ -139,12 +138,12 @@ def test_fields_model(qtmodeltester, conn, qtbot):
         assert item.text() in fields
 
     # check comment item
-    with qtbot.waitSignal(model.field_checked, timeout=10000) as blocker:
-        model.item(1).setCheckState(QtCore.Qt.Checked)
+    with qtbot.waitSignal(model.field_checked, timeout=100) as blocker:
+        model.item(0).setCheckState(QtCore.Qt.Unchecked)
 
-    assert blocker.args == ["comment", True]
+    assert blocker.args == ["chr", False]
 
-    assert len(model.checked_fields()) == 4
+    assert len(model.checked_fields()) == len(fields) - 1
 
 
 def test_fields_widget(conn, qtbot):

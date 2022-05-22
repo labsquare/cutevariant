@@ -2,8 +2,8 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 
-from cutevariant.gui.widgets import ChoiceWidget, DictWidget, MarkdownEditor
-from cutevariant.gui.widgets.multi_combobox import MultiComboBox
+from cutevariant.gui.widgets import DictWidget, MarkdownEditor
+from cutevariant.gui.widgets import TagEdit
 from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
 from cutevariant.config import Config
 
@@ -49,10 +49,7 @@ class TableModel(QAbstractTableModel):
 class VariantWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
-        if Config("variant_view")["tags"] != None:
-            self.TAG_LIST = [tag["name"] for tag in Config("variant_view")["tags"]]
-        else:
-            self.TAG_LIST = []
+
         self.TAG_SEPARATOR = "&"
         self.REVERSE_CLASSIF = {v["name"]: k for k, v in CLASSIFICATION.items()}
         self._conn = conn
@@ -72,16 +69,18 @@ class VariantWidget(QWidget):
 
         self.classification = QComboBox()
 
-        self.tag_edit = MultiComboBox()
-        self.tag_edit.addItems(self.TAG_LIST)
+        # self.tag_model = QStringListModel(["arefaire", "refactoring des tags", "attention"])
+        # self.tag_completer = QCompleter()
+        # self.tag_completer.setModel(self.tag_model)
+        self.tag_edit = TagEdit()
+        self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma ..."))
+        # self.tag_edit.setCompleter(self.tag_completer)
 
         self.tag_layout = QHBoxLayout()
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
 
-        self.tag_choice = ChoiceWidget()
-        self.tag_choice_action = QWidgetAction(self)
-        self.tag_choice_action.setDefaultWidget(self.tag_choice)
+        self.tag_choice = TagEdit()
 
         self.edit_comment_btn = QPushButton("Edit comment")
         self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
@@ -181,22 +180,14 @@ class VariantWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
-        #avoid losing tags who exist in DB but not in config.yml
-        missing_tags = []
-        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
-            if tag not in self.TAG_LIST:
-                missing_tags.append(tag)
-
+        # avoid losing tags who exist in DB but not in config.yml
         update_data = {"id": self.data["id"]}
         if self.favorite.isChecked:
             update_data["favorite"] = 1
         else:
             update_data["favorite"] = 0
         update_data["classification"] = self.classification.currentData()
-        print("self.tag_edit.currentData()", self.tag_edit.currentData())
-        print("missing_tags", missing_tags)
-        print("added", self.tag_edit.currentData() + missing_tags)
-        update_data["tags"] = self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags)
+        update_data["tags"] = self.TAG_SEPARATOR.join(self.tag_edit.text().split(","))
         update_data["comment"] = self.comment.toPlainText()
         sql.update_variant(self._conn, update_data)
 
@@ -252,11 +243,8 @@ class VariantWidget(QWidget):
         self.classification.setCurrentIndex(index)
 
         if self.data["tags"] is not None:
-            for tag in self.data["tags"].split(self.TAG_SEPARATOR):
-                if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
-                        Qt.Checked, Qt.CheckStateRole
-                    )
+            self.tag_edit.setText(",".join(self.data["tags"].split(self.TAG_SEPARATOR)))
+
         self.comment.setPlainText(self.data["comment"])
         self.comment.preview_btn.setChecked(True)
         self.variant_view.set_dict(self.data)
@@ -279,7 +267,7 @@ class VariantWidget(QWidget):
         values = []
         values.append(self.favorite.isChecked())
         values.append(self.classification.currentIndex())
-        values.append(self.tag_edit.currentData())
+        values.append(self.tag_edit.text())
         values.append(self.comment.toPlainText())
         return values
 
@@ -296,10 +284,10 @@ class VariantWidget(QWidget):
             self.ann_view.set_dict({i: k for i, k in adata.items() if k != ""})
 
     def get_history_variants(self):
-        """ Get the history of samples """
+        """Get the history of samples"""
         results = {}
         for record in self._conn.execute(
-        f"""SELECT   ('[' || `timestamp` || ']') as time,
+            f"""SELECT   ('[' || `timestamp` || ']') as time,
                      ('[' || `history`.`id` || ']') as id,
                         ( '[' || `user` || ']' || ' - ' || '[' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
                 FROM `history`
@@ -310,15 +298,14 @@ class VariantWidget(QWidget):
 
         return results
 
+
 class VariantDialog(QDialog):
     def __init__(self, conn, variant_id, parent=None):
         super().__init__(parent)
 
         self.variant_id = variant_id
         self.w = VariantWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)

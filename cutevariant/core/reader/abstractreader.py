@@ -7,7 +7,7 @@ from collections import Counter
 # use to format value with URL caracter : #See Issue
 from urllib.parse import unquote
 
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 
 from cutevariant import LOGGER
 
@@ -366,9 +366,18 @@ class AbstractReader(ABC):
             variant["count_no"] = genotype_counter[-1]
             # Number of variants (not 0/0)
             variant["count_var"] = genotype_counter[1] + genotype_counter[2]
-            variant["count_all"] = genotype_counter[-1] + genotype_counter[0] + genotype_counter[1] + genotype_counter[2]
-            variant["freq_var"] = ( ( variant["count_hom"] * 2 ) + variant["count_het"] ) / ( variant["count_var"] * 2 )
-            variant["freq_var_full"] = ( ( variant["count_hom"] * 2 ) + variant["count_het"] ) / ( variant["count_all"] * 2 )
+            variant["count_all"] = (
+                genotype_counter[-1]
+                + genotype_counter[0]
+                + genotype_counter[1]
+                + genotype_counter[2]
+            )
+            variant["freq_var"] = ((variant["count_hom"] * 2) + variant["count_het"]) / (
+                variant["count_var"] * 2
+            )
+            variant["freq_var_full"] = ((variant["count_hom"] * 2) + variant["count_het"]) / (
+                variant["count_all"] * 2
+            )
 
             variant["is_indel"] = len(variant["ref"]) != len(variant["alt"])
             variant["is_snp"] = len(variant["ref"]) == len(variant["alt"])
@@ -425,17 +434,13 @@ class AbstractReader(ABC):
                 for i, ann in enumerate(variant["annotations"]):
                     for key, value in ann.items():
                         if isinstance(value, str):
-                            variant["annotations"][i][key] = unquote(
-                                variant["annotations"][i][key]
-                            )
+                            variant["annotations"][i][key] = unquote(variant["annotations"][i][key])
 
             if "samples" in variant:
                 for i, sample in enumerate(variant["samples"]):
                     for key, value in sample.items():
                         if isinstance(value, str):
-                            variant["samples"][i][key] = unquote(
-                                variant["samples"][i][key]
-                            )
+                            variant["samples"][i][key] = unquote(variant["samples"][i][key])
 
             yield nullify(variant)
 
@@ -451,9 +456,7 @@ class AbstractReader(ABC):
         :return: A generator of fields
         :rtype: <generator>
         """
-        return (
-            field for field in self.get_extra_fields() if field["category"] == category
-        )
+        return (field for field in self.get_extra_fields() if field["category"] == category)
 
     def get_fields_by_category(self, category: str):
         """Syntaxic suggar to get fields according their category

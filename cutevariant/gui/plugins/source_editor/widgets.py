@@ -23,9 +23,10 @@ from cutevariant.core.sql import (
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
-from cutevariant.commons import DEFAULT_SELECTION_NAME
+from cutevariant.constants import DEFAULT_SELECTION_NAME
 
 
+import re
 from cutevariant import LOGGER
 
 # =================== SELECTION MODEL ===========================
@@ -120,9 +121,7 @@ class SourceModel(QAbstractTableModel):
 
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role=Qt.DisplayRole
-    ) -> str:
+    def headerData(self, section: int, orientation: Qt.Orientation, role=Qt.DisplayRole) -> str:
         """Override from QAbstractTableModel
 
         Args:
@@ -222,6 +221,11 @@ class SourceModel(QAbstractTableModel):
     def get_source_names(self):
         return [rec["name"] for rec in self.records]
 
+    def clear(self):
+        self.beginResetModel()
+        self.records.clear()
+        self.endResetModel()
+
 
 # =================== SELECTION VIEW ===========================
 
@@ -242,7 +246,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         """
         super().__init__(parent)
 
-        self.setWindowIcon(FIcon(0xF10E4))
+        self.setWindowIcon(FIcon(0xF04EB))
         # conn is always None here but initialized in on_open_project()
         self.model = SourceModel(conn)
         self.proxy_model = QSortFilterProxyModel()
@@ -253,9 +257,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.horizontalHeader().setStretchLastSection(False)
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.view.setSortingEnabled(True)
         self.view.setShowGrid(False)
         self.view.setAlternatingRowColors(False)
@@ -283,7 +285,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.doubleClicked.connect(self.on_double_click)
 
         self.create_selection_action = self.toolbar.addAction(
-            FIcon(0xF0F87),
+            FIcon(0xF0A75),
             self.tr("New source..."),
             self.create_selection_from_current,
         )
@@ -350,6 +352,7 @@ class SourceEditorWidget(plugin.PluginWidget):
     def create_selection_from_current(self):
         name = self.ask_and_check_selection_name()
 
+        name = re.sub(r"\s+", "_", name.strip())
         if name:
 
             executed_query_data = self.mainwindow.get_state_data("executed_query_data")
@@ -403,6 +406,9 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.conn = conn
         self.on_refresh()
 
+    def on_close_project(self):
+        self.model.clear()
+
     def on_refresh(self):
         """override from PluginWidget"""
         # self.view.selectionModel().blockSignals(True)
@@ -422,8 +428,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         For this widget, it allows us to check whether the number of selected sources is exactly two, so we can enable/disable the set operations
         """
         selected_sources = [
-            index.data(Qt.DisplayRole)
-            for index in self.view.selectionModel().selectedRows(0)
+            index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)
         ]
 
         if not selected_sources:
@@ -498,9 +503,7 @@ class SourceEditorWidget(plugin.PluginWidget):
                 self.tr("'%s' is a reserved name for a selection!") % name,
             )
         elif name in self.model.get_source_names():
-            LOGGER.error(
-                "SourceEditorWidget:save_current_query:: '%s' is already used!", name
-            )
+            LOGGER.error("SourceEditorWidget:save_current_query:: '%s' is already used!", name)
             self.mainwindow.status_bar.showMessage(
                 self.tr("'%s' is already used for a selection!") % name
             )
@@ -516,15 +519,12 @@ class SourceEditorWidget(plugin.PluginWidget):
         """Remove a selection from the database"""
 
         if not self.view.selectionModel().selectedRows(0):
-            QMessageBox.information(
-                self, self.tr("Info"), self.tr("No source to remove!")
-            )
+            QMessageBox.information(self, self.tr("Info"), self.tr("No source to remove!"))
             return
 
         # This should not even be called, since remove/edit actions are supposed to be disabled by the widget
         if any(
-            self.model.record(self.proxy_model.mapToSource(index))
-            == DEFAULT_SELECTION_NAME
+            self.model.record(self.proxy_model.mapToSource(index)) == DEFAULT_SELECTION_NAME
             for index in self.view.selectionModel().selectedRows(0)
         ):
             QMessageBox.warning(
@@ -540,8 +540,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         if msg.exec_() == QMessageBox.Yes:
             indexes = [
-                self.proxy_model.mapToSource(i)
-                for i in self.view.selectionModel().selectedRows(0)
+                self.proxy_model.mapToSource(i) for i in self.view.selectionModel().selectedRows(0)
             ]
             self.model.remove_records(indexes)
 
@@ -556,14 +555,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         current_index = self.proxy_model.mapToSource(current_index)
 
         if not current_index.isValid():
-            QMessageBox.information(
-                self, self.tr("Info"), self.tr("No source to edit!")
-            )
+            QMessageBox.information(self, self.tr("Info"), self.tr("No source to edit!"))
         old_record = self.model.record(current_index)
 
-        selection_name = self.ask_and_check_selection_name(
-            placeholder=old_record["name"]
-        )
+        selection_name = self.ask_and_check_selection_name(placeholder=old_record["name"])
         if current_index and selection_name:
             old_record["name"] = selection_name
             self.model.edit_record(current_index, old_record)
@@ -577,27 +572,20 @@ class SourceEditorWidget(plugin.PluginWidget):
         operators = {"intersect": "AND", "union": "OR", "subtract": "MINUS"}
         operations = {
             "intersect": (
-                lambda name, first, last: command.set_cmd(
-                    self.conn, name, first, last, "&"
-                ),
+                lambda name, first, last: command.set_cmd(self.conn, name, first, last, "&"),
                 self.tr("intersection"),
             ),
             "union": (
-                lambda name, first, last: command.set_cmd(
-                    self.conn, name, first, last, "|"
-                ),
+                lambda name, first, last: command.set_cmd(self.conn, name, first, last, "|"),
                 self.tr("union"),
             ),
             "subtract": (
-                lambda name, first, last: command.set_cmd(
-                    self.conn, name, first, last, "-"
-                ),
+                lambda name, first, last: command.set_cmd(self.conn, name, first, last, "-"),
                 self.tr("difference"),
             ),
         }
         selected_sources = [
-            index.data(Qt.DisplayRole)
-            for index in self.view.selectionModel().selectedRows(0)
+            index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)
         ]
         if not selected_sources:
             return
@@ -607,9 +595,7 @@ class SourceEditorWidget(plugin.PluginWidget):
                 QMessageBox.question(
                     self,
                     self.tr(f"Set operation on sources"),
-                    self.tr(
-                        'This will perform "{first}" {operator} "{last}". Continue?'
-                    ).format(
+                    self.tr('This will perform "{first}" {operator} "{last}". Continue?').format(
                         first=selected_sources[0],
                         operator=operators[operation],
                         last=selected_sources[1],

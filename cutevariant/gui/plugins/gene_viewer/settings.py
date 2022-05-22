@@ -8,7 +8,7 @@ from PySide6.QtWidgets import *
 from cutevariant.gui.plugin import PluginSettingsWidget
 from cutevariant.gui.settings import AbstractSettingsWidget
 from cutevariant.gui import FIcon
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 
 from cutevariant.gui.widgets import FileEdit
 

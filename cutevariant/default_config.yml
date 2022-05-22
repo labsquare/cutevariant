@@ -9,6 +9,61 @@ app:
   style:
     theme: 'Bright'
 
+classifications:
+  genotypes: 
+  - number: 0
+    description: "To confirm"
+    name: "To confirm"
+    color: 'dimgray'
+  - number: 1
+    description: "Confirmed"
+    name: "confirmed"
+    color: 'green'
+
+  samples: 
+  - number: -1
+    description: "Sample is canceled "
+    name: "Rejected"
+    color: 'dimgray'
+  - number: 0
+    description: "Sample is not valided "
+    name: "Pending"
+    color: 'orange'
+  - number: 1
+    description: "Sample valided"
+    name: "Valided"
+    color: 'green'
+
+  variants:
+  - number: -1
+    description: "Rejected or artifact"
+    name: Rejected
+    color: '#dimgray'
+  - number: 0
+    description: "Unclassified"
+    name: "Unclassified"
+    color: '#lightgray'
+  - number: 1
+    description: "Benin"
+    name: "Benin"
+    color: '#71e096'
+  - number: 2
+    description: "Likely benin"
+    name: "Likely benin"
+    color: '#71e096'
+  - number: 3
+    description: "Variant of uncertain significance"
+    name: "Variant of uncertain significance"
+    color: '#f5a26f'
+  - number: 4
+    description: "Likely pathogenic"
+    name: "Likely pathogenic"
+    color: '#ed6d79'
+  - number: 5
+    description: "Pathogenic"
+    name: "Pathogenic"
+    color: '#ed6d79'
+
 variant_view:
   memory_cache: 32
   rows_per_page: 50

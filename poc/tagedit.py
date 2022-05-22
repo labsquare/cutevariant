@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 from functools import partial
 
 
@@ -61,7 +61,8 @@ class FlowLayout(QLayout):
         for item in self.itemList:
             size = size.expandedTo(item.minimumSize())
 
-        size += QSize(2 * self.margin(), 2 * self.margin())
+        self.margin = 5
+        size += QSize(2 * self.margin, 2 * self.margin)
         return size
 
     def _doLayout(self, rect, testOnly):
@@ -162,7 +163,7 @@ class TagEdit(QWidget):
         self.flow_layout = FlowLayout()
 
         pal = self.palette()
-        pal.setBrush(QPalette.Background, Qt.white)
+        pal.setBrush(QPalette.WindowText, Qt.white)
         self.setPalette(pal)
 
         self.items = []

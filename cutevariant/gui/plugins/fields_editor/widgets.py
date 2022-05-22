@@ -18,10 +18,10 @@ from cutevariant.gui.mainwindow import MainWindow
 from cutevariant.core import sql
 
 
-import cutevariant.commons as cm
 from cutevariant.gui.widgets import PresetAction
 
 from cutevariant import LOGGER
+from cutevariant.gui.widgets.filters_widget import FilterDialog
 
 
 class SortFieldDialog(QDialog):
@@ -43,9 +43,7 @@ class SortFieldDialog(QDialog):
         self.view.setDragDropMode(QAbstractItemView.InternalMove)
         self.view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Cancel | QDialogButtonBox.Ok
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
         self.up_button = QToolButton()
         self.up_button.setText("▲")
         self.up_button.setIcon(FIcon(0xF0143))
@@ -161,9 +159,7 @@ class FieldsModel(QStandardItemModel):
     fields_loaded = Signal()
     field_checked = Signal(str, bool)
 
-    def __init__(
-        self, conn: sqlite3.Connection = None, category="variants", parent=None
-    ):
+    def __init__(self, conn: sqlite3.Connection = None, category="variants", parent=None):
         super().__init__(0, 2, parent)
         self.conn = conn
         self._checkable_items = []
@@ -289,8 +285,9 @@ class FieldsModel(QStandardItemModel):
 
                 for field in fields:
                     field_name = field
-
                     field_desc = fields[field]["description"]
+                    field_type = fields[field]["type"]
+                    field_type_style = style.FIELD_TYPE.get(field_type)
 
                     field_name_item = QStandardItem(field_name)
 
@@ -300,27 +297,26 @@ class FieldsModel(QStandardItemModel):
                     field_name_item.setData(False, Qt.UserRole)
                     self.all_fields.add(field_name)
 
-                    # if (self.category, field_name.split(".")[-1]) in indexed_fields:
-                    #     font.setUnderline(True)
-                    #     field_name_item.setData(True, Qt.UserRole)
                     font.setBold(True)
                     field_name_item.setFont(font)
-                    field_type = style.FIELD_TYPE.get(fields[field]["type"])
                     field_name_item.setIcon(
-                        FIcon(field_type["icon"], field_type["color"])
+                        FIcon(field_type_style["icon"], field_type_style["color"])
+                    )
+                    field_name_item.setToolTip(
+                        self.tr(f"Check to add field '{field}'<hr>{field_desc}")
                     )
 
                     self._checkable_items.append(field_name_item)
                     field_name_item.setData(
                         {
                             "name": field,
-                            "type": fields[field]["type"],
-                            "description": fields[field]["description"],
+                            "type": field_type,
+                            "description": field_desc,
                         }
                     )
 
                     descr_item = QStandardItem(field_desc)
-                    descr_item.setToolTip(fields[field]["description"])
+                    descr_item.setToolTip(field_desc)
 
                     self.appendRow([field_name_item, descr_item])
                     self.fields_loaded.emit()
@@ -422,9 +418,10 @@ class FieldsModel(QStandardItemModel):
         Returns:
             QMimeData
         """
+        res = super().mimeData(indexes)
+
         fields = [idx.data(Qt.UserRole + 1) for idx in indexes if idx.column() == 0]
         fields = [(f["name"], f["type"]) for f in fields]
-        res = QMimeData("cutevariant/typed-json")
         res.setData(
             "cutevariant/typed-json",
             bytes(json.dumps({"type": "fields", "fields": fields}), "utf-8"),
@@ -439,6 +436,7 @@ class FieldsModel(QStandardItemModel):
         Returns:
             typing.List[str]
         """
+
         return ["cutevariant/typed-json"]
 
     def to_file(self, filename: str):
@@ -464,6 +462,13 @@ class FieldsModel(QStandardItemModel):
             self.fields = obj.get("fields", [])
 
 
+FIELDS_CATEGORY_DESCRIPTION = {
+    "variants": "Fields associated to variants\nTheses fields are provided by the INFO column of VCF",
+    "annotations": "Fields associated to variants\nTheses fields are provided by the INFO column of VCF related to the specific annotation tool (e.g. snpEff, VEP)",
+    "samples": "Fields associated to sample genotype\nTheses fields are provided by the FORMAT column of VCF, for each samples (e.g. GT, DP, AD)",
+}
+
+
 class FieldsWidget(QWidget):
 
     """A fields widget with 3 tabwidget show all 3 models"""
@@ -477,12 +482,19 @@ class FieldsWidget(QWidget):
         self.tab_widget.setTabPosition(QTabWidget.South)
         self.tab_widget.tabBar().setDocumentMode(True)
         self.tab_widget.tabBar().setExpanding(True)
+        self.tab_widget.setToolTip(self.tr("Fields categories"))
+
         self.search_edit = QLineEdit()
         self.search_edit.textChanged.connect(self.update_filter)
-        self.search_edit.setPlaceholderText(self.tr("Search by keywords... "))
-        self.search_edit.addAction(
-            FIcon(0xF015A), QLineEdit.TrailingPosition
-        ).triggered.connect(self.search_edit.clear)
+        self.search_edit.setPlaceholderText(self.tr("Search fields by keywords... "))
+        self.search_edit.addAction(FIcon(0xF015A), QLineEdit.TrailingPosition).triggered.connect(
+            self.search_edit.clear
+        )
+        self.search_edit.setToolTip(
+            self.tr(
+                "Search fields by keywords<hr>Use keywords to show only fields that contain the keyword on its name or description"
+            )
+        )
 
         self.views = []
 
@@ -542,10 +554,19 @@ class FieldsWidget(QWidget):
             name = view["name"]
             model.conn = conn
             self.tab_widget.setTabText(index, f"{name} ({model.rowCount()})")
+            fields_category_description = FIELDS_CATEGORY_DESCRIPTION.get(name, "")
+            self.tab_widget.setTabToolTip(
+                index,
+                f"{model.rowCount()} fields in category '{name}'<hr>{fields_category_description}",
+            )
             if conn:
                 view["view"].horizontalHeader().setSectionResizeMode(
                     0, QHeaderView.ResizeToContents
                 )
+
+    def clear(self):
+        for view in self.views:
+            view["model"].clear()
 
     def add_view(self, conn: sqlite3.Connection, category: str):
         """Create a view with fields model
@@ -585,16 +606,17 @@ class FieldsWidget(QWidget):
 
         # broadcast the model signal
         model.field_checked.connect(self.on_field_changed)
+        model.field_checked.connect(lambda x: print(f"yofff {x}"))
         # model.fields_changed.connect(lambda: self.fields_changed.emit())
 
         # Setup actions
 
-        # Setup the filter field action. Will filter out NULL values (thus the broom icon)
-        # filter_field_action = QAction(self.tr("Create filter on null values"), view)
-        # filter_field_action.triggered.connect(
-        #     functools.partial(self._on_filter_field_clicked, view, proxy, category)
-        # )
-        # filter_field_action.setIcon(FIcon(0xF00E2))
+        # Setup the filter field action that will apply custom filter
+        custom_filter_field_action = QAction(self.tr("Create filter ..."), view)
+        custom_filter_field_action.triggered.connect(
+            functools.partial(self._on_filter_field_clicked, view)
+        )
+        custom_filter_field_action.setIcon(FIcon(0xF0232))
 
         # index_field_action = QAction(self.tr("Create index..."), view)
         # index_field_action.triggered.connect(
@@ -608,7 +630,7 @@ class FieldsWidget(QWidget):
         # )
         # remove_index_action.setIcon(FIcon(0xF0A97))
 
-        # view.addActions([filter_field_action, index_field_action, remove_index_action])
+        view.addAction(custom_filter_field_action)
 
         # Update even if the index didn't change
         # view.pressed.connect(self._update_actions)
@@ -714,36 +736,35 @@ class FieldsWidget(QWidget):
     #             ),
     #         )
 
-    # def _on_filter_field_clicked(
-    #     self, view: QTableView, proxy: QSortFilterProxyModel, category: str
-    # ):
-    #     """When the user triggers the "filter not null" field action.
-    #     Applies immediately a filter on this field, with a not-null condition
+    def _on_filter_field_clicked(self, view: QTableView):
+        """When the user triggers the "filter not null" field action.
+        Applies immediately a filter on this field, with a not-null condition
 
-    #     Args:
-    #         view (QTableView): The view showing a selected field
-    #         category (str): (not used) The category the selected field belongs to
-    #         model (FieldsModel): The actual model containing the data
-    #         proxy (QSortFilterProxyModel): The proxymodel used by the view
-    #     """
-    #     parent: FieldsEditorWidget = self.parent()
-    #     mainwindow: MainWindow = parent.mainwindow
-    #     filters = copy.deepcopy(mainwindow.get_state_data("filters"))
-    #     field_name = view.currentIndex().siblingAtColumn(0).data()
+        Args:
+            view (QTableView): The view showing a selected field
+            category (str): (not used) The category the selected field belongs to
+            model (FieldsModel): The actual model containing the data
+            proxy (QSortFilterProxyModel): The proxymodel used by the view
+        """
+        parent: FieldsEditorWidget = self.parent()
+        mainwindow: MainWindow = parent.mainwindow
+        filters = copy.deepcopy(mainwindow.get_state_data("filters"))
+        field_name = view.currentIndex().siblingAtColumn(0).data()
 
-    #     if category == "annotations":
-    #         field_name = f"ann.{field_name}"
-    #     if category == "samples":
-    #         field_name = f"samples.{field_name}"
+        if not filters:
+            filters = {"$and": []}
 
-    #     # TODO: filters should start with below expression application-wide...
-    #     if not filters:
-    #         filters = {"$and": []}
+        if "$and" in filters:
+            # Quickly filter using a dialog
+            dialog = FilterDialog(self.conn)
+            dialog.set_field(field_name)
 
-    #     if "$and" in filters:
-    #         filters["$and"].append({field_name: {"$ne": None}})
-    #         mainwindow.set_state_data("filters", filters)
-    #         mainwindow.refresh_plugins(sender=self)
+            if dialog.exec() == QDialog.Accepted:
+                one_filter = dialog.get_filter()
+                filters["$and"].append(one_filter)
+                # Defaults to filtering on non-null values
+                mainwindow.set_state_data("filters", filters)
+                mainwindow.refresh_plugins(sender=self)
 
     def on_field_changed(self, field: str, checked: bool):
 
@@ -770,6 +791,11 @@ class FieldsWidget(QWidget):
             count = view["proxy"].rowCount()
             name = view["name"]
             self.tab_widget.setTabText(index, f"{name} ({count})")
+            # self.tab_widget.setTabToolTip(index, f"{name} ({count})")
+            fields_category_description = FIELDS_CATEGORY_DESCRIPTION.get(name, name)
+            self.tab_widget.setTabToolTip(
+                index, f"{count} fields in category '{name}'<hr>{fields_category_description}"
+            )
 
     def show_checked_only(self, active=False):
 
@@ -782,6 +808,11 @@ class FieldsWidget(QWidget):
             count = view["proxy"].rowCount()
             name = view["name"]
             self.tab_widget.setTabText(index, f"{name} ({count})")
+            # self.tab_widget.setTabToolTip(index, f"{name} ({count})")
+            fields_category_description = FIELDS_CATEGORY_DESCRIPTION.get(name, name)
+            self.tab_widget.setTabToolTip(
+                index, f"{count} fields in category '{name}'<hr>{fields_category_description}"
+            )
 
 
 class FieldsEditorWidget(plugin.PluginWidget):
@@ -804,6 +835,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         super().__init__(parent)
 
         self.setWindowIcon(FIcon(0xF08DF))
+        # self.setToolTip(self.)
 
         # Create toolbar with search
         self.tool_layout = QHBoxLayout()
@@ -832,17 +864,21 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         ## apply action
         apply_action = self.toolbar.addAction(FIcon(0xF040A), "apply")
-        apply_action.setToolTip(self.tr("Apply current selection"))
+        apply_action.setToolTip(
+            self.tr("Apply<hr>Apply current checked fields to the variant table")
+        )
         apply_action.triggered.connect(self.on_apply)
 
         ## auto action
         auto_icon = QIcon()
         auto_icon.addPixmap(FIcon(0xF04E6).pixmap(16, 16), QIcon.Normal, QIcon.On)
         auto_icon.addPixmap(FIcon(0xF04E8).pixmap(16, 16), QIcon.Normal, QIcon.Off)
-        self.auto_action = self.toolbar.addAction("Auto appy")
+        self.auto_action = self.toolbar.addAction("Auto apply")
         self.auto_action.setIcon(auto_icon)
         self.auto_action.setCheckable(True)
-        self.auto_action.setToolTip(self.tr("Auto Apply when checked"))
+        self.auto_action.setToolTip(
+            self.tr("Auto Apply<hr>Enable/Disable Auto Apply when fields are checked")
+        )
         self.auto_action.toggled.connect(apply_action.setDisabled)
 
         self.toolbar.addSeparator()
@@ -850,7 +886,9 @@ class FieldsEditorWidget(plugin.PluginWidget):
         ## check only action
         check_action = self.toolbar.addAction(FIcon(0xF0C51), "check only")
         check_action.setCheckable(True)
-        check_action.setToolTip(self.tr("Show only checked fields"))
+        check_action.setToolTip(
+            self.tr("Show checked fields<hr>Only already checked fields will be shown")
+        )
         check_action.toggled.connect(self.toggle_checked)
 
         spacer = QWidget()
@@ -860,7 +898,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
         ## sort button
         self.sort_action = self.toolbar.addAction(FIcon(0xF04BA), "54 fields")
         self.sort_action.triggered.connect(self.show_fields_dialog)
-        self.sort_action.setToolTip(self.tr("Sort fields order"))
+        self.sort_action.setToolTip(
+            self.tr(
+                "Fields order<hr>Drag and drop checked fields to order them in the variant table"
+            )
+        )
 
         ## make sort action with text
         self.toolbar.widgetForAction(self.sort_action).setToolButtonStyle(
@@ -871,7 +913,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         self.preset_menu = QMenu()
         self.preset_button = QPushButton()
-        self.preset_button.setToolTip(self.tr("Presets"))
+        self.preset_button.setToolTip(
+            self.tr(
+                "Presets<hr>- Load a existing preset<br>- Save the current preset<br>- Delete an existing preset<br>- Reload configured presets"
+            )
+        )
         self.preset_button.setIcon(FIcon(0xF035C))
         self.preset_button.setMenu(self.preset_menu)
         self.preset_button.setFlat(True)
@@ -913,9 +959,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 ret = QMessageBox.warning(
                     self,
                     self.tr("Overwrite preset"),
-                    self.tr(
-                        f"Preset {name} already exists. Do you want to overwrite it ?"
-                    ),
+                    self.tr(f"Preset {name} already exists. Do you want to overwrite it ?"),
                     QMessageBox.Yes | QMessageBox.No,
                 )
 
@@ -958,6 +1002,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         This method should be called by __init__ and on refresh
         """
         self.preset_menu.clear()
+
         config = Config("fields_editor")
 
         self.preset_menu.addAction("Save preset", self.save_preset)
@@ -970,7 +1015,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
                 action.set_close_icon(FIcon(0xF05E8, "red"))
                 action.triggered.connect(self._on_select_preset)
                 action.removed.connect(self.delete_preset)
-
                 self.preset_menu.addAction(action)
 
         self.preset_menu.addSeparator()
@@ -1012,15 +1056,22 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
         config = Config("fields_editor")
         presets = config["presets"]
+
         key = self.sender().data()
+
         if key in presets:
             self.fields = presets[key]
-            self.on_apply()
+        else:
+            self.fields = ["chr", "pos", "ref", "alt"]
+        self.on_apply()
 
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
         self.widget_fields.conn = conn
         self.on_refresh()
+
+    def on_close_project(self):
+        self.widget_fields.clear()
 
     def on_refresh(self):
         """overrided from PluginWidget"""
@@ -1028,7 +1079,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self._is_refreshing = True
             self.fields = self.mainwindow.get_state_data("fields")
             self._is_refreshing = False
-        self.load_presets()
+            self.load_presets()
 
     def on_apply(self):
         if self.mainwindow is None or self._is_refreshing:

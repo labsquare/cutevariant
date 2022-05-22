@@ -73,9 +73,7 @@ class DictModel(QAbstractTableModel):
         else:
             return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self._headers[section]
 
@@ -155,6 +153,9 @@ class DictWidget(QWidget):
 
     def clear(self):
         self.model.clear()
+
+    def set_headers(self, headers: list):
+        self.model._headers = headers
 
     def paintEvent(self, event: QPaintEvent):
 

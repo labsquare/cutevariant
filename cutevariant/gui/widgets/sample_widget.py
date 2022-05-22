@@ -9,8 +9,10 @@ from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
 
-from cutevariant.gui.widgets import ChoiceWidget, DictWidget
+from cutevariant.gui.widgets import DictWidget, TagEdit
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
+
+from cutevariant.gui.widgets import ChoiceButton
 
 
 class HpoWidget(QWidget):
@@ -45,19 +47,9 @@ class SampleWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        if Config("validation")["sample_tags"] != None:
-            self.TAG_LIST = [tag["name"] for tag in Config("validation")["sample_tags"]]
-        else:
-            self.TAG_LIST = []
         self.TAG_SEPARATOR = "&"
-        self.SAMPLE_CLASSIFICATION = {
-            -1: {"name": "Rejected"},
-            0: {"name": "Unlocked"},
-            1: {"name": "Locked"},
-        }
-        self.REVERSE_CLASSIF = {
-            v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()
-        }
+
+        # self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
 
         # Identity
         self.name_edit = QLineEdit()
@@ -65,7 +57,7 @@ class SampleWidget(QWidget):
         self.fam_edit = QLineEdit()
         self.tab_widget = QTabWidget()
         self.classification = QComboBox()
-        self.tag_edit = MultiComboBox()
+        self.tag_edit = TagEdit()
         self.tag_button = QToolButton()
         self.tag_button.setAutoRaise(True)
         self.tag_button.setIcon(FIcon(0xF0349))
@@ -83,17 +75,15 @@ class SampleWidget(QWidget):
         identity_layout.addRow("Tags", self.tag_layout)
         identity_layout.addRow("Statut", self.classification)
 
-        self.tag_choice = ChoiceWidget()
-        self.tag_choice_action = QWidgetAction(self)
-        self.tag_choice_action.setDefaultWidget(self.tag_choice)
+        self.tag_choice = ChoiceButton()
+        # self.tag_choice_action = QWidgetAction(self)
+        # self.tag_choice_action.setDefaultWidget(self.tag_choice)
 
         self.menu = QMenu()
-        self.menu.addAction(self.tag_choice_action)
+        # self.menu.addAction(self.tag_choice_action)
 
         self.tag_button.setMenu(self.menu)
         self.tag_button.setPopupMode(QToolButton.InstantPopup)
-
-        self.tag_edit.addItems(self.TAG_LIST)
 
         # validation
         val_layout = QFormLayout()
@@ -128,8 +118,19 @@ class SampleWidget(QWidget):
         # pheno_layout.addRow("HPO", self.hpo_widget) #hidden for now
         self.tab_widget.addTab(identity_widget, "Edit")
         self.tab_widget.addTab(pheno_widget, "Phenotype")
+        # Validated variant
+
+        self.variant_model = QStringListModel()
+        self.variant_view = QListView()
+        self.variant_view.setModel(self.variant_model)
+
+        # self.tab_widget.addTab(self.variant_view, "Validated variants")
 
         self.history_view = DictWidget()
+        self.history_view.view.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
+        self.history_view.set_headers(["Date", "Modifications"])
         self.tab_widget.addTab(self.history_view, "History")
 
         header_layout = QHBoxLayout()
@@ -156,18 +157,16 @@ class SampleWidget(QWidget):
         self.sex_combo.setCurrentIndex(data.get("sex", 0))
         self.phenotype_combo.setCurrentIndex(data.get("phenotype", 0))
 
-        # self.classification.addItems([v["name"] for v in self.SAMPLE_CLASSIFICATION.values()])
-        for k, v in self.SAMPLE_CLASSIFICATION.items():
-            self.classification.addItem(v["name"], k)
-        index = self.classification.findData(data["valid"])
+        config = Config("classifications")
+        self.CLASSIFICATIONS = config.get("samples", [])
+
+        for item in self.CLASSIFICATIONS:
+            self.classification.addItem(FIcon(0xF012F, item["color"]), item["name"], item["number"])
+
+        index = self.classification.findData(data["classification"])
         self.classification.setCurrentIndex(index)
 
-        if data["tags"] is not None:
-            for tag in data["tags"].split(self.TAG_SEPARATOR):
-                if tag in self.TAG_LIST:
-                    self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
-                        Qt.Checked, Qt.CheckStateRole
-                    )
+        # self.tag_edit.setText(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
 
         self.comment.setPlainText(data.get("comment", ""))
         self.comment.preview_btn.setChecked(True)
@@ -176,12 +175,24 @@ class SampleWidget(QWidget):
         self.setWindowTitle("Sample edition: " + data.get("name", "Unknown"))
         self.initial_state = self.get_gui_state()
 
+        # Get validated variants
+        sample_name = sql.get_sample(self.conn, sample_id)["name"]
+        str_lists = []
+        for v in sql.get_variants(
+            self.conn,
+            ["chr", "pos", "ref", "alt"],
+            filters={"$and": [{f"samples.{sample_name}.classification": 2}]},
+        ):
+            str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
+
+        self.variant_model.setStringList(str_lists)
+
     def save(self, sample_id: int):
         """
         Two checks to perform:
          - did the user change any value through the interface?
          - is the database state the same as when the dialog was first opened?
-        If yes and yes, update sample_has_variant
+        If yes and yes, update genotypes
         """
         current_state = self.get_gui_state()
         if current_state == self.initial_state:
@@ -200,10 +211,6 @@ class SampleWidget(QWidget):
                 return
 
         # avoid losing tags who exist in DB but not in config.yml
-        missing_tags = []
-        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
-            if tag not in self.TAG_LIST:
-                missing_tags.append(tag)
 
         data = {
             "id": sample_id,
@@ -211,8 +218,8 @@ class SampleWidget(QWidget):
             "family_id": self.fam_edit.text(),
             "sex": self.sex_combo.currentIndex(),
             "phenotype": self.phenotype_combo.currentIndex(),
-            "valid": self.REVERSE_CLASSIF[self.classification.currentText()],
-            "tags": self.TAG_SEPARATOR.join(self.tag_edit.currentData() + missing_tags),
+            "classification": self.classification.currentData(),
+            "tags": self.TAG_SEPARATOR.join(self.tag_edit.text().split(",")),
             "comment": self.comment.toPlainText(),
         }
 
@@ -223,7 +230,7 @@ class SampleWidget(QWidget):
             "fam": data["family_id"],
             "tags": data["tags"],
             "comment": data["comment"],
-            "valid": int("{valid}".format(**data)),
+            "classification": int("{classification}".format(**data)),
             "sex": data["sex"],
             "phenotype": data["phenotype"],
         }
@@ -235,7 +242,7 @@ class SampleWidget(QWidget):
         values = []
         values.append(self.fam_edit.text())
         values.append(self.classification.currentIndex())
-        values.append(self.tag_edit.currentData())
+        values.append(self.tag_edit.text())
         values.append(self.comment.toPlainText())
         values.append(self.sex_combo.currentIndex())
         values.append(self.phenotype_combo.currentIndex())
@@ -244,15 +251,10 @@ class SampleWidget(QWidget):
     def get_history_samples(self):
         """Get the history of samples"""
         results = {}
-        for record in self.conn.execute(
-            f"""SELECT  ('[' || `timestamp` || ']') as time,
-                        ('[' || `history`.`id` || ']') as id,
-                        ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || ']' || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
-                FROM `history`
-                INNER JOIN `samples` ON `history`.`table_rowid`=`samples`.`rowid`
-                WHERE `table`='samples'"""
-        ):
-            results[record["time"] + " " + record["id"]] = record["change"]
+        for record in sql.get_histories(self.conn, "samples", self.sample_id):
+
+            message = "{user} changed {field} from {before} to {after}".format(**record)
+            results[record["timestamp"]] = message
 
         return results
 
@@ -263,9 +265,7 @@ class SampleDialog(QDialog):
 
         self.sample_id = sample_id
         self.w = SampleWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)

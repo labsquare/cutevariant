@@ -103,17 +103,17 @@ def get_history_variants(conn: sqlite3.Connection):
     return results
 
 
-def get_history_sample_has_variant(conn: sqlite3.Connection):
+def get_history_genotypes(conn: sqlite3.Connection):
     """Get the history of samples"""
     results = {}
     for record in conn.execute(
         f"""SELECT  ('[' || `timestamp` || ']') as gene,
                     ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || '|' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || '] '  || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'count'
             FROM `history`
-            INNER JOIN `sample_has_variant` ON `history`.`table_rowid`=`sample_has_variant`.`rowid`
-            INNER JOIN `variants` ON `sample_has_variant`.`variant_id`=`variants`.`id`
-            INNER JOIN `samples` ON `sample_has_variant`.`sample_id`=`samples`.`id` 
-            WHERE `table`='sample_has_variant'"""
+            INNER JOIN `genotypes` ON `history`.`table_rowid`=`genotypes`.`rowid`
+            INNER JOIN `variants` ON `genotypes`.`variant_id`=`variants`.`id`
+            INNER JOIN `samples` ON `genotypes`.`sample_id`=`samples`.`id` 
+            WHERE `table`='genotypes'"""
     ):
         results[record["gene"]] = record["count"]
 
@@ -206,7 +206,7 @@ class HistoryDialog(PluginDialog):
 
             if sql.table_exists(conn, "history"):
                 meta_data = get_history_variants(conn)
-                stats_data = get_history_sample_has_variant(conn)
+                stats_data = get_history_genotypes(conn)
                 genes_data = get_history_samples(conn)
             else:
                 meta_data = {}

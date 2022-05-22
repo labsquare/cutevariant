@@ -2,9 +2,9 @@ import sys
 
 import time
 
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 from csv_dialog import CSVDialog
 from vcf_dialog import VCFDialog
@@ -12,9 +12,9 @@ from cutevariant.core.writer.abstractwriter import AbstractWriter
 
 import sqlite3
 from cutevariant.core import sql
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 
-LOGGER = cm.logger()
+import cutevariant.commons as cm
 
 
 class ExportDialog(QWidget):
@@ -34,9 +34,7 @@ class ExportDialog(QWidget):
 
         self.setWindowTitle(self.tr("Export database"))
 
-        self.description_label = QLabel(
-            self.tr("Welcome to the export database plugin.")
-        )
+        self.description_label = QLabel(self.tr("Welcome to the export database plugin."))
         self.spacer = QSpacerItem(0, 80)
 
         self.combo_format = QComboBox(self)
@@ -84,18 +82,14 @@ class ExportDialog(QWidget):
 
             # Make sure the extension of the save file name matches the extension_name (even though you can write csv data to a file called export.vcf)
             if not self.save_file_name.endswith(f".{extension_name}"):
-                self.save_file_name += (
-                    f".{extension_name}"  # At 11PM, cannot do better...
-                )
+                self.save_file_name += f".{extension_name}"  # At 11PM, cannot do better...
 
             # Open the export dialog according to the chosen extension.
             # The specialized dialog needs sql connection, a file name to save the exported file to, and self (parent widget)
-            self.specialized_export_dialog = ExportDialog.EXPORT_FORMATS[
-                extension_name
-            ](self.conn, self.save_file_name, self)
-            LOGGER.debug(
-                "Instantiated CSV dialog with filename %s", self.save_file_name
+            self.specialized_export_dialog = ExportDialog.EXPORT_FORMATS[extension_name](
+                self.conn, self.save_file_name, self
             )
+            LOGGER.debug("Instantiated CSV dialog with filename %s", self.save_file_name)
 
             self.specialized_export_dialog.accepted.connect(self.save)
             self.specialized_export_dialog.rejected.connect(self.cancel_export)
@@ -120,9 +114,7 @@ class ExportDialog(QWidget):
             return
 
         if self.specialized_export_dialog is None:
-            LOGGER.debug(
-                "No export dialog was created, please report a bug (this is serious)"
-            )
+            LOGGER.debug("No export dialog was created, please report a bug (this is serious)")
 
         writer: AbstractWriter = self.specialized_export_dialog.writer()
 
@@ -156,9 +148,7 @@ class TestWindow(QMainWindow):
         self.button_export.pressed.connect(self.show_export_dialog)
 
         self.label_state = QLabel(
-            self.tr(
-                "No database loaded yet (File -> Open to load variant sql database)"
-            )
+            self.tr("No database loaded yet (File -> Open to load variant sql database)")
         )
         layout = QVBoxLayout()
         layout.addWidget(self.label_state)

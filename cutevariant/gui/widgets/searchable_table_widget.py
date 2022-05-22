@@ -21,7 +21,7 @@ from PySide6.QtGui import (
 )
 
 
-from cutevariant.commons import GENOTYPE_DESC
+from cutevariant.constants import GENOTYPE_DESC
 
 
 class LoadingTableView(QTableView):
@@ -35,9 +35,7 @@ class LoadingTableView(QTableView):
         if self._is_loading:
             painter = QPainter(self.viewport())
 
-            painter.drawText(
-                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
-            )
+            painter.drawText(self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ..."))
 
         else:
             super().paintEvent(event)
@@ -90,10 +88,7 @@ class SearchableTableWidget(QWidget):
 
     def selected_indexes(self):
         if self.tableview.selectedIndexes():
-            return [
-                self.proxy.mapToSource(index)
-                for index in self.tableview.selectedIndexes()
-            ]
+            return [self.proxy.mapToSource(index) for index in self.tableview.selectedIndexes()]
         else:
             return []
 

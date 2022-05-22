@@ -18,8 +18,8 @@ from PySide6.QtWidgets import QStyleOptionViewItem, QStyle
 # Custom imports
 from cutevariant.gui.formatter import Formatter
 from cutevariant.gui import FIcon
+import cutevariant.constants as cst
 import cutevariant.commons as cm
-
 from cutevariant.config import Config
 
 
@@ -58,7 +58,7 @@ class CutestyleFormatter(Formatter):
 
     # Cache genotype icons
     # Values in gt field as keys (str), FIcon as values
-    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cm.GENOTYPE_ICONS.items()}
+    GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
 
     def __init__(self):
         self.refresh()
@@ -69,10 +69,18 @@ class CutestyleFormatter(Formatter):
 
     def format(self, field: str, value: str, option, is_selected):
 
-        if value == "NULL":
+        if re.match(r"samples\..+\.gt", field) or field == "gt":
+            if value == "NULL":
+                value = -1
+            icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
+            return {"text": "", "icon": icon}
+        
+        if value == "NULL" or value == "None":
             font = QFont()
             font.setItalic(True)
-            return {"font": font, "color": "lightgray"}
+            color = option.palette.color(QPalette.BrightText if is_selected else QPalette.Text)
+            color = cm.contrast_color(color, factor=300)
+            return {"font": font, "color": color }
 
         if field == "ann.impact" and not is_selected:
             font = QFont()
@@ -119,12 +127,6 @@ class CutestyleFormatter(Formatter):
                 value = m.group(1)
                 return {"text": value}
 
-        if re.match(r"samples\..+\.gt", field) or field == "gt":
-            if value == None:
-                value=-1
-            icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
-            return {"text": "", "icon": icon}
-
         if field == "ann.consequence":
             values = str(value).split("&")
             font = QFont()
@@ -165,18 +167,18 @@ class CutestyleFormatter(Formatter):
             for index, value in enumerate(values):
                 width = metrics.boundingRect(value).width()
                 height = metrics.height()
-                rect = QRect(x, 2, width + 15, height + 10)
+
+                rect = QRect(x, (option.rect.height() - height) * 0.5, width + 10, height)
 
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)
-                painter.setBrush(
-                    QBrush(QColor(self.TAGS_COLOR.get(value, "lightgray")))
-                )
+                col = QColor("#D5E9F5")
+                painter.setBrush(QBrush(col))
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
-                painter.setPen(QPen(QColor("white")))
+                painter.setPen(QPen(cm.contrast_color(col)))
                 painter.drawText(rect, Qt.AlignCenter | Qt.AlignVCenter, value)
-                x += width + 20
+                x += width + 15
 
             return {"pixmap": pix}
 

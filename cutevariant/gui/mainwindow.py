@@ -18,17 +18,18 @@ from PySide6.QtGui import QIcon, QKeySequence, QDesktopServices
 
 # Custom imports
 from cutevariant import LOGGER
-from cutevariant.core import get_sql_connection, get_metadatas, command
+from cutevariant.core import get_sql_connection, get_metadatas, command, querybuilder
 from cutevariant.core import sql
 from cutevariant.core.sql import get_database_file_name
 from cutevariant.core.writer import CsvWriter, PedWriter
+from cutevariant.core.quicksearch import quicksearch
 from cutevariant.gui import FIcon
 from cutevariant.gui.widgets.project_wizard import ProjectWizard
 from cutevariant.gui.widgets.import_widget import VcfImportDialog
 from cutevariant.gui.settings import SettingsDialog
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
-from cutevariant import commons as cm
-from cutevariant.commons import (
+from cutevariant import constants as cst
+from cutevariant.constants import (
     MAX_RECENT_PROJECTS,
     DIR_ICONS,
     MIN_AUTHORIZED_DB_VERSION,
@@ -82,6 +83,8 @@ class StateData:
             "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
             "source": "variants",
             "filters": {},
+            "order_by": [],
+            "samples": [],
         }
 
 
@@ -151,6 +154,15 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
+        self.fields_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.fields_info_label)
+        self.filters_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.filters_info_label)
+        self.samples_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.samples_info_label)
+        self.source_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.source_info_label)
+
         # setup omnibar
         self.quick_search_edit = QLineEdit()
         self.quick_search_edit.setPlaceholderText("Type a gene or coordinate ...")
@@ -183,7 +195,10 @@ class MainWindow(QMainWindow):
         # Auto open recent projects
         recent = self.get_recent_projects()
         if recent and os.path.isfile(recent[0]):
-            self.open(recent[0])
+            self.open_database_from_file(recent[0])
+
+        # To avoid refreshing side effects upon project opening
+        self._project_is_opening = False
 
     def set_state_data(self, key: str, value: typing.Any):
         """set state data value from key
@@ -226,9 +241,7 @@ class MainWindow(QMainWindow):
         """
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle().upper())
-        dock.setStyleSheet(
-            "QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}"
-        )
+        dock.setStyleSheet("QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}")
         # frame = QLabel()
         # frame.setAlignment(Qt.AlignCenter)
         # frame.setText("<b>" + dock.windowTitle() + "</b>")
@@ -245,6 +258,10 @@ class MainWindow(QMainWindow):
         action = dock.toggleViewAction()
         action.setIcon(widget.windowIcon())
         action.setText(widget.windowTitle())
+        action.setToolTip(widget.toolTip())
+        action.setWhatsThis(widget.whatsThis())
+
+        action.triggered.connect(widget.on_refresh)
         self.view_menu.addAction(action)
 
         return dock
@@ -288,8 +305,7 @@ class MainWindow(QMainWindow):
 
             if not widget.objectName():
                 LOGGER.debug(
-                    "widget '%s' has no objectName attribute; "
-                    "=> fallback to extension name",
+                    "widget '%s' has no objectName attribute; " "=> fallback to extension name",
                     displayed_title,
                 )
                 widget.setObjectName(name)
@@ -298,10 +314,10 @@ class MainWindow(QMainWindow):
             widget.setWindowTitle(displayed_title)
 
             # WhatsThis content
-            long_description = extension.get("long_description")
-            if not long_description:
-                long_description = extension.get("description")
+            long_description = extension.get("long_description", "")
+            short_description = extension.get("description", "")
             widget.setWhatsThis(long_description)
+            widget.setToolTip(short_description)
             # Register (launch first init on some of them)
             widget.mainwindow = self
             widget.on_register(self)
@@ -355,6 +371,7 @@ class MainWindow(QMainWindow):
                 plugin_obj is not sender
                 and (plugin_obj.isVisible() or not plugin_obj.REFRESH_ONLY_VISIBLE)
                 and (set(plugin_obj.REFRESH_STATE_DATA) & self._state_data.changed)
+                and not self._project_is_opening
             )
 
             if need_refresh:
@@ -370,6 +387,8 @@ class MainWindow(QMainWindow):
         self._state_data.clear_changed()
         for plugin in plugin_to_refresh:
             plugin.on_refresh()
+
+        self.update_status_bar()
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a widget plugin identified by plugin_name
@@ -406,17 +425,12 @@ class MainWindow(QMainWindow):
             self.import_file,
             QKeySequence.AddTab,
         )
-        self.open_config_action = self.file_menu.addAction(
-            FIcon(0xF102F), self.tr("&Open config..."), self.open_config
-        )
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
-        self.toolbar.addAction(self.open_config_action)
-        self.toolbar.addAction(
-            FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
-        )
+        # self.toolbar.addAction(self.open_config_action)
+        self.toolbar.addAction(FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode)
         self.toolbar.addSeparator()
 
         ### Recent projects
@@ -454,10 +468,12 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addSeparator()
         ### Misc
-        self.file_menu.addAction(
-            FIcon(0xF0493), self.tr("Settings..."), self.show_settings
-        )
+
+        self.file_menu.addAction(FIcon(0xF0493), self.tr("Settings..."), self.show_settings)
         self.file_menu.addSeparator()
+        self.close_project_action = self.file_menu.addAction(
+            FIcon(0xF0156), self.tr("&Close project"), self.close_database
+        )
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
@@ -481,9 +497,7 @@ class MainWindow(QMainWindow):
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         # Set toggle footer visibility action
-        show_action = self.view_menu.addAction(
-            FIcon(0xF018D), self.tr("Show VQL editor")
-        )
+        show_action = self.view_menu.addAction(FIcon(0xF018D), self.tr("Show VQL editor"))
         show_action.setCheckable(True)
         self.toolbar.addAction(show_action)
         show_action.setChecked(True)
@@ -516,14 +530,12 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(
             FIcon(0xF059F),
             self.tr("Documentation..."),
-            partial(QDesktopServices.openUrl, QUrl(cm.WIKI_URL, QUrl.TolerantMode)),
+            partial(QDesktopServices.openUrl, QUrl(cst.WIKI_URL, QUrl.TolerantMode)),
         )
         self.help_menu.addAction(
             FIcon(0xF0A30),
             self.tr("Report a bug..."),
-            partial(
-                QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode)
-            ),
+            partial(QDesktopServices.openUrl, QUrl(cst.REPORT_BUG_URL, QUrl.TolerantMode)),
         )
 
         self.help_menu.addSeparator()
@@ -532,16 +544,14 @@ class MainWindow(QMainWindow):
         self.setup_developers_menu()
         self.help_menu.addMenu(self.developers_menu)
 
-        self.help_menu.addAction(
-            self.tr("About Qt..."), QApplication.instance().aboutQt
-        )
+        self.help_menu.addAction(self.tr("About Qt..."), QApplication.instance().aboutQt)
         self.help_menu.addAction(
             QIcon(DIR_ICONS + "app.png"),
             self.tr("About Cutevariant..."),
             self.about_cutevariant,
         )
 
-    def open(self, filepath):
+    def open_database_from_file(self, filepath):
         """Open the given db/project file
 
         .. note:: Called at the end of a project creation by the Wizard,
@@ -562,17 +572,13 @@ class MainWindow(QMainWindow):
         try:
             # DB version filter
             db_version = get_metadatas(self.conn).get("cutevariant_version")
-            if db_version and parse_version(db_version) < parse_version(
-                MIN_AUTHORIZED_DB_VERSION
-            ):
+            if db_version and parse_version(db_version) < parse_version(MIN_AUTHORIZED_DB_VERSION):
                 # Refuse to open blacklisted DB versions
                 # Unversioned files are still accepted
                 QMessageBox.critical(
                     self,
                     self.tr("Error while opening project"),
-                    self.tr("File: {} is too old; please create a new project.").format(
-                        filepath
-                    ),
+                    self.tr("File: {} is too old; please create a new project.").format(filepath),
                 )
                 return
 
@@ -584,9 +590,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 self.tr("Error while opening project"),
-                self.tr("File: {}\nThe following exception occurred:\n{}").format(
-                    filepath, e
-                ),
+                self.tr("File: {}\nThe following exception occurred:\n{}").format(filepath, e),
             )
             return
 
@@ -600,6 +604,7 @@ class MainWindow(QMainWindow):
         Args:
             conn (sqlite3.Connection): Sqlite3 Connection
         """
+
         self.conn = conn
 
         self._state_data.reset()
@@ -614,9 +619,21 @@ class MainWindow(QMainWindow):
 
         # self.state = self.app_settings.value(f"{file_path}/last_state", State())
 
+        self._project_is_opening = True
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
             plugin_obj.setEnabled(True)
+        self._project_is_opening = False
+
+    def close_database(self):
+        if self.conn:
+            self.conn.close()
+            self._state_data.reset()
+            self.setWindowTitle("Cutevariant")
+
+            for plugin_obj in self.plugins.values():
+                plugin_obj.on_close_project()
+                plugin_obj.setEnabled(False)
 
     def save_recent_project(self, path):
         """Save current project into QSettings
@@ -664,7 +681,7 @@ class MainWindow(QMainWindow):
     def on_recent_project_clicked(self):
         """Slot to load a recent project"""
         action = self.sender()
-        self.open(action.text())
+        self.open_database_from_file(action.text())
 
     def new_project(self):
         """Slot to allow creation of a project with the Wizard"""
@@ -675,7 +692,7 @@ class MainWindow(QMainWindow):
         db_filename = wizard.db_filename()
 
         try:
-            self.open(db_filename)
+            self.open_database_from_file(db_filename)
         except Exception as e:
             self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
             raise
@@ -693,7 +710,7 @@ class MainWindow(QMainWindow):
         )
         if filepath:
             try:
-                self.open(filepath)
+                self.open_database_from_file(filepath)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
                 raise
@@ -710,31 +727,9 @@ class MainWindow(QMainWindow):
             # LOGGER.warning("ICI", db_filename)
 
             try:
-                self.open(db_filename)
+                self.open_database_from_file(db_filename)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
-
-    def open_config(self):
-        """Slot to open an existing config from a QFileDialog"""
-        # Reload last directory used
-        last_directory = self.app_settings.value("last_directory", QDir.homePath())
-
-        config_path, _ = QFileDialog.getOpenFileName(
-            self,
-            self.tr("Open config"),
-            last_directory,
-            self.tr("Cutevariant config (*.yml)"),
-        )
-
-        if os.path.isfile(config_path):
-            Config.DEFAULT_CONFIG_PATH = config_path
-            self.reload_ui()
-
-        else:
-            LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
-
-        # Save directory
-        self.app_settings.setValue("last_directory", os.path.dirname(config_path))
 
     def export_as_csv(self):
         """Export variants into CSV file"""
@@ -1040,9 +1035,7 @@ class MainWindow(QMainWindow):
         ]  # Hacky, extracts extension from second element from getSaveFileName result
 
         # Automatic extension of file_name
-        file_name = (
-            file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
-        )
+        file_name = file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
 
         export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
             self.conn,
@@ -1085,42 +1078,46 @@ class MainWindow(QMainWindow):
 
         return self.developers_menu
 
+    def update_status_bar(self):
+
+        source = self.get_state_data("source")
+        self.source_info_label.setText(f"<b>Source:</b> {source}   ")
+
+        fields = self.get_state_data("fields")
+        msg = "Selected Fields <hr/>" + "<br>".join([f"{f}" for f in fields])
+        self.fields_info_label.setText(f"<b>Fields:</b> {len(fields)}")
+        self.fields_info_label.setToolTip(msg)
+
+        filters = self.get_state_data("filters")
+        msg = json.dumps(filters, indent=2)
+        filter_size = len(querybuilder.filters_to_flat(filters))
+        self.filters_info_label.setText(f"<b>Filters:</b> {filter_size}")
+        self.filters_info_label.setToolTip(msg)
+
+        samples = self.get_state_data("samples")
+        msg = "\n".join(samples)
+        self.samples_info_label.setText(f"<b>Samples:</b> {len(samples)}    ")
+        self.samples_info_label.setToolTip(msg)
+
     def quick_search(self, query: str):
 
-        if not query:
-            self.set_state_data("filters", {})
-            self.refresh_plugins(self)
-            return
+        additionnal_filter = quicksearch(query)
+        self.quick_search_edit.clear()
 
-        # match coordinate
-        match = re.findall(r"(\w+):(\d+)-(\d+)", query)
+        if additionnal_filter:
+            previous_filter = copy.deepcopy(self.get_state_data("filters"))
 
-        if match:
-            chrom, start, end = match[0]
-            start = int(start)
-            end = int(end)
+            # TODO: do we really need to extend filters ?
+            # if "$and" in previous_filter:
+            #     previous_filter["$and"].extend(additionnal_filter["$and"])
+
+            previous_filter = additionnal_filter
+
             self.set_state_data(
                 "filters",
-                {
-                    "$and": [
-                        {"chr": chrom},
-                        {"pos": {"$gte": start}},
-                        {"pos": {"$lte": end}},
-                    ]
-                },
+                previous_filter,
             )
-            self.refresh_plugins(self)
-            return
-
-        # match gene
-        match = re.findall(r"(\w+)", query)
-
-        if match:
-            gene = match[0]
-
-            self.set_state_data("filters", {"$and": [{"ann.gene": gene}]})
-            self.refresh_plugins(self)
-            return
+            self.refresh_plugins()
 
     # @Slot()
     # def on_query_model_changed(self):

@@ -3,8 +3,6 @@ import csv
 
 # Custom imports
 from .abstractwriter import AbstractWriter
-from cutevariant.core import command as cmd
-import cutevariant.commons as cm
 
 import time
 

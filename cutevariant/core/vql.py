@@ -13,7 +13,7 @@ See test_vql.py for usage and features.
 
 import textx
 from pkg_resources import resource_string
-
+from typing import Tuple
 
 OPERATORS = {
     "=": "$eq",
@@ -70,9 +70,7 @@ class VQLSyntaxError(ValueError):
 
 
 # ============ Error handle ==================================
-def error_message_from_err(
-    err: textx.exceptions.TextXSyntaxError, raw_vql: str
-) -> (str, int):
+def error_message_from_err(err: textx.exceptions.TextXSyntaxError, raw_vql: str) -> Tuple[str, int]:
     """Return human-readable information and index in raw_sql query
     about the given exception"""
     # print(err)
@@ -87,11 +85,7 @@ def error_message_from_err(
         return "no SELECT clause", -1
     if err.message.endswith("=> 's,ref FROM*'."):
         return "empty 'FROM' clause", err.col
-    if (
-        ",*," in err.message
-        and len(err.expected_rules) == 1
-        and type(err.expected_rules[0]).__name__ == "RegExMatch"
-    ):
+    if ",*," in err.message and len(err.expected_rules) == 1 and type(err.expected_rules[0]).__name__ == "RegExMatch":
         return "invalid empty identifier in SELECT clause", err.col
     if "Expected INT " in err.message and len(err.expected_rules) == 3:
         return "invalid value in WHERE clause", err.col
@@ -172,6 +166,19 @@ class Tuple(metaclass=model_class):
         return list(self.items)
 
 
+class OrderBy(metaclass=model_class):
+    @property
+    def value(self):
+
+        print("DIRECTION", self.direction)
+        if not self.direction:
+            self.direction = "ASC"
+
+        direction = True if self.direction == "ASC" else False
+
+        return (self.field, direction)
+
+
 class WordSetIdentifier(metaclass=model_class):
     @property
     def value(self):
@@ -184,6 +191,8 @@ class SelectCmd(metaclass=model_class):
 
         filters = {}
         fields = []
+
+        order_by = [i.value for i in self.order_by]
 
         for col in self.fields:
             # Manage function like sample("boby").gt
@@ -207,6 +216,10 @@ class SelectCmd(metaclass=model_class):
             "source": self.source,
             "filters": filters,
         }
+
+        if order_by:
+            output["order_by"] = order_by
+
         return output
 
 
