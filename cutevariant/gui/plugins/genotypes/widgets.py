@@ -367,7 +367,7 @@ class GenotypeModel(QAbstractTableModel):
         # Persist in SQL
         data["variant_id"] = self._genotypes[row]["variant_id"]
         data["sample_id"] = self._genotypes[row]["sample_id"]
-        sql.update_sample_has_variant(self.conn, data)
+        sql.update_genotypes(self.conn, data)
         self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount()))
         self.headerDataChanged.emit(Qt.Vertical, row, row)
 

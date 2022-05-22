@@ -214,7 +214,7 @@ class SampleVariantWidget(QWidget):
         #     self.tag_edit.setDisabled(True)
         #     self.comment.preview_btn.setDisabled(True)
 
-        self.history_view.set_dict(self.get_history_sample_has_variant())
+        self.history_view.set_dict(self.get_history_genotypes())
 
         self.initial_state = self.get_gui_state()
 
@@ -223,7 +223,7 @@ class SampleVariantWidget(QWidget):
         Two checks to perform:
          - did the user change any value through the interface?
          - is the database state the same as when the dialog was first opened?
-        If yes and yes, update sample_has_variant
+        If yes and yes, update genotypes
         """
         current_state = self.get_gui_state()
         if current_state == self.initial_state:
@@ -258,7 +258,7 @@ class SampleVariantWidget(QWidget):
             "tags": self.TAG_SEPARATOR.join(self.tag_edit.text()),
             "comment": self.comment.toPlainText(),
         }
-        sql.update_sample_has_variant(self.conn, update_data)
+        sql.update_genotypes(self.conn, update_data)
 
     def get_validation_from_data(self, data):
         return {
@@ -277,7 +277,7 @@ class SampleVariantWidget(QWidget):
         values.append(self.comment.toPlainText())
         return values
 
-    def get_history_sample_has_variant(self):
+    def get_history_genotypes(self):
         """Get the history of samples"""
         results = {}
         for record in self.conn.execute(
@@ -285,10 +285,10 @@ class SampleVariantWidget(QWidget):
                         ('[' || `history`.`id` || ']') as id,
                         ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || '|' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || '] '  || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
                 FROM `history`
-                INNER JOIN `sample_has_variant` ON `history`.`table_rowid`=`sample_has_variant`.`rowid`
-                INNER JOIN `variants` ON `sample_has_variant`.`variant_id`=`variants`.`id`
-                INNER JOIN `samples` ON `sample_has_variant`.`sample_id`=`samples`.`id` 
-                WHERE `table`='sample_has_variant'"""
+                INNER JOIN `genotypes` ON `history`.`table_rowid`=`genotypes`.`rowid`
+                INNER JOIN `variants` ON `genotypes`.`variant_id`=`variants`.`id`
+                INNER JOIN `samples` ON `genotypes`.`sample_id`=`samples`.`id` 
+                WHERE `table`='genotypes'"""
         ):
             results[record["time"] + " " + record["id"]] = record["change"]
 

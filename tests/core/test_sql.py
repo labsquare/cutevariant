@@ -181,7 +181,7 @@ def test_create_database_schema():
     assert sql.table_exists(conn, "fields")
     assert sql.table_exists(conn, "annotations")
     assert sql.table_exists(conn, "samples")
-    assert sql.table_exists(conn, "sample_has_variant")
+    assert sql.table_exists(conn, "genotypes")
     assert sql.table_exists(conn, "selections")
     assert sql.table_exists(conn, "wordsets")
 
@@ -295,7 +295,7 @@ def conn():
     )
     sql.alter_table(
         conn,
-        "sample_has_variant",
+        "genotypes",
         [field for field in FIELDS if field["category"] == "samples"],
     )
 
@@ -383,14 +383,14 @@ def print_table_for_debug(conn, table):
 
 # def test_update(conn):
 #     #TODO: automate table update verification
-#     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
+#     for table in ("variants", "annotations", "samples", "genotypes", "selections"):
 #         print_table_for_debug(conn, table)
 #     for x, y in sql.update_variants_async(conn,
 #                             VARIANTS_FOR_UPDATE,
 #                             total_variant_count=len(VARIANTS_FOR_UPDATE),
 #                             yield_every=1):
 #         print(x,y)
-#     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
+#     for table in ("variants", "annotations", "samples", "genotypes", "selections"):
 #         print_table_for_debug(conn, table)
 
 
@@ -570,7 +570,7 @@ def test_columns(conn):
     q = conn.execute("PRAGMA table_info(annotations)")
     annotation_fields = [record[1] for record in q]
 
-    q = conn.execute("PRAGMA table_info(sample_has_variant)")
+    q = conn.execute("PRAGMA table_info(genotypes)")
     sample_fields = [record[1] for record in q]
 
     for field in FIELDS:
@@ -648,7 +648,7 @@ def test_get_histories(conn):
 def test_get_sample_annotations(conn, variants_data):
     """Compare sample annotations from DB with expected samples annotations
 
-    Interrogation of `sample_has_variant` table
+    Interrogation of `genotypes` table
     """
     for variant_id, variant in enumerate(variants_data, 1):
         if "samples" in variant:
@@ -1205,6 +1205,6 @@ def test_sql_selection_operation(conn):
 def test_get_sample_variant_classification_count(conn):
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 0
-    sql.update_sample_has_variant(conn, {"variant_id": 1, "sample_id": 1, "classification": 2})
+    sql.update_genotypes(conn, {"variant_id": 1, "sample_id": 1, "classification": 2})
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 1

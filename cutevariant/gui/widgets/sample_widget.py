@@ -192,7 +192,7 @@ class SampleWidget(QWidget):
         Two checks to perform:
          - did the user change any value through the interface?
          - is the database state the same as when the dialog was first opened?
-        If yes and yes, update sample_has_variant
+        If yes and yes, update genotypes
         """
         current_state = self.get_gui_state()
         if current_state == self.initial_state:

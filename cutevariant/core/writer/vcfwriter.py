@@ -188,7 +188,7 @@ class VcfWriter(AbstractWriter):
         # FORMAT fields
         format_fields = []
         for format_field in dict(
-            self.conn.execute(f"""SELECT * FROM sample_has_variant LIMIT 1""").fetchone()
+            self.conn.execute(f"""SELECT * FROM genotypes LIMIT 1""").fetchone()
         ):
             if format_field not in (
                 "variant_id",

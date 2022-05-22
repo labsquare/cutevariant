@@ -225,7 +225,7 @@ def test_import_new_samples_with_null_genotype():
     # Check if new samples
     assert utils.table_count(conn, "variants") == 2 + 1
     # 2 variant for 2 samples in genotype tables ! Not for boby
-    assert utils.table_count(conn, "sample_has_variant") == variant_count * 2
+    assert utils.table_count(conn, "genotypes") == variant_count * 2
 
     assert {i["name"] for i in sql.get_samples(conn)} == {"sacha", "charles", "boby"}
 

@@ -497,7 +497,7 @@ def alter_table_from_fields(conn: sqlite3.Connection, fields: list):
     """
 
     # Tables to alters
-    tables = ["variants", "annotations", "sample_has_variant"]
+    tables = ["variants", "annotations", "genotypes"]
 
     # If shema exists, create database shema
     if not schema_exists(conn):
@@ -506,7 +506,7 @@ def alter_table_from_fields(conn: sqlite3.Connection, fields: list):
 
     for table in tables:
 
-        category = "samples" if table == "sample_has_variant" else table
+        category = "samples" if table == "genotypes" else table
 
         # Get local columns names
         local_col_names = set(get_table_columns(conn, table))
@@ -836,7 +836,7 @@ def get_histories(conn: sqlite3.Connection, table: str, table_id: int) -> dict:
 
     Args:
         conn (sqlite3.Connection): Description
-        table (str): table name (variants, samples, sample_has_variant)
+        table (str): table name (variants, samples, genotypes)
         table_id (int): record id
 
     Todo: test function
@@ -1524,7 +1524,7 @@ def create_table_fields(conn: sqlite3.Connection):
 
     This table contain fields. A field is a column with its description and type;
     it can be choose by a user to build a Query
-    Fields are the columns of the tables: variants, annotations and sample_has_variant.
+    Fields are the columns of the tables: variants, annotations and genotypes.
     Fields are extracted from reader objects and are dynamically constructed.
 
     variants:
@@ -1533,7 +1533,7 @@ def create_table_fields(conn: sqlite3.Connection):
     annotations:
     Gene, transcrit, etc.
 
-    sample_has_variant:
+    genotypes:
     Genotype
 
     :param conn: sqlite3.connect
@@ -1683,8 +1683,8 @@ def get_field_range(conn, field_name: str, sample_name=None):
         if not sample_name:
             raise ValueError("Pass sample parameter for sample fields")
         query = f"""SELECT min({field_name}), max({field_name})
-        FROM sample_has_variant
-        JOIN samples ON sample_has_variant.sample_id = samples.id
+        FROM genotypes
+        JOIN samples ON genotypes.sample_id = samples.id
         WHERE samples.name='{sample_name}'
         """
     else:
@@ -1721,7 +1721,7 @@ def get_field_unique_values(conn, field_name: str, like: str = None, limit=None)
     table = field["category"]  # variants, or annotations or samples
 
     if table == "samples":
-        query = f""" SELECT DISTINCT `{field_name}` FROM sample_has_variant """
+        query = f""" SELECT DISTINCT `{field_name}` FROM genotypes """
 
     elif table == "annotations":
         query = f""" SELECT DISTINCT `{field_name}` FROM annotations """
@@ -1816,7 +1816,7 @@ def get_annotations(conn, variant_id: int):
 
 
 def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
-    """Create "variants" and "sample_has_variant" tables which contains dynamics fields
+    """Create "variants" and "genotypes" tables which contains dynamics fields
 
     :Example:
 
@@ -1825,7 +1825,7 @@ def create_table_variants(conn: sqlite3.Connection, fields: List[dict]):
 
     .. seealso:: get_fields
 
-    .. note:: "gt" field in "sample_has_variant" = Patient's genotype.
+    .. note:: "gt" field in "genotypes" = Patient's genotype.
         - Patient without variant: gt = 0: Wild homozygote
         - Patient with variant in the heterozygote state: gt = -1: Heterozygote
         - Patient with variant in the homozygote state: gt = 2: Homozygote
@@ -1883,7 +1883,7 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     """
     # Complementary index of the primary key (sample_id, variant_id)
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS `idx_sample_has_variant` ON sample_has_variant (`variant_id`, `sample_id`)"
+        "CREATE INDEX IF NOT EXISTS `idx_genotypes` ON genotypes (`variant_id`, `sample_id`)"
     )
 
     for field in indexed_fields:
@@ -1906,7 +1906,7 @@ def get_variant(
     Returns:
         dict: A variant item with all fields in "variants" table;
             \+ all fields of annotations table if `with_annotations` is True;
-            \+ all fields of sample_has_variant associated to all samples if
+            \+ all fields of genotypes associated to all samples if
             `with_samples` is True.
             Example:
 
@@ -1939,8 +1939,8 @@ def get_variant(
         variant["samples"] = [
             dict(sample)
             for sample in conn.execute(
-                f"""SELECT samples.name, sample_has_variant.* FROM samples
-                LEFT JOIN sample_has_variant on samples.id = sample_has_variant.sample_id
+                f"""SELECT samples.name, genotypes.* FROM samples
+                LEFT JOIN genotypes on samples.id = genotypes.sample_id
                 WHERE variant_id = {variant_id} """
             )
         ]
@@ -2005,9 +2005,9 @@ def get_sample_variant_classification_count(
     Used for edit boxes
     Returns total of variants having a given classification (validation status) for a given sample
     """
-    # r = conn.execute(f"SELECT COUNT(*) FROM variants v LEFT JOIN sample_has_variant sv WHERE sv.sample_id={sample_id} AND sv.variant_id = v.id AND v.classification = {classification}").fetchone()[0]
+    # r = conn.execute(f"SELECT COUNT(*) FROM variants v LEFT JOIN genotypes sv WHERE sv.sample_id={sample_id} AND sv.variant_id = v.id AND v.classification = {classification}").fetchone()[0]
     r = conn.execute(
-        f"SELECT COUNT(*) FROM sample_has_variant sv WHERE sv.sample_id={sample_id} AND classification = {classification}"
+        f"SELECT COUNT(*) FROM genotypes sv WHERE sv.sample_id={sample_id} AND classification = {classification}"
     ).fetchone()[0]
     return int(r)
 
@@ -2137,7 +2137,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET count_var = ifnull(
-        (SELECT  COUNT(*) FROM sample_has_variant WHERE gt > 1 AND variant_id = variants.id)
+        (SELECT  COUNT(*) FROM genotypes WHERE gt > 1 AND variant_id = variants.id)
         , 0)"""
     )
 
@@ -2146,7 +2146,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET count_het = ifnull(
-        (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 1 AND variant_id = variants.id)
+        (SELECT  COUNT(*) FROM genotypes WHERE gt = 1 AND variant_id = variants.id)
         , 0)"""
     )
 
@@ -2155,7 +2155,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET count_var = ifnull(
-        (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 2 AND variant_id = variants.id)
+        (SELECT  COUNT(*) FROM genotypes WHERE gt = 2 AND variant_id = variants.id)
         , 0)"""
     )
 
@@ -2164,7 +2164,7 @@ def update_variants_counts(conn: sqlite3.Connection):
         """
         UPDATE variants
         SET count_var = ifnull(
-        (SELECT  COUNT(*) FROM sample_has_variant WHERE gt = 0 AND variant_id = variants.id)
+        (SELECT  COUNT(*) FROM genotypes WHERE gt = 0 AND variant_id = variants.id)
         , 0)"""
     )
 
@@ -2182,7 +2182,7 @@ def update_variants_counts(conn: sqlite3.Connection):
     conn.execute(
         """
         UPDATE variants
-        SET case_count_hom = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        SET case_count_hom = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
         WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
     """
     )
@@ -2191,7 +2191,7 @@ def update_variants_counts(conn: sqlite3.Connection):
     conn.execute(
         """
        UPDATE variants
-       SET case_count_het = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+       SET case_count_het = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
        WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
    """
     )
@@ -2200,7 +2200,7 @@ def update_variants_counts(conn: sqlite3.Connection):
     conn.execute(
         """
         UPDATE variants
-        SET case_count_ref = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        SET case_count_ref = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
         WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
     """
     )
@@ -2209,7 +2209,7 @@ def update_variants_counts(conn: sqlite3.Connection):
     conn.execute(
         """
         UPDATE variants
-        SET control_count_hom = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        SET control_count_hom = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
         WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
     """
     )
@@ -2218,7 +2218,7 @@ def update_variants_counts(conn: sqlite3.Connection):
     conn.execute(
         """
         UPDATE variants
-        SET control_count_het = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        SET control_count_het = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
         WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
     """
     )
@@ -2227,7 +2227,7 @@ def update_variants_counts(conn: sqlite3.Connection):
     conn.execute(
         """
         UPDATE variants
-        SET control_count_ref = ifnull( (SELECT  COUNT(*) FROM sample_has_variant sv, samples s 
+        SET control_count_ref = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
         WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
     """
     )
@@ -2268,7 +2268,7 @@ def insert_variants(
 
     variants_local_fields = set(get_table_columns(conn, "variants"))
     annotations_local_fields = set(get_table_columns(conn, "annotations"))
-    samples_local_fields = set(get_table_columns(conn, "sample_has_variant"))
+    samples_local_fields = set(get_table_columns(conn, "genotypes"))
 
     # get samples name / samples id map
     samples_map = {sample["name"]: sample["id"] for sample in get_samples(conn)}
@@ -2351,14 +2351,14 @@ def insert_variants(
                     sample["gt"] = sample.get("gt", -1)
                     if sample["gt"] < 0:  # Allow genotype 1,2,3,4,5,... ( for other species )
                         # remove gt if exists
-                        query_remove = f"""DELETE FROM sample_has_variant WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
+                        query_remove = f"""DELETE FROM genotypes WHERE variant_id={sample["variant_id"]} AND sample_id={sample["sample_id"]}"""
                         cursor.execute(query_remove)
                     else:
                         common_fields = samples_local_fields & sample.keys()
                         query_fields = ",".join((f"`{i}`" for i in common_fields))
                         query_values = ",".join((f"?" for i in common_fields))
                         query_datas = [sample[i] for i in common_fields]
-                        query = f"""INSERT INTO sample_has_variant ({query_fields}) VALUES ({query_values}) ON CONFLICT (variant_id, sample_id)
+                        query = f"""INSERT INTO genotypes ({query_fields}) VALUES ({query_values}) ON CONFLICT (variant_id, sample_id)
                         DO UPDATE SET ({query_fields}) = ({query_values})
                         """
                         cursor.execute(query, query_datas * 2)
@@ -2573,7 +2573,7 @@ def create_table_samples(conn, fields=[]):
     )
 
     cursor.execute(
-        f"""CREATE TABLE sample_has_variant  (
+        f"""CREATE TABLE genotypes  (
         sample_id INTEGER NOT NULL,
         variant_id INTEGER NOT NULL,
         {schema},
@@ -2597,7 +2597,7 @@ def create_samples_indexes(conn, indexed_samples_fields=None):
 
     for field in indexed_samples_fields:
         conn.execute(
-            f"CREATE INDEX IF NOT EXISTS `idx_samples_{field}` ON sample_has_variant (`{field}`)"
+            f"CREATE INDEX IF NOT EXISTS `idx_samples_{field}` ON genotypes (`{field}`)"
         )
 
 
@@ -2616,7 +2616,7 @@ def insert_sample(conn, name="no_name"):
 
 def insert_samples(conn, samples: list):
     """Insert many samples at a time in samples table.
-    Set genotype to -1 in sample_has_variant for all pre-existing variants.
+    Set genotype to -1 in genotypes for all pre-existing variants.
 
     :param samples: List of samples names
         .. todo:: only names in this list ?
@@ -2705,7 +2705,7 @@ def get_sample_annotations(conn, variant_id: int, sample_id: int):
     conn.row_factory = sqlite3.Row
     return dict(
         conn.execute(
-            f"SELECT * FROM sample_has_variant WHERE variant_id = {variant_id} and sample_id = {sample_id}"
+            f"SELECT * FROM genotypes WHERE variant_id = {variant_id} and sample_id = {sample_id}"
         ).fetchone()
     )
 
@@ -2718,7 +2718,7 @@ def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List
     Args:
         conn (TYPE)
         variant_id (int): variant id
-        fields (List[str], optional): Fields list from sample_has_variant table
+        fields (List[str], optional): Fields list from genotypes table
         samples (List[str], optional): Samples filters
         family (List[str], optional): Family filters
         tags (List[str], optional): Tags filters
@@ -2729,7 +2729,7 @@ def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List
     sql_fields = ",".join([f"sv.{f}" for f in fields])
 
     query = f"""SELECT sv.sample_id, sv.variant_id, samples.name , {sql_fields} FROM samples
-    LEFT JOIN sample_has_variant sv 
+    LEFT JOIN genotypes sv 
     ON sv.sample_id = samples.id AND sv.variant_id = {variant_id}  """
 
     conditions = []
@@ -2777,7 +2777,7 @@ def update_sample(conn: sqlite3.Connection, sample: dict):
     conn.commit()
 
 
-def update_sample_has_variant(conn: sqlite3.Connection, data: dict):
+def update_genotypes(conn: sqlite3.Connection, data: dict):
     """Summary
 
     data must contains variant_id and sample_id
@@ -2802,7 +2802,7 @@ def update_sample_has_variant(conn: sqlite3.Connection, data: dict):
     sample_id = data["sample_id"]
     variant_id = data["variant_id"]
     query = (
-        "UPDATE sample_has_variant SET "
+        "UPDATE genotypes SET "
         + ",".join(sql_set)
         + f" WHERE sample_id = {sample_id} AND variant_id = {variant_id}"
     )
@@ -2820,7 +2820,7 @@ def create_triggers(conn):
     ### TRIGGER count_hom
     conn.execute(
         """
-        CREATE TRIGGER count_hom AFTER INSERT ON sample_has_variant
+        CREATE TRIGGER count_hom AFTER INSERT ON genotypes
         WHEN new.gt = 2 BEGIN
         UPDATE variants SET count_hom = count_hom + 1 WHERE variants.id = new.variant_id ;
 
@@ -2838,7 +2838,7 @@ def create_triggers(conn):
     ### TRIGGER count_var
     conn.execute(
         """
-        CREATE TRIGGER count_var AFTER INSERT ON sample_has_variant
+        CREATE TRIGGER count_var AFTER INSERT ON genotypes
         WHEN new.gt > 0 BEGIN
         UPDATE variants SET count_var = count_var + 1 WHERE variants.id = new.variant_id ;
 
@@ -2848,7 +2848,7 @@ def create_triggers(conn):
     # TRIGGER count_het
     conn.execute(
         """
-        CREATE TRIGGER count_het AFTER INSERT ON sample_has_variant
+        CREATE TRIGGER count_het AFTER INSERT ON genotypes
         WHEN new.gt = 1 BEGIN
         UPDATE variants SET count_het = count_het + 1 WHERE variants.id = new.variant_id ;
 
@@ -2866,7 +2866,7 @@ def create_triggers(conn):
     ### TRIGGER count_ref
     conn.execute(
         """
-        CREATE TRIGGER count_ref AFTER INSERT ON sample_has_variant
+        CREATE TRIGGER count_ref AFTER INSERT ON genotypes
         WHEN new.gt = 0 BEGIN
         UPDATE variants SET count_ref = count_ref + 1 WHERE variants.id = new.variant_id ;
 
@@ -2884,7 +2884,7 @@ def create_triggers(conn):
     ### TRIGGER count_none
     conn.execute(
         """
-        CREATE TRIGGER count_none AFTER INSERT ON sample_has_variant
+        CREATE TRIGGER count_none AFTER INSERT ON genotypes
         WHEN new.gt = -1 BEGIN
         UPDATE variants SET count_none = count_none + 1 WHERE variants.id = new.variant_id ;
 
@@ -2894,7 +2894,7 @@ def create_triggers(conn):
     ### TRIGGER count_tot
     conn.execute(
         """
-        CREATE TRIGGER count_tot AFTER INSERT ON sample_has_variant
+        CREATE TRIGGER count_tot AFTER INSERT ON genotypes
         BEGIN
         UPDATE variants SET count_tot = count_tot + 1 WHERE variants.id = new.variant_id ;
 
@@ -3126,11 +3126,11 @@ def create_triggers(conn):
 
     ### SAMPLE_HAS_VARIANT
 
-    ### TRIGGER history_sample_has_variant_classification
+    ### TRIGGER history_genotypes_classification
     conn.execute(
         """
-        CREATE TRIGGER history_sample_has_variant_classification
-        AFTER UPDATE ON sample_has_variant
+        CREATE TRIGGER history_genotypes_classification
+        AFTER UPDATE ON genotypes
         WHEN old.classification !=  new.classification
         BEGIN
             INSERT INTO history (
@@ -3144,7 +3144,7 @@ def create_triggers(conn):
         VALUES
             (
             current_user(),
-            "sample_has_variant",
+            "genotypes",
             new.rowid,
             "classification",
             old.classification,
@@ -3153,11 +3153,11 @@ def create_triggers(conn):
         END;"""
     )
 
-    ### TRIGGER history_sample_has_variant_tags
+    ### TRIGGER history_genotypes_tags
     conn.execute(
         """
-        CREATE TRIGGER history_sample_has_variant_tags 
-        AFTER UPDATE ON sample_has_variant
+        CREATE TRIGGER history_genotypes_tags 
+        AFTER UPDATE ON genotypes
         WHEN old.tags !=  new.tags
         BEGIN
             INSERT INTO history (
@@ -3171,7 +3171,7 @@ def create_triggers(conn):
         VALUES
             (
             current_user(),
-            "sample_has_variant",
+            "genotypes",
             new.rowid,
             "tags",
             old.tags,
@@ -3180,11 +3180,11 @@ def create_triggers(conn):
         END;"""
     )
 
-    ### TRIGGER history_sample_has_variant_comment
+    ### TRIGGER history_genotypes_comment
     conn.execute(
         """
-        CREATE TRIGGER history_sample_has_variant_comment
-        AFTER UPDATE ON sample_has_variant
+        CREATE TRIGGER history_genotypes_comment
+        AFTER UPDATE ON genotypes
         WHEN old.comment !=  new.comment
         BEGIN
             INSERT INTO history (
@@ -3198,7 +3198,7 @@ def create_triggers(conn):
         VALUES
             (
             current_user(),
-            "sample_has_variant",
+            "genotypes",
             new.rowid,
             "comment",
             old.comment,
@@ -3257,7 +3257,7 @@ def import_reader(
     progress_callback: Callable = None,
 ):
 
-    tables = ["variants", "annotations", "sample_has_variant"]
+    tables = ["variants", "annotations", "genotypes"]
     fields = get_clean_fields(reader.get_fields())
     fields = get_accepted_fields(fields, ignored_fields)
 

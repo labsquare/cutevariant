@@ -105,15 +105,15 @@ class ValidationCheckDialog(PluginDialog):
         filter_type = self.type_combo.currentData()
 
         # Default request
-        request = "SELECT variant_id FROM sample_has_variant WHERE sample_has_variant.classification IN (2) AND sample_has_variant.gt >=1 GROUP BY sample_has_variant.classification, sample_has_variant.variant_id INTERSECT SELECT variant_id FROM sample_has_variant WHERE sample_has_variant.classification IN (0) AND sample_has_variant.gt >=1 GROUP BY sample_has_variant.classification, sample_has_variant.variant_id"
+        request = "SELECT variant_id FROM genotypes WHERE genotypes.classification IN (2) AND genotypes.gt >=1 GROUP BY genotypes.classification, genotypes.variant_id INTERSECT SELECT variant_id FROM genotypes WHERE genotypes.classification IN (0) AND genotypes.gt >=1 GROUP BY genotypes.classification, genotypes.variant_id"
 
         # Type of request
         if filter_type == self.ALREADY_VALIDATED:
-            request = "SELECT distinct(variant_id) FROM sample_has_variant WHERE sample_has_variant.classification IN (2) AND sample_has_variant.gt >=1 GROUP BY sample_has_variant.classification, sample_has_variant.variant_id INTERSECT SELECT variant_id FROM sample_has_variant WHERE sample_has_variant.classification IN (0) AND sample_has_variant.gt >=1 GROUP BY sample_has_variant.classification, sample_has_variant.variant_id"
+            request = "SELECT distinct(variant_id) FROM genotypes WHERE genotypes.classification IN (2) AND genotypes.gt >=1 GROUP BY genotypes.classification, genotypes.variant_id INTERSECT SELECT variant_id FROM genotypes WHERE genotypes.classification IN (0) AND genotypes.gt >=1 GROUP BY genotypes.classification, genotypes.variant_id"
         elif filter_type == self.PATHOGENIC:
-            request = "SELECT distinct(variant_id) FROM sample_has_variant WHERE sample_has_variant.classification IN (0) AND sample_has_variant.gt >=1 AND sample_has_variant.variant_id IN (SELECT id FROM variants WHERE variants.classification IN (5))"
+            request = "SELECT distinct(variant_id) FROM genotypes WHERE genotypes.classification IN (0) AND genotypes.gt >=1 AND genotypes.variant_id IN (SELECT id FROM variants WHERE variants.classification IN (5))"
         elif filter_type == self.LIKELY_PATHOGENIC:
-            request = "SELECT distinct(variant_id) FROM sample_has_variant WHERE sample_has_variant.classification IN (0) AND sample_has_variant.gt >=1 AND sample_has_variant.variant_id IN (SELECT id FROM variants WHERE variants.classification IN (4,5))"
+            request = "SELECT distinct(variant_id) FROM genotypes WHERE genotypes.classification IN (0) AND genotypes.gt >=1 AND genotypes.variant_id IN (SELECT id FROM variants WHERE variants.classification IN (4,5))"
 
         # create variant list
         variants = [{"id": record[0]} for record in self.conn.execute(request)]
