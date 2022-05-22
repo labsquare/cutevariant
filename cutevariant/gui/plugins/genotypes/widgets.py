@@ -69,16 +69,18 @@ class GenotypeVerticalHeader(QHeaderView):
         if number:
             classification = next(i for i in self.model().classifications if i["number"] == number)
             color = classification.get("color", "gray")
-            #icon = 0xF012F
         else:
-            #icon = 0xF012F
             color = "gray"
 
-        #pix_icon=FIcon(icon, color)
-
-        # genotype
+        # genotype icon
         GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
-        genotype=self.model().get_genotype(section)["gt"]
+        genotype_sample_name=self.model().get_genotype(section)["name"]
+        genotype_variant_id=self.model().get_genotype(section)["variant_id"]
+
+        genotype=""
+        if genotype_variant_id and genotype_sample_name:
+            genotype_infos = next(sql.get_genotypes(self.model().conn, genotype_variant_id, ["gt"], [genotype_sample_name]))
+            genotype=genotype_infos["gt"]
         if genotype:
             genotype_int=int(genotype)
         else:
@@ -86,6 +88,7 @@ class GenotypeVerticalHeader(QHeaderView):
         pix_icon = GENOTYPE_ICONS.get(genotype_int) #, GENOTYPE_ICONS[-1])
         pix_icon.engine.setColor(color)
 
+        # painter
         pen = QPen(QColor(color))
         pen.setWidth(6)
         painter.setPen(pen)
@@ -93,7 +96,6 @@ class GenotypeVerticalHeader(QHeaderView):
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
         target = QRect(0, 0, 20, 20)
-        #pix = FIcon(icon, color).pixmap(target.size())
         pix = pix_icon.pixmap(target.size())
         target.moveCenter(rect.center() + QPoint(1, 1))
 
