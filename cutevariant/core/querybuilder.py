@@ -107,7 +107,7 @@ def filters_to_flat(filters: dict):
     return flatten
 
 
-def is_annotation_join_required(fields, filters) -> bool:
+def is_annotation_join_required(fields, filters, order_by = None) -> bool:
     """Return True if SQL join annotation is required
 
     Args:
@@ -122,6 +122,12 @@ def is_annotation_join_required(fields, filters) -> bool:
         if field.startswith("ann."):
             return True
 
+    if order_by:
+        for by in order_by:
+            field, direction = by
+            if field.startswith("ann."):
+                return True
+
     for condition in filters_to_flat(filters):
 
         condition = list(condition.keys())[0]
@@ -131,7 +137,7 @@ def is_annotation_join_required(fields, filters) -> bool:
     return False
 
 
-def samples_join_required(fields, filters) -> list:
+def samples_join_required(fields, filters, order_by = None) -> list:
     """Return sample list of sql join is required
 
     Args:
@@ -148,6 +154,14 @@ def samples_join_required(fields, filters) -> list:
             _, *sample, _ = field.split(".")
             sample = ".".join(sample)
             samples.add(sample)
+
+    if order_by:
+        for by in order_by:
+            field, direction = by
+            if field.startswith("samples"):
+                _, *sample, _ = field.split(".")
+                sample = ".".join(sample)
+                samples.add(sample)
 
     for condition in filters_to_flat(filters):
         key = list(condition.keys())[0]
@@ -683,19 +697,12 @@ def build_sql_query(
     # Create fields
     sql_fields = ["`variants`.`id`"] + fields_to_sql(fields, use_as=True)
 
-    # if group_by:
-    #     sql_fields.insert(1, "COUNT() as 'count'")
-
     sql_query = f"SELECT DISTINCT {','.join(sql_fields)} "
-
-    # #Add child count if grouped
-    # if grouped:
-    #     sql_query += ", COUNT(*) as `children`"
 
     # Add source table
     sql_query += "FROM variants"
 
-    if is_annotation_join_required(fields, filters):
+    if is_annotation_join_required(fields, filters, order_by):
         sql_query += " LEFT JOIN annotations ON annotations.variant_id = variants.id"
 
     # Add Join Selection
@@ -714,7 +721,7 @@ def build_sql_query(
         join_samples = list(samples_ids.keys())
 
     else:
-        join_samples = samples_join_required(fields, filters)
+        join_samples = samples_join_required(fields, filters, order_by)
 
     for sample_name in join_samples:
         if sample_name in samples_ids:
@@ -735,16 +742,14 @@ def build_sql_query(
         for item in order_by:
             field, direction = item
 
-            if field in fields:
-                field = fields_to_sql([field])[0]
+            field = fields_to_sql([field])[0]
 
-                direction = "ASC" if direction else "DESC"
-                order_by_clause.append(f"{field} {direction}")
+            direction = "ASC" if direction else "DESC"
+            order_by_clause.append(f"{field} {direction}")
 
-        if order_by_clause:
-            order_by_clause = ",".join(order_by_clause)
+        order_by_clause = ",".join(order_by_clause)
 
-            sql_query += f" ORDER BY {order_by_clause}"
+        sql_query += f" ORDER BY {order_by_clause}"
 
     if limit:
         sql_query += f" LIMIT {limit} OFFSET {offset}"
