@@ -2291,11 +2291,13 @@ def insert_variants(
         # INSERT VARIANTS
 
         query = f"""INSERT INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) 
-        DO UPDATE SET ({query_fields}) = ({query_values})
+        DO UPDATE SET ({query_fields}) = ({query_values}) RETURNING id
         """
 
         # Use execute many and get last rowS inserted ?
-        cursor.execute(query, query_datas * 2)
+        res = cursor.execute(query, query_datas * 2).fetchone()
+
+        variant_id = dict(res)["id"]
 
         total += 1
 
@@ -2304,9 +2306,9 @@ def insert_variants(
         ref = variant["ref"]
         alt = variant["alt"]
 
-        variant_id = conn.execute(
-            f"SELECT id FROM variants where chr='{chrom}' AND pos = {pos} AND ref='{ref}' AND alt='{alt}'"
-        ).fetchone()[0]
+        # variant_id = conn.execute(
+        #     f"SELECT id FROM variants where chr='{chrom}' AND pos = {pos} AND ref='{ref}' AND alt='{alt}'"
+        # ).fetchone()[0]
 
         # variant_id = cursor.lastrowid
 
@@ -3284,6 +3286,8 @@ def import_reader(
     insert_fields(conn, fields)
 
     # insert variants
+    # Create index for annotation ( performance reason)
+    create_annotations_indexes(conn)
     insert_variants(
         conn,
         get_clean_variants(reader.get_variants()),
