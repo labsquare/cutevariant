@@ -2278,6 +2278,9 @@ def insert_variants(
     cursor = conn.cursor()
     batches = []
     total = 0
+
+    RETURNING_ENABLE = parse_version(sqlite3.sqlite_version) >= parse_version("3.35.0 ")
+
     for variant_count, variant in enumerate(variants):
 
         variant_fields = {i for i in variant.keys() if i not in ("samples", "annotations")}
@@ -2290,14 +2293,21 @@ def insert_variants(
 
         # INSERT VARIANTS
 
-        query = f"""INSERT INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) 
-        DO UPDATE SET ({query_fields}) = ({query_values}) RETURNING id
-        """
-
-        # Use execute many and get last rowS inserted ?
-        res = cursor.execute(query, query_datas * 2).fetchone()
-
-        variant_id = dict(res)["id"]
+        if RETURNING_ENABLE:
+            query = f"""INSERT INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) 
+            DO UPDATE SET ({query_fields}) = ({query_values}) RETURNING id
+            """
+            res = cursor.execute(query, query_datas * 2).fetchone()
+            variant_id = dict(res)["id"]
+        else:
+            query = f"""INSERT INTO variants ({query_fields}) VALUES ({query_values}) ON CONFLICT (chr,pos,ref,alt) 
+            DO UPDATE SET ({query_fields}) = ({query_values})
+            """
+            # Use execute many and get last rowS inserted ?
+            res = cursor.execute(query, query_datas * 2)
+            variant_id = conn.execute(
+                f"SELECT id FROM variants where chr='{chrom}' AND pos = {pos} AND ref='{ref}' AND alt='{alt}'"
+            ).fetchone()[0]
 
         total += 1
 
@@ -2596,9 +2606,7 @@ def create_samples_indexes(conn, indexed_samples_fields=None):
         return
 
     for field in indexed_samples_fields:
-        conn.execute(
-            f"CREATE INDEX IF NOT EXISTS `idx_samples_{field}` ON genotypes (`{field}`)"
-        )
+        conn.execute(f"CREATE INDEX IF NOT EXISTS `idx_samples_{field}` ON genotypes (`{field}`)")
 
 
 def insert_sample(conn, name="no_name"):
