@@ -2,7 +2,7 @@
 
 **A standalone and free application to explore genetics variations from VCF file**
 
-A preprint is [available in bioRxiv](https://www.biorxiv.org/content/10.1101/2021.02.10.430619v1)
+Published in [Bioinformatics Advanced](https://academic.oup.com/bioinformaticsadvances/article/2/1/vbab028/6440032?login=true)    
 Documentation available on [cutevariant.labsquare.org](cutevariant.labsquare.org/)
 
 [![Test](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml/badge.svg)](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml) [![codecov](https://codecov.io/gh/labsquare/cutevariant/branch/devel/graph/badge.svg?token=p5CNtiNIfD)](https://codecov.io/gh/labsquare/cutevariant)
