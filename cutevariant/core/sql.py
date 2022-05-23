@@ -2304,17 +2304,18 @@ def insert_variants(
             DO UPDATE SET ({query_fields}) = ({query_values})
             """
             # Use execute many and get last rowS inserted ?
-            res = cursor.execute(query, query_datas * 2)
+            cursor.execute(query, query_datas * 2)
+
+            chrom = variant["chr"]
+            pos = variant["pos"]
+            ref = variant["ref"]
+            alt = variant["alt"]
+
             variant_id = conn.execute(
                 f"SELECT id FROM variants where chr='{chrom}' AND pos = {pos} AND ref='{ref}' AND alt='{alt}'"
             ).fetchone()[0]
 
         total += 1
-
-        chrom = variant["chr"]
-        pos = variant["pos"]
-        ref = variant["ref"]
-        alt = variant["alt"]
 
         # variant_id = conn.execute(
         #     f"SELECT id FROM variants where chr='{chrom}' AND pos = {pos} AND ref='{ref}' AND alt='{alt}'"
