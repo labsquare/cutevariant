@@ -5,8 +5,7 @@
 A preprint is [available in bioRxiv](https://www.biorxiv.org/content/10.1101/2021.02.10.430619v1)
 Documentation available on [cutevariant.labsquare.org](cutevariant.labsquare.org/)
 
-[![Test](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml/badge.svg)](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml)
-
+[![Test](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml/badge.svg)](https://github.com/labsquare/cutevariant/actions/workflows/test.workflows.yml) [![codecov](https://codecov.io/gh/labsquare/cutevariant/branch/devel/graph/badge.svg?token=p5CNtiNIfD)](https://codecov.io/gh/labsquare/cutevariant)
 
 Cutevariant is a cross-plateform application dedicated to maniupulate and filter variation from annotated VCF file. 
 When you create a project, data are imported into an sqlite database that cutevariant queries according your needs. 
