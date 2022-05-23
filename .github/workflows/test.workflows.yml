@@ -45,8 +45,7 @@ jobs:
       - name: test 
         run: xvfb-run -a python -m pytest
       - name: coverage
-        run: python -m pytest --cov=cutevariant --cov-report=xml 
-
+        run: xvfb-run -a python -m pytest --cov=cutevariant --cov-report=xml 
       - uses: codecov/codecov-action@v2
         with:
           verbose: true # optional (default = false)
