@@ -4,7 +4,7 @@ test:
 
 
 coverage:
-	python -m pytest --cov=cutevariant 
+	python -m pytest --cov=cutevariant --cov-report=xml 
 
 
 run:
