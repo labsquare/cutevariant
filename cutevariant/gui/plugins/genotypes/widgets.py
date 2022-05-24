@@ -793,17 +793,20 @@ class GenotypesWidget(plugin.PluginWidget):
 
         # Get fields
         self.current_variant = self.mainwindow.get_state_data("current_variant")
-        variant_id = self.current_variant["id"]
-        variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
-        if len(variant["annotations"]):
-            for ann in variant["annotations"][0]:
-                variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-        variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-        variant_name = variant_name_pattern.format(**variant)
+        if self.current_variant and "id" in self.current_variant:
+            variant_id = self.current_variant["id"]
+            variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
+            if len(variant["annotations"]):
+                for ann in variant["annotations"][0]:
+                    variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+            variant_name = variant_name_pattern.format(**variant)
 
-        # Troncate variant name
-        if troncate and len(variant_name) > 25:
-            variant_name = variant_name[0:15] + " ... " + variant_name[-10:]
+            # Troncate variant name
+            if troncate and len(variant_name) > 25:
+                variant_name = variant_name[0:15] + " ... " + variant_name[-10:]
+        else:
+            variant_name = "unknown"
 
         return variant_name
 
@@ -815,7 +818,10 @@ class GenotypesWidget(plugin.PluginWidget):
         # variant id
         self.current_variant = self.mainwindow.get_state_data("current_variant")
 
-        variant_id = self.current_variant["id"]
+        if self.current_variant and "id" in self.current_variant:
+            variant_id = self.current_variant["id"]
+        else:
+            variant_id = None
         fields = self.fields_button.get_checked()
         samples = self.mainwindow.get_state_data("samples")
 
