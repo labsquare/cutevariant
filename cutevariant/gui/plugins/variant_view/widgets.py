@@ -1731,6 +1731,7 @@ class VariantViewWidget(plugin.PluginWidget):
             self.view.fields = self.mainwindow.get_state_data("fields")
             self.view.filters = self.mainwindow.get_state_data("filters")
             self.view.model.order_by = self.mainwindow.get_state_data("order_by")
+            self.view.model.source = self.mainwindow.get_state_data("source")
 
             self.view.load(reset_page=True)
 
