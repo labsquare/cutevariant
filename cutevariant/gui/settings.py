@@ -187,7 +187,7 @@ class ClassificationSettingsWidget(AbstractSettingsWidget):
         super().__init__()
         self.setWindowIcon(FIcon(0xF0133))
 
-        self.widget = ClassificationEditor()
+        self.widget = ClassificationEditor(section=section)
         self.v_layout = QVBoxLayout(self)
         self.v_layout.addWidget(self.widget)
         self.section = section

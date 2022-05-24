@@ -376,7 +376,18 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu.addAction(self.edit_action)
 
-        menu.addMenu(self._create_classification_menu())
+        menu_classification = self._create_classification_menu()
+        menu.addMenu(menu_classification)
+        sample = self.model.get_sample(self.view.currentIndex().row())
+        if sample:
+            classification=sample["classification"]
+            style = next(i for i in self.model.classifications if i["number"] == classification)
+            if "lock" in style:
+                locked = bool(style["lock"])
+            else:
+                locked = False
+        menu_classification.setEnabled(not locked)
+
         menu.addSeparator()
         menu.addAction(self.select_action)
         menu.addAction(self.unselect_action)

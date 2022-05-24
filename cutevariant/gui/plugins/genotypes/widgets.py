@@ -621,6 +621,20 @@ class GenotypesWidget(plugin.PluginWidget):
                 action = cat_menu.addAction(FIcon(0xF012F, item["color"]), item["name"])
                 action.setData(item["number"])
                 action.triggered.connect(self._on_classification_changed)
+            
+            # Locked sample
+            sample_infos=sql.get_sample(self.conn, sample_id = int(sample["sample_id"]))
+            sample_id=sample_infos["id"]
+            if sample_id:
+                classification=sample_infos["classification"]
+                config = Config("classifications")
+                samples_classifications = config.get("samples", [])
+                style = next(i for i in samples_classifications if i["number"] == classification)
+                if "lock" in style:
+                    locked = bool(style["lock"])
+                else:
+                    locked = False
+            cat_menu.setEnabled(not locked)
 
             menu.exec_(event.globalPos())
 
