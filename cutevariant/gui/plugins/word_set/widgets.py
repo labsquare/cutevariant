@@ -363,7 +363,7 @@ class WordSetWidget(PluginWidget):
         super().__init__(parent)
         self.conn = None
         self.model = WordsetCollectionModel(parent=self)
-        self.setWindowIcon(FIcon(0xF0B64))
+        self.setWindowIcon(FIcon(0xF0C2E))
         self.toolbar = QToolBar(self)
         self.view = QTableView(self)
         self.view.setSortingEnabled(True)

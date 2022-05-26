@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QApplication
 
 __title__ = "Source"
-__description__ = "A plugin to display selections"
+__description__ = "Use and manage different variant subset"
 __long_description__ = """
 <p>It is a plugin allowing to work on a subset of variants.<br>
 A subset of variants is called selection or source.

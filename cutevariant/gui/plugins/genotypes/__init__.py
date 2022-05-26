@@ -1,5 +1,5 @@
 __title__ = "Genotype"
-__description__ = "A plugin to display genotype fields  "
+__description__ = "Display genotypes data of the selected variants"
 __long_description__ = """
 Docstring todo 
 """

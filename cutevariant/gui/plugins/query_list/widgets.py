@@ -57,13 +57,19 @@ class QueryWidget(QWidget):
 
             # register keywords
             for keyword in self.code_edit.syntax.sql_keywords:
-                self.code_edit.completer.model.add_item(keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0")
+                self.code_edit.completer.model.add_item(
+                    keyword, "VQL keywords", FIcon(0xF0169), "#f6ecf0"
+                )
 
             for selection in selections:
-                self.code_edit.completer.model.add_item(selection, "Source table", FIcon(0xF04EB), "#f6ecf0")
+                self.code_edit.completer.model.add_item(
+                    selection, "Source table", FIcon(0xF04EB), "#f6ecf0"
+                )
 
             for wordset in wordsets:
-                self.code_edit.completer.model.add_item(f"WORDSET['{wordset}']", "WORDSET", FIcon(0xF04EB), "#f6ecf0")
+                self.code_edit.completer.model.add_item(
+                    f"WORDSET['{wordset}']", "WORDSET", FIcon(0xF04EB), "#f6ecf0"
+                )
 
             for field in sql.get_fields(self.conn):
                 name = field["name"]
@@ -149,7 +155,7 @@ class QueryListModel(QAbstractListModel):
         self.beginResetModel()
         config = Config("vql_editor")
         _presets = config["presets"] or []
-        _presets.sort(key= lambda x:x['name'].lower())
+        _presets.sort(key=lambda x: x["name"].lower())
         self._presets = _presets
         self.endResetModel()
 
@@ -208,9 +214,9 @@ class QueryListModel(QAbstractListModel):
     def data(self, index: QModelIndex, role: int) -> str:
         row = index.row()
         col = index.column()
-        name=self._presets[row]["name"]
-        description=self._presets[row]["description"]
-        query=self._presets[row]["query"]
+        name = self._presets[row]["name"]
+        description = self._presets[row]["description"]
+        query = self._presets[row]["query"]
         if role == Qt.DisplayRole:
             if col == 0:
                 return name
@@ -249,7 +255,7 @@ class QueryListWidget(plugin.PluginWidget):
         self.tool_bar = QToolBar()
         self.view = QListView()
         self.view.setModel(self.model)
-        self.setWindowIcon(FIcon(0xF0A38))
+        self.setWindowIcon(FIcon(0xF0EBF))
 
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(self.tool_bar)
@@ -269,21 +275,33 @@ class QueryListWidget(plugin.PluginWidget):
 
         self.run_action = self.tool_bar.addAction(FIcon(0xF040A), "Apply")
         self.run_action.triggered.connect(self._run_query)
-        self.run_action.setToolTip(self.tr("Apply Query<hr>Apply query to filter variants and show selected fields"))
+        self.run_action.setToolTip(
+            self.tr("Apply Query<hr>Apply query to filter variants and show selected fields")
+        )
 
         self.tool_bar.addSeparator()
 
         self.add_action = self.tool_bar.addAction(FIcon(0xF0415), "Add")
         self.add_action.triggered.connect(self._add_query)
-        self.add_action.setToolTip(self.tr("Add Query<hr>Add query to the list.<br>Current query is automatically selected"))
+        self.add_action.setToolTip(
+            self.tr(
+                "Add Query<hr>Add query to the list.<br>Current query is automatically selected"
+            )
+        )
 
         self.remove_action = self.tool_bar.addAction(FIcon(0xF0A7A), "Remove")
         self.remove_action.triggered.connect(self._remove_query)
-        self.remove_action.setToolTip(self.tr("Remove Query<hr>Remove existing query from the list"))
+        self.remove_action.setToolTip(
+            self.tr("Remove Query<hr>Remove existing query from the list")
+        )
 
         self.edit_action = self.tool_bar.addAction(FIcon(0xF064F), "Edit")
         self.edit_action.triggered.connect(self._edit_query)
-        self.edit_action.setToolTip(self.tr("Edit Query<hr>Edit existing query, by changing name, description or query itself"))
+        self.edit_action.setToolTip(
+            self.tr(
+                "Edit Query<hr>Edit existing query, by changing name, description or query itself"
+            )
+        )
 
         self.view.addActions([self.remove_action, self.edit_action])
 
@@ -332,7 +350,10 @@ class QueryListWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def _add_query(self):
-        current_query = {k: self.mainwindow.get_state_data(k) for k in ("fields", "source", "filters", "order_by")}
+        current_query = {
+            k: self.mainwindow.get_state_data(k)
+            for k in ("fields", "source", "filters", "order_by")
+        }
         query = build_vql_query(**current_query)
         dialog = QueryDialog(self, self.conn)
         dialog.set_item({"query": query})
@@ -343,7 +364,9 @@ class QueryListWidget(plugin.PluginWidget):
             try:
                 _ = parse_one_vql(saved_query)
             except:
-                QMessageBox.warning(self, self.tr("Aborting"), self.tr("Invalid query, won't save!"))
+                QMessageBox.warning(
+                    self, self.tr("Aborting"), self.tr("Invalid query, won't save!")
+                )
                 return
 
             if "name" in new_preset and new_preset["name"]:
@@ -362,7 +385,9 @@ class QueryListWidget(plugin.PluginWidget):
                     self.model.add_preset(**new_preset)
                     self.model.save()
             else:
-                QMessageBox.warning("Aborting", self.tr("Cannot save preset with no name, won't save!"))
+                QMessageBox.warning(
+                    "Aborting", self.tr("Cannot save preset with no name, won't save!")
+                )
                 return
 
     def _remove_query(self):
@@ -385,12 +410,15 @@ class QueryListWidget(plugin.PluginWidget):
 
         dialog = QueryDialog(self, self.conn)
 
-        dialog.set_item({"name": name, "description": description, "query": query, "previous_name": name})
+        dialog.set_item(
+            {"name": name, "description": description, "query": query, "previous_name": name}
+        )
 
         if dialog.exec() == QDialog.Accepted:
             self.model.edit_preset(**dialog.get_item(), previous_name=name)
             self.model.save()
             self.model.load()
+
 
 if __name__ == "__main__":
     import sys

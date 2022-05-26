@@ -449,7 +449,7 @@ class GenotypesWidget(plugin.PluginWidget):
             )
         )
 
-        self.setWindowIcon(FIcon(0xF0A8C))
+        self.setWindowIcon(FIcon(0xF0AA1))
 
         self.stack_layout = QStackedLayout()
         self.stack_layout.addWidget(empty_widget)

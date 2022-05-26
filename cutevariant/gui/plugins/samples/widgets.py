@@ -269,7 +269,7 @@ class SamplesWidget(plugin.PluginWidget):
     # Refresh the plugin only if the following state variable changed.
     # Can be : fields, filters, source
 
-    REFRESH_STATE_DATA = {"fields", "filters"}
+    REFRESH_STATE_DATA = {"samples"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -310,8 +310,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setVerticalHeader(SampleVerticalHeader(parent))
-        self.model.modelReset.connect(self.on_model_changed)
-        self.sample_editor.sample_selected.connect(self.model.add_samples)
+        # self.model.modelReset.connect(self.on_model_changed)
+        self.sample_editor.sample_selected.connect(self.on_add_samples)
 
         self.stack_layout = QStackedLayout()
         self.stack_layout.addWidget(self.empty_widget)
@@ -332,6 +332,10 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.mainwindow.set_state_data("samples", copy.deepcopy(self.model.get_samples()))
         self.mainwindow.refresh_plugins(sender=self)
+
+    def on_add_samples(self, samples: list):
+        self.model.add_samples(samples)
+        self.on_model_changed()
 
     def _create_classification_menu(self):
 
@@ -402,9 +406,11 @@ class SamplesWidget(plugin.PluginWidget):
             rows.append(index.row())
 
         self.model.remove_samples(rows)
+        self.on_model_changed()
 
     def on_clear_samples(self):
         self.model.clear()
+        self.on_model_changed()
 
     def update_classification(self, value: int = 0):
 
@@ -440,10 +446,10 @@ class SamplesWidget(plugin.PluginWidget):
         for sample_name in selected_samples:
             fields += [f"samples.{sample_name}.gt"]
 
-        self.mainwindow.set_state_data("selected_samples", selected_samples)
-        self.mainwindow.set_state_data("fields", fields)
-        self.mainwindow.set_state_data("filters", self._create_filters())
-        self.mainwindow.refresh_plugins(sender=self)
+        # self.mainwindow.set_state_data("selected_samples", selected_samples)
+        # self.mainwindow.set_state_data("fields", fields)
+        # self.mainwindow.set_state_data("filters", self._create_filters())
+        # self.mainwindow.refresh_plugins(sender=self)
         # self.mainwindow.refresh_plugins("samples")
         self.on_model_changed()
         # print("selected_samples:")
@@ -464,10 +470,7 @@ class SamplesWidget(plugin.PluginWidget):
         for sample_name in selected_samples:
             fields += [f"samples.{sample_name}.gt"]
 
-        self.mainwindow.set_state_data("selected_samples", selected_samples)
-        self.mainwindow.set_state_data("fields", fields)
-        self.mainwindow.set_state_data("filters", self._create_filters())
-        self.mainwindow.refresh_plugins(sender=self)
+        self.on_model_changed()
         # print("selected_samples:")
         # print(self.mainwindow.get_state_data("selected_samples"))
 
@@ -524,7 +527,10 @@ class SamplesWidget(plugin.PluginWidget):
         You may want to overload this method to update the plugin state
         when query changed
         """
-        pass
+
+        samples = self.mainwindow.get_state_data("samples")
+        self.model.set_samples(copy.deepcopy(samples))
+        self.model.load()
 
     def _create_filters(self, copy_existing_filters: bool = True) -> dict:
         """

@@ -1,5 +1,5 @@
 __title__ = "samples"
-__description__ = "A sample editor"
+__description__ = "Manage selected samples"
 __long_description__ = """Edit samples"""
 __author__ = "Charles"
 __version__ = "1.0.0"
