@@ -1038,6 +1038,38 @@ def test_advanced_get_one_variant(conn):
                 assert found_variant[extra_field] == expected_variant[extra_field]
 
 
+def test_insert_selection_from_sql(conn):
+
+    sql.insert_selection_from_sql(conn, "SELECT variants.id FROM variants LIMIT 2", "subset")
+    selection = next(i for i in sql.get_selections(conn) if i["name"] == "subset")
+
+    assert selection["name"] == "subset"
+    assert selection["count"] == 2
+
+
+def test_insert_selection_from_source(conn):
+    source = "variants"
+    filters = {"$and": [{"ref": "G"}]}
+
+    observed = list(sql.get_variants(conn, ["chr"], source, filters))
+    sql.insert_selection_from_source(conn, "test", source, filters)
+
+    selection = next(i for i in sql.get_selections(conn) if i["name"] == "test")
+
+    assert selection["name"] == "test"
+    assert selection["count"] == len(observed)
+
+
+def test_insert_selection_from_samples(conn):
+
+    sql.insert_selection_from_samples(conn, ["sacha"], "samples")
+
+    selection = next(i for i in sql.get_selections(conn) if i["name"] == "samples")
+
+    assert selection["name"] == "samples"
+    assert selection["count"] == 1
+
+
 def test_selection_from_bedfile(conn):
     """Test the creation of a selection based on BED data
 

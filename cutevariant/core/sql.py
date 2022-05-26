@@ -1039,6 +1039,28 @@ def insert_selection_from_source(
     return None
 
 
+def insert_selection_from_samples(
+    conn: sqlite3.Connection, samples: list, name="samples", gt_min=0
+):
+    samples_clause = "(" + ",".join([f"'{i}'" for i in samples]) + ")"
+    ids = ",".join(
+        [
+            str(dict(rec)["id"])
+            for rec in conn.execute(f"SELECT id FROM samples WHERE name in {samples_clause}")
+        ]
+    )
+
+    query = f"""
+    SELECT id FROM variants INNER JOIN genotypes ON genotypes.variant_id = variants.id 
+    WHERE genotypes.sample_id IN ({ids}) AND genotypes.gt > {gt_min}"""
+
+    insert_selection_from_sql(
+        conn,
+        query,
+        name,
+    )
+
+
 def insert_selection_from_sql(
     conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
 ) -> int:
@@ -1982,6 +2004,33 @@ def update_variant(conn: sqlite3.Connection, variant: dict):
 def get_variants_count(conn: sqlite3.Connection):
     """Get the number of variants in the "variants" table"""
     return count_query(conn, "variants")
+
+
+def get_variant_occurences(conn: sqlite3.Connection, variant_id: int):
+    """Return variant statistics
+
+    Args:
+        conn (sqlite3.Connection)
+        variant_id (int): variant id
+    """
+
+    for rec in conn.execute(
+        f"""
+        SELECT samples.name, genotypes.* FROM genotypes 
+        INNER JOIN samples ON samples.id = genotypes.sample_id 
+        WHERE genotypes.variant_id = {variant_id} AND genotypes.gt > 0"""
+    ):
+        yield dict(rec)
+
+
+def get_variant_occurences_summary(conn: sqlite3.Connection, variant_id: int):
+
+    for rec in conn.execute(
+        f"""
+        SELECT gt , COUNT(*) as count FROM genotypes 
+        WHERE variant_id = {variant_id} GROUP BY gt """
+    ):
+        yield dict(rec)
 
 
 def get_summary(conn: sqlite3.Connection):
