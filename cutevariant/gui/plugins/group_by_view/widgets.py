@@ -37,6 +37,7 @@ from PySide6.QtGui import (
     QFont,
     QAction,
 )
+from cutevariant.config import Config
 
 
 from cutevariant.gui.plugin import PluginWidget
@@ -84,6 +85,15 @@ class GroupbyModel(QAbstractTableModel):
         self._order_by_count = True
 
         self.is_loading = False
+
+        # Load by config from on_openproject
+        self.config_classifications = []
+        self.config_sample_classifications = []
+
+    def load_config(self):
+        config = Config("classifications")
+        self.config_class_map = {i["number"]: i["name"] for i in config.get("variants", [])}
+        self.config_sample_class_map = {i["number"]: i["name"] for i in config.get("samples", [])}
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """override"""
@@ -139,7 +149,7 @@ class GroupbyModel(QAbstractTableModel):
                     else self.tr(f"Current field name: {self._field_name}")
                 )
             if index.column() == 0:
-                return self._raw_data[index.row()][self._field_name]
+                return self.display_name(index.row())
             if index.column() == 1:
                 return self._raw_data[index.row()]["count"]
 
@@ -163,6 +173,18 @@ class GroupbyModel(QAbstractTableModel):
 
     def clear(self):
         self._set_raw_data([])
+
+    def display_name(self, row: int):
+        """Return display key name"""
+        value = self._raw_data[row][self._field_name]
+        if self._field_name == "classification":
+            return self.config_class_map.get(value, "Unknown")
+
+        if self._field_name.startswith("samples.") and self._field_name.endswith(".classification"):
+            return self.config_sample_class_map.get(value, "Unknown")
+
+        else:
+            return value
 
     def set_conn(self, conn: sqlite3.Connection):
         self._conn = conn
@@ -367,6 +389,10 @@ class GroupByViewWidget(PluginWidget):
         """override"""
         self.conn = conn
         self.view.conn = conn
+
+        # Load config
+        self.view.groupby_model.load_config()
+
         self.on_refresh()
 
     def on_close_project(self):
