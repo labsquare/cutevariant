@@ -1,4 +1,5 @@
 """A place to store style rules for the GUI"""
+from PySide6.QtWidgets import QProxyStyle
 from cutevariant.constants import DIR_STYLES
 from PySide6.QtGui import QPalette, QColor
 
@@ -199,3 +200,82 @@ def dark(app):
 #     """
 #     with open(DIR_STYLES + "frameless.qss", "r") as file:
 #         widget.setStyleSheet(file.read())
+
+from PySide6.QtWidgets import QApplication, QSplashScreen, QStyleFactory, QStyle, QProxyStyle
+from PySide6.QtGui import *
+from PySide6.QtCore import *
+
+from cutevariant.gui.ficon import FIcon
+
+
+class DarkStyle(QProxyStyle):
+    def __init__(self):
+        super().__init__(QStyleFactory.create("fusion"))
+
+    def polish(self, palette: QPalette):
+
+        if type(palette) != QPalette:
+            return super().polish(palette)
+
+        palette.setColor(QPalette.WindowText, QColor(180, 180, 180))
+        palette.setColor(QPalette.Button, QColor(53, 53, 53))
+        palette.setColor(QPalette.Light, QColor(180, 180, 180))
+        palette.setColor(QPalette.Midlight, QColor(90, 90, 90))
+        palette.setColor(QPalette.Dark, QColor(35, 35, 35))
+        palette.setColor(QPalette.Text, QColor(180, 180, 180))
+        palette.setColor(QPalette.BrightText, QColor(200, 200, 200))
+        palette.setColor(QPalette.ButtonText, QColor(180, 180, 180))
+
+        palette.setColor(QPalette.Base, QColor(42, 42, 42))
+        palette.setColor(QPalette.Window, QColor(53, 53, 53))
+
+        palette.setColor(QPalette.Shadow, QColor(20, 20, 20))
+        palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+        palette.setColor(QPalette.HighlightedText, QColor(180, 180, 180))
+        palette.setColor(QPalette.Link, QColor(56, 252, 196))
+        palette.setColor(QPalette.AlternateBase, QColor(66, 66, 66))
+        palette.setColor(QPalette.ToolTipBase, QColor(53, 53, 53))
+        palette.setColor(QPalette.ToolTipText, QColor(180, 180, 180))
+
+        palette.setColor(QPalette.PlaceholderText, QColor(127, 127, 127))
+        palette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127, 127, 127))
+        palette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
+        palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(127, 127, 127))
+        palette.setColor(QPalette.Disabled, QPalette.Highlight, QColor(80, 80, 80))
+        palette.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127))
+
+    def drawPrimitive(self, element, option, painter, widget) -> None:
+
+        if element == QStyle.PE_IndicatorCheckBox:
+            op = option
+
+            #            op.icon = FIcon(0xF0143)
+            # op.iconSize = QSize(50, 50)
+            color = op.palette.color(QPalette.Light)
+            painter.setPen(QPen(color))
+            painter.drawRect(option.rect)
+
+            check = option.rect.adjusted(2, 2, -2, -2)
+            check.moveCenter(option.rect.center())
+
+            print(op.state)
+            if op.state & QStyle.State_On:
+                painter.setBrush(color)
+                # painter.setPen(Qt.NoPen)
+                painter.drawRect(check)
+
+            # return super().drawPrimitive(element, op, painter, widget)
+
+        else:
+            return super().drawPrimitive(element, option, painter, widget)
+
+    # def drawControl(self, element, option, painter, widget):
+
+    #     # return 3
+
+    #     if element == QStyle.CE_CheckBox:
+    #         painter.setBrush(QBrush(QColor("red")))
+    #         painter.drawRect(option.rect)
+    #         painter.setPen(QPen(QColor("green")))
+    #     else:
+    #         super().drawControl(element, option, painter, widget)

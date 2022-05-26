@@ -46,6 +46,7 @@ from cutevariant import __version__
 import faulthandler
 import os
 
+
 faulthandler.enable()
 
 
@@ -75,8 +76,11 @@ def main():
 
     # Load app styles
     LOGGER.info("Load style")
-    app.setStyle(QStyleFactory.create("Fusion"))
-    load_styles(app)
+    mystyle = style.DarkStyle()
+    app.setStyle(mystyle)
+
+    # app.setPalette(mystyle.standardPalette())
+    # load_styles(app)
 
     # # Uncomment those line to clear settings
     # settings = QSettings()
