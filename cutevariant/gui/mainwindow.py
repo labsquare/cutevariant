@@ -241,7 +241,9 @@ class MainWindow(QMainWindow):
         """
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle().upper())
-        dock.setStyleSheet("QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}")
+        dock.setStyleSheet(
+            "QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}"
+        )
         # frame = QLabel()
         # frame.setAlignment(Qt.AlignCenter)
         # frame.setText("<b>" + dock.windowTitle() + "</b>")
@@ -305,7 +307,8 @@ class MainWindow(QMainWindow):
 
             if not widget.objectName():
                 LOGGER.debug(
-                    "widget '%s' has no objectName attribute; " "=> fallback to extension name",
+                    "widget '%s' has no objectName attribute; "
+                    "=> fallback to extension name",
                     displayed_title,
                 )
                 widget.setObjectName(name)
@@ -430,7 +433,9 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
         # self.toolbar.addAction(self.open_config_action)
-        self.toolbar.addAction(FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode)
+        self.toolbar.addAction(
+            FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
+        )
         self.toolbar.addSeparator()
 
         ### Recent projects
@@ -469,7 +474,9 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
         ### Misc
 
-        self.file_menu.addAction(FIcon(0xF0493), self.tr("Settings..."), self.show_settings)
+        self.file_menu.addAction(
+            FIcon(0xF0493), self.tr("Settings..."), self.show_settings
+        )
         self.file_menu.addSeparator()
         self.close_project_action = self.file_menu.addAction(
             FIcon(0xF0156), self.tr("&Close project"), self.close_database
@@ -497,7 +504,9 @@ class MainWindow(QMainWindow):
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         # Set toggle footer visibility action
-        show_action = self.view_menu.addAction(FIcon(0xF018D), self.tr("Show VQL editor"))
+        show_action = self.view_menu.addAction(
+            FIcon(0xF018D), self.tr("Show VQL editor")
+        )
         show_action.setCheckable(True)
         self.toolbar.addAction(show_action)
         show_action.setChecked(True)
@@ -535,7 +544,9 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(
             FIcon(0xF0A30),
             self.tr("Report a bug..."),
-            partial(QDesktopServices.openUrl, QUrl(cst.REPORT_BUG_URL, QUrl.TolerantMode)),
+            partial(
+                QDesktopServices.openUrl, QUrl(cst.REPORT_BUG_URL, QUrl.TolerantMode)
+            ),
         )
 
         self.help_menu.addSeparator()
@@ -544,7 +555,9 @@ class MainWindow(QMainWindow):
         self.setup_developers_menu()
         self.help_menu.addMenu(self.developers_menu)
 
-        self.help_menu.addAction(self.tr("About Qt..."), QApplication.instance().aboutQt)
+        self.help_menu.addAction(
+            self.tr("About Qt..."), QApplication.instance().aboutQt
+        )
         self.help_menu.addAction(
             QIcon(DIR_ICONS + "app.png"),
             self.tr("About Cutevariant..."),
@@ -572,13 +585,17 @@ class MainWindow(QMainWindow):
         try:
             # DB version filter
             db_version = get_metadatas(self.conn).get("cutevariant_version")
-            if db_version and parse_version(db_version) < parse_version(MIN_AUTHORIZED_DB_VERSION):
+            if db_version and parse_version(db_version) < parse_version(
+                MIN_AUTHORIZED_DB_VERSION
+            ):
                 # Refuse to open blacklisted DB versions
                 # Unversioned files are still accepted
                 QMessageBox.critical(
                     self,
                     self.tr("Error while opening project"),
-                    self.tr("File: {} is too old; please create a new project.").format(filepath),
+                    self.tr("File: {} is too old; please create a new project.").format(
+                        filepath
+                    ),
                 )
                 return
 
@@ -590,7 +607,9 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 self.tr("Error while opening project"),
-                self.tr("File: {}\nThe following exception occurred:\n{}").format(filepath, e),
+                self.tr("File: {}\nThe following exception occurred:\n{}").format(
+                    filepath, e
+                ),
             )
             return
 
@@ -1035,7 +1054,9 @@ class MainWindow(QMainWindow):
         ]  # Hacky, extracts extension from second element from getSaveFileName result
 
         # Automatic extension of file_name
-        file_name = file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
+        file_name = (
+            file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
+        )
 
         export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
             self.conn,
@@ -1081,23 +1102,13 @@ class MainWindow(QMainWindow):
     def update_status_bar(self):
 
         source = self.get_state_data("source")
-        self.source_info_label.setText(f"<b>Source:</b> {source}   ")
-
         fields = self.get_state_data("fields")
-        msg = "Selected Fields <hr/>" + "<br>".join([f"{f}" for f in fields])
-        self.fields_info_label.setText(f"<b>Fields:</b> {len(fields)}")
-        self.fields_info_label.setToolTip(msg)
-
         filters = self.get_state_data("filters")
-        msg = json.dumps(filters, indent=2)
-        filter_size = len(querybuilder.filters_to_flat(filters))
-        self.filters_info_label.setText(f"<b>Filters:</b> {filter_size}")
-        self.filters_info_label.setToolTip(msg)
-
         samples = self.get_state_data("samples")
-        msg = "\n".join(samples)
-        self.samples_info_label.setText(f"<b>Samples:</b> {len(samples)}    ")
-        self.samples_info_label.setToolTip(msg)
+        order_by = self.get_state_data("order_by")
+
+        vql = querybuilder.build_vql_query(fields, source, filters, order_by)
+        self.status_bar.showMessage(vql)
 
     def quick_search(self, query: str):
 
