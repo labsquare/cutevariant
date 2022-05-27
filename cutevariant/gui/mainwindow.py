@@ -20,6 +20,7 @@ from PySide6.QtCore import (
     QUrl,
     Signal,
     QSize,
+    QPoint,
 )
 from PySide6.QtWidgets import *
 from PySide6.QtGui import QIcon, QKeySequence, QDesktopServices
@@ -730,6 +731,10 @@ class MainWindow(QMainWindow):
         loop = QEventLoop()
         w.destroyed.connect(loop.quit)
         w.sample_selected.connect(self.add_samples)
+        w.move(
+            self.geometry().center()
+            - QPoint(w.geometry().width() / 2, w.geometry().height() / 2)
+        )
         w.show()
         loop.exec()
 

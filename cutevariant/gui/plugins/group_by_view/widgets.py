@@ -92,8 +92,12 @@ class GroupbyModel(QAbstractTableModel):
 
     def load_config(self):
         config = Config("classifications")
-        self.config_class_map = {i["number"]: i["name"] for i in config.get("variants", [])}
-        self.config_sample_class_map = {i["number"]: i["name"] for i in config.get("samples", [])}
+        self.config_class_map = {
+            i["number"]: i["name"] for i in config.get("variants", [])
+        }
+        self.config_sample_class_map = {
+            i["number"]: i["name"] for i in config.get("samples", [])
+        }
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """override"""
@@ -161,7 +165,12 @@ class GroupbyModel(QAbstractTableModel):
 
         if role == Qt.ForegroundRole:
             if index.column() == 1:
-                return QApplication.instance().style().standardPalette().color(QPalette.Shadow)
+                return (
+                    QApplication.instance()
+                    .style()
+                    .standardPalette()
+                    .color(QPalette.Shadow)
+                )
 
         if role == Qt.TextAlignmentRole:
 
@@ -180,7 +189,9 @@ class GroupbyModel(QAbstractTableModel):
         if self._field_name == "classification":
             return self.config_class_map.get(value, "Unknown")
 
-        if self._field_name.startswith("samples.") and self._field_name.endswith(".classification"):
+        if self._field_name.startswith("samples.") and self._field_name.endswith(
+            ".classification"
+        ):
             return self.config_sample_class_map.get(value, "Unknown")
 
         else:
@@ -244,7 +255,9 @@ class GroupbyModel(QAbstractTableModel):
         QMessageBox.critical(
             None,
             self.tr("Error!"),
-            self.tr(f"Group by thread returned error {self.load_groupby_thread.last_error}"),
+            self.tr(
+                f"Group by thread returned error {self.load_groupby_thread.last_error}"
+            ),
         )
         self.clear()
         self.groupby_error.emit()
@@ -319,7 +332,9 @@ class GroupbyTable(QWidget):
         self.tableview.stop_loading()
         self.tableview.horizontalHeader().setStretchLastSection(False)
         self.tableview.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.tableview.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.tableview.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
 
 
 class GroupByViewWidget(PluginWidget):
@@ -340,7 +355,9 @@ class GroupByViewWidget(PluginWidget):
         # Create QCombobox
         self.field_select_combo = QComboBox(self)
         self.field_select_combo.currentTextChanged.connect(self._load_groupby)
-        self.field_select_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.field_select_combo.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Preferred
+        )
 
         # Create actions
         # self.apply_action = QAction(self)
@@ -368,16 +385,23 @@ class GroupByViewWidget(PluginWidget):
         self.view.groupby_model.groupby_started.connect(
             lambda: self.field_select_combo.setEnabled(False)
         )
-        self.view.groupby_model.groubpby_finished.connect(
-            lambda: self.field_select_combo.setEnabled(True)
-        )
+
+        self.view.groupby_model.groubpby_finished.connect(self.on_loaded)
+
         # self.view.tableview.selectionModel().selectionChanged.connect(
         #     lambda s, d: self.apply_action.setEnabled(len(s) != 0)
         # )
 
         # Create layout
+
+        self.total_label = QLabel()
+        self.total_label.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+        self.total_label.setAlignment(Qt.AlignCenter)
+        self.total_label.setMinimumHeight(30)
+
         layout = QVBoxLayout(self)
         layout.addWidget(self.toolbar)
+        layout.addWidget(self.total_label)
         layout.addWidget(self.view)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -424,6 +448,7 @@ class GroupByViewWidget(PluginWidget):
                 # Select the same field as previously selected for user's comfort
                 self.field_select_combo.setCurrentText(previous_selection)
             self._load_groupby()
+
         else:
             self.field_select_combo.clear()
             self.view.groupby_model.clear()
@@ -451,7 +476,8 @@ class GroupByViewWidget(PluginWidget):
 
     def on_apply(self):
         selected_values = [
-            idx.data(Qt.DisplayRole) for idx in self.view.tableview.selectionModel().selectedRows(0)
+            idx.data(Qt.DisplayRole)
+            for idx in self.view.tableview.selectionModel().selectedRows(0)
         ]
         if selected_values:
             self.add_condition_to_filters(
@@ -474,6 +500,14 @@ class GroupByViewWidget(PluginWidget):
         self.mainwindow: MainWindow
         self.mainwindow.set_state_data("filters", filters)
         self.mainwindow.refresh_plugins(sender=self)
+
+    def on_loaded(self):
+
+        self.field_select_combo.setEnabled(True)
+
+        # Show total
+        total = self.view.groupby_model.rowCount()
+        self.total_label.setText(f"<b> Total: </b> {total}")
 
 
 if __name__ == "__main__":

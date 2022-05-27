@@ -880,10 +880,15 @@ class VariantView(QWidget):
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.top_bar.setIconSize(QSize(16, 16))
 
-        self.bottom_bar.addAction(FIcon(0xF0A30), "sql", self.on_show_sql)
+        self.bottom_bar.addAction(FIcon(0xF0A30), "Show SQL query", self.on_show_sql)
+        self.bottom_bar.addAction(
+            FIcon(0xF10A6), "clear all cache", self.on_clear_cache
+        )
+
         self.bottom_bar.addWidget(self.time_label)
         self.bottom_bar.addWidget(self.cache_label)
         self.bottom_bar.addSeparator()
+        self.bottom_bar.setIconSize(QSize(16, 16))
         self.bottom_bar.addWidget(spacer)
 
         # Add loading action and store action
@@ -1190,6 +1195,11 @@ class VariantView(QWidget):
         self.favorite_action.blockSignals(True)
         self.favorite_action.setChecked(bool(full_variant["favorite"]))
         self.favorite_action.blockSignals(False)
+
+    def on_clear_cache(self):
+
+        self.model.clear_all_cache()
+        self.load()
 
     def on_show_sql(self):
         """Display debug sql query"""
