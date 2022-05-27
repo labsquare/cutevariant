@@ -80,7 +80,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.variant_classification = config.get("variants")
         for item in self.variant_classification:
             self.class_combo.addItem(
-                FIcon(0xF012F, item.get("color", "gray")), item["name"], userData=item["number"]
+                FIcon(0xF012F, item.get("color", "gray")),
+                item["name"],
+                userData=item["number"],
             )
 
     def get_variant(self) -> dict:
@@ -98,7 +100,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         # Load favorite
         if "favorite" in variant:
             # Bug with pyside.. need to cast int
-            self.favorite.setCheckState(Qt.Checked if variant["favorite"] == 1 else Qt.Unchecked)
+            self.favorite.setCheckState(
+                Qt.Checked if variant["favorite"] == 1 else Qt.Unchecked
+            )
 
         # Load tags
         if "tags" in variant:
@@ -128,7 +132,9 @@ class VariantSectionWidget(AbstractSectionWidget):
         )
 
         # self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.view.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
         self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
 
     def get_variant(self):
@@ -307,10 +313,10 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
         self.setToolTip("List of all samples where the current variant belong to")
         main_layout = QVBoxLayout(self)
         self.model = OccurenceModel()
-        # self.delegate = gui.FormatterDelegate()
-        # self.delegate.set_formatter(CutestyleFormatter())
+        self.delegate = gui.FormatterDelegate()
+        self.delegate.set_formatter(CutestyleFormatter())
         self.view = QTableView()
-        # self.view.setItemDelegate(self.delegate)
+        self.view.setItemDelegate(self.delegate)
         self.view.setModel(self.model)
         self.view.horizontalHeader().hide()
         self.view.setAlternatingRowColors(True)
@@ -333,7 +339,9 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
         count = self.model.rowCount()
         total = len(list(sql.get_samples(self.conn)))
 
-        self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})")
+        self.setWindowTitle(
+            OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})"
+        )
 
         ## Get samples count
 
@@ -443,7 +451,9 @@ class VariantWidget(QWidget):
             variant_id (int): variant sql id
         """
 
-        variant = sql.get_variant(self.conn, variant_id, with_annotations=True, with_samples=True)
+        variant = sql.get_variant(
+            self.conn, variant_id, with_annotations=True, with_samples=True
+        )
         current_variant_hash = self.get_variant_hash(variant)
 
         if self.last_variant_hash != current_variant_hash:
@@ -470,7 +480,9 @@ class VariantWidget(QWidget):
         Args:
             variant_id (int): variant sql id
         """
-        variant = sql.get_variant(self._conn, variant_id, with_annotations=True, with_samples=True)
+        variant = sql.get_variant(
+            self._conn, variant_id, with_annotations=True, with_samples=True
+        )
         self.last_variant_hash = self.get_variant_hash(variant)
 
         # # Set name
@@ -525,7 +537,9 @@ class VariantDialog(QDialog):
 
         self.variant_id = variant_id
         self.w = VariantWidget(conn)
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Save | QDialogButtonBox.Cancel
+        )
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)

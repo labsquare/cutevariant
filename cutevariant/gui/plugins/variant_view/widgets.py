@@ -1733,8 +1733,10 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_field_removed(self, field: str):
 
-        self.view.model.fields.remove(field)
+        fields = self.view.model.fields
 
+        fields.remove(field)
+        self.view.model.fields = fields
         self.view.load()
         self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.refresh_plugins(sender=self)

@@ -38,15 +38,6 @@ class CutestyleFormatter(Formatter):
         "frameshift_variant": "#ff89b5",
     }
 
-    ACMG_ICON = {
-        "0": FIcon(0xF03A1, "lightgray"),
-        "1": FIcon(0xF03A4, "#71e096"),
-        "2": FIcon(0xF03A7, "#a7ecbe"),
-        "3": FIcon(0xF03AA, "#f5a26f"),
-        "4": FIcon(0xF03AD, "#f9cdd1"),
-        "5": FIcon(0xF03B1, "#ed6d79"),
-    }
-
     IMPACT_COLOR = {
         "HIGH": "#ff4b5c",
         "LOW": "#056674",
@@ -72,15 +63,17 @@ class CutestyleFormatter(Formatter):
         if re.match(r"samples\..+\.gt", field) or field == "gt":
             if value == "NULL":
                 value = -1
-            icon = self.GENOTYPE_ICONS.get(int(value), self.GENOTYPE_ICONS[-1])
-            return {"text": "", "icon": icon}
-        
+            icon = cst.GENOTYPE_ICONS.get(int(value))
+            return {"text": "", "icon": FIcon(icon)}
+
         if value == "NULL" or value == "None":
             font = QFont()
             font.setItalic(True)
-            color = option.palette.color(QPalette.BrightText if is_selected else QPalette.Text)
+            color = option.palette.color(
+                QPalette.BrightText if is_selected else QPalette.Text
+            )
             color = cm.contrast_color(color, factor=300)
-            return {"font": font, "color": color }
+            return {"font": font, "color": color}
 
         if field == "ann.impact" and not is_selected:
             font = QFont()
@@ -168,7 +161,9 @@ class CutestyleFormatter(Formatter):
                 width = metrics.boundingRect(value).width()
                 height = metrics.height()
 
-                rect = QRect(x, (option.rect.height() - height) * 0.5, width + 10, height)
+                rect = QRect(
+                    x, (option.rect.height() - height) * 0.5, width + 10, height
+                )
 
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)

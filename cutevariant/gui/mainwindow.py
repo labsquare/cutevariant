@@ -1130,7 +1130,7 @@ class MainWindow(QMainWindow):
         samples = self.get_state_data("samples")
         order_by = self.get_state_data("order_by")
 
-        vql = querybuilder.build_vql_query(fields, source, filters, order_by)
+        vql = querybuilder.filters_to_vql(filters)
         self.status_bar.showMessage(vql)
         self.samples_info_label.setText(",".join(samples))
 
