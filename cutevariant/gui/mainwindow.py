@@ -90,7 +90,7 @@ class StateData:
 
     def reset(self):
         self._data = {
-            "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
+            "fields": ["chr", "pos", "ref", "alt"],
             "source": "variants",
             "filters": {},
             "order_by": [],

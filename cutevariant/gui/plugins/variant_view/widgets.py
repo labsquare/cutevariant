@@ -67,7 +67,9 @@ class VariantVerticalHeader(QHeaderView):
         painter.restore()
 
         try:
-            classification = next(i for i in self.model().classifications if i["number"] == number)
+            classification = next(
+                i for i in self.model().classifications if i["number"] == number
+            )
 
             color = classification.get("color")
             icon = 0xF0130
@@ -78,10 +80,14 @@ class VariantVerticalHeader(QHeaderView):
             pen.setWidth(6)
             painter.setPen(pen)
             painter.setBrush(QBrush(classification.get("color")))
-            painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+            painter.drawLine(
+                rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1
+            )
 
             target = QRect(0, 0, 20, 20)
-            pix = FIcon(icon_favorite if favorite else icon, color).pixmap(target.size())
+            pix = FIcon(icon_favorite if favorite else icon, color).pixmap(
+                target.size()
+            )
             target.moveCenter(rect.center() + QPoint(1, 1))
 
             painter.drawPixmap(target, pix)
@@ -163,13 +169,21 @@ class VariantModel(QAbstractTableModel):
         self._load_variant_thread = SqlThread(self.conn)
         self._load_count_thread = SqlThread(self.conn)
 
-        self._load_variant_thread.started.connect(lambda: self.variant_is_loading.emit(True))
-        self._load_variant_thread.finished.connect(lambda: self.variant_is_loading.emit(False))
+        self._load_variant_thread.started.connect(
+            lambda: self.variant_is_loading.emit(True)
+        )
+        self._load_variant_thread.finished.connect(
+            lambda: self.variant_is_loading.emit(False)
+        )
         self._load_variant_thread.result_ready.connect(self.on_variant_loaded)
         self._load_variant_thread.error.connect(self.error_raised)
 
-        self._load_count_thread.started.connect(lambda: self.count_is_loading.emit(True))
-        self._load_count_thread.finished.connect(lambda: self.count_is_loading.emit(False))
+        self._load_count_thread.started.connect(
+            lambda: self.count_is_loading.emit(True)
+        )
+        self._load_count_thread.finished.connect(
+            lambda: self.count_is_loading.emit(False)
+        )
         self._load_count_thread.result_ready.connect(self.on_count_loaded)
 
         self._finished_thread_count = 0
@@ -423,11 +437,15 @@ class VariantModel(QAbstractTableModel):
 
         # Current data
         sql_variant = {
-            k: v for k, v in sql.get_variant(self.conn, variant_id).items() if k in editable_fields
+            k: v
+            for k, v in sql.get_variant(self.conn, variant_id).items()
+            if k in editable_fields
         }
 
         # SQL data
-        model_variant = {k: v for k, v in self.variants[row].items() if k in editable_fields}
+        model_variant = {
+            k: v for k, v in self.variants[row].items() if k in editable_fields
+        }
 
         # Is there a difference between model and sql ? Which one ?
 
@@ -483,7 +501,9 @@ class VariantModel(QAbstractTableModel):
             (list[int]): ids of rows
         """
         return [
-            row_id for row_id, variant in enumerate(self.variants) if variant["id"] == variant_id
+            row_id
+            for row_id, variant in enumerate(self.variants)
+            if variant["id"] == variant_id
         ]
 
     def interrupt(self):
@@ -524,7 +544,10 @@ class VariantModel(QAbstractTableModel):
 
     def is_running(self):
         if self._load_variant_thread and self._load_count_thread:
-            return self._load_variant_thread.isRunning() or self._load_count_thread.isRunning()
+            return (
+                self._load_variant_thread.isRunning()
+                or self._load_count_thread.isRunning()
+            )
 
         return False
 
@@ -542,7 +565,9 @@ class VariantModel(QAbstractTableModel):
             return
 
         if self.is_running():
-            LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
+            LOGGER.debug(
+                "Cannot load data. Thread is not finished. You can call interrupt() "
+            )
             return
 
         LOGGER.debug("Start loading")
@@ -592,7 +617,9 @@ class VariantModel(QAbstractTableModel):
         self._start_timer = time.perf_counter()
 
         # Create function HASH for CACHE
-        self._count_hash = hash(count_function.func.__name__ + str(count_function.keywords))
+        self._count_hash = hash(
+            count_function.func.__name__ + str(count_function.keywords)
+        )
         self._variant_hash = hash(load_func.func.__name__ + str(load_func.keywords))
 
         self.load_started.emit()
@@ -606,7 +633,9 @@ class VariantModel(QAbstractTableModel):
 
         # Launch the second thread "count" or by pass it using the cache
         if self._variant_hash in self._load_variant_cache:
-            self._load_variant_thread.results = self._load_variant_cache[self._variant_hash]
+            self._load_variant_thread.results = self._load_variant_cache[
+                self._variant_hash
+            ]
             self.on_variant_loaded()
 
         else:
@@ -624,7 +653,9 @@ class VariantModel(QAbstractTableModel):
         self.variants.clear()
 
         # Save cache
-        self._load_variant_cache[self._variant_hash] = self._load_variant_thread.results.copy()
+        self._load_variant_cache[
+            self._variant_hash
+        ] = self._load_variant_thread.results.copy()
 
         # Load variants
         self.variants = self._load_variant_thread.results
@@ -652,7 +683,9 @@ class VariantModel(QAbstractTableModel):
         """
 
         # Save cache
-        self._load_count_cache[self._count_hash] = self._load_count_thread.results.copy()
+        self._load_count_cache[
+            self._count_hash
+        ] = self._load_count_thread.results.copy()
 
         self.total = self._load_count_thread.results["count"]
         self.count_loaded.emit()
@@ -748,7 +781,9 @@ class LoadingTableView(QTableView):
         if self.is_loading():
             painter = QPainter(self.viewport())
 
-            painter.drawText(self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ..."))
+            painter.drawText(
+                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
+            )
 
         else:
             super().paintEvent(event)
@@ -779,6 +814,7 @@ class VariantView(QWidget):
     load_finished = Signal()
     filter_add = Signal(str)
     filter_remove = Signal(str)
+    field_remove = Signal(str)
 
     def __init__(self, parent=None):
         """
@@ -909,7 +945,9 @@ class VariantView(QWidget):
 
         # -----------Resize action ----------
 
-        self.resize_action = self.top_bar.addAction(FIcon(0xF142A), self.tr("Auto resize"))
+        self.resize_action = self.top_bar.addAction(
+            FIcon(0xF142A), self.tr("Auto resize")
+        )
         self.resize_action.setToolTip(self.tr("Adjust columns size to content"))
         self.resize_action.triggered.connect(self.auto_resize)
 
@@ -1186,7 +1224,9 @@ class VariantView(QWidget):
     def set_tool_loading(self, active=True):
 
         if active:
-            self.info_label.setText(self.tr("Counting all variants. This can take a while ... "))
+            self.info_label.setText(
+                self.tr("Counting all variants. This can take a while ... ")
+            )
             self.loading_action.setVisible(True)
             self.loading_label.movie().start()
         else:
@@ -1250,6 +1290,12 @@ class VariantView(QWidget):
             functools.partial(lambda x: self.filter_remove.emit(x), field),
         )
 
+        menu.addAction(
+            FIcon(0xF04EE),
+            f"Remove columns",
+            functools.partial(lambda x: self.field_remove.emit(x), field),
+        )
+
         return menu
 
     def _create_variant_menu(self, index: QModelIndex) -> QMenu:
@@ -1273,7 +1319,9 @@ class VariantView(QWidget):
         menu.addAction(
             FIcon(0xF014C),
             formatted_variant,
-            functools.partial(QApplication.instance().clipboard().setText, formatted_variant),
+            functools.partial(
+                QApplication.instance().clipboard().setText, formatted_variant
+            ),
         )
 
         # action menu
@@ -1288,7 +1336,9 @@ class VariantView(QWidget):
 
         # Edit menu
         menu.addSeparator()
-        menu.addAction(FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy)
+        menu.addAction(
+            FIcon(0xF018F), self.tr("&Copy"), self.copy_to_clipboard, QKeySequence.Copy
+        )
         menu.addAction(
             FIcon(0xF018F),
             self.tr("Copy cell value"),
@@ -1310,7 +1360,9 @@ class VariantView(QWidget):
 
         # Menu header
         if self.view.horizontalHeader().underMouse():
-            pos = self.view.horizontalHeader().viewport().mapFromGlobal(event.globalPos())
+            pos = (
+                self.view.horizontalHeader().viewport().mapFromGlobal(event.globalPos())
+            )
             column = self.view.horizontalHeader().logicalIndexAt(pos)
 
             menu = self._create_header_menu(column)
@@ -1357,7 +1409,9 @@ class VariantView(QWidget):
                     urllib.request.urlopen(url.toString(), timeout=10)
                 except Exception as e:
                     LOGGER.error(
-                        "Error while trying to access " + url.toString() + "\n%s" * len(e.args),
+                        "Error while trying to access "
+                        + url.toString()
+                        + "\n%s" * len(e.args),
                         *e.args,
                     )
                     cr = "\n"
@@ -1494,14 +1548,18 @@ class VariantView(QWidget):
             return
 
         # Get comment from DB
-        variant_data = sql.get_variant(self.model.conn, self.model.variant(index.row())["id"])
+        variant_data = sql.get_variant(
+            self.model.conn, self.model.variant(index.row())["id"]
+        )
         comment = variant_data["comment"] if variant_data["comment"] else ""
 
         editor = MarkdownDialog()
         editor.widget.setPlainText(comment)
         if editor.exec_() == QDialog.Accepted:
             # Save in DB
-            self.model.update_variant(index.row(), {"comment": editor.widget.toPlainText()})
+            self.model.update_variant(
+                index.row(), {"comment": editor.widget.toPlainText()}
+            )
 
             # Request a refresh of the variant_edit plugin
             self.parent.mainwindow.refresh_plugin("variant_edit")
@@ -1594,7 +1652,9 @@ class VariantView(QWidget):
     def create_external_links_menu(self):
         menu = QMenu(self.tr("Browse to ..."))
         for link in self._get_links():
-            func_slot = functools.partial(self._open_url, link["url"], link["is_browser"])
+            func_slot = functools.partial(
+                self._open_url, link["url"], link["is_browser"]
+            )
             action = menu.addAction(link["name"], func_slot)
             action.setIcon(FIcon(0xF0866))
         return menu
@@ -1654,6 +1714,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.view.filter_add.connect(self.on_filter_added)
         self.view.filter_remove.connect(self.on_filter_removed)
+        self.view.field_remove.connect(self.on_field_removed)
 
     def on_load_finished(self):
         """Triggered when variant load is finished
@@ -1669,6 +1730,14 @@ class VariantViewWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("executed_query_data", executed_query_data)
         self.mainwindow.set_state_data("order_by", self.view.model.order_by)
         self.mainwindow.refresh_plugins()
+
+    def on_field_removed(self, field: str):
+
+        self.view.model.fields.remove(field)
+
+        self.view.load()
+        self.mainwindow.set_state_data("fields", fields)
+        self.mainwindow.refresh_plugins(sender=self)
 
     def on_filter_added(self, field: str):
 
