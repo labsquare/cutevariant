@@ -55,9 +55,7 @@ class SampleModel(QAbstractTableModel):
                     self._samples.append(sample)
             self.endResetModel()
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole):
         # Titles
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and section == 0:
             return self.tr("Samples")
@@ -140,9 +138,7 @@ class SampleModel(QAbstractTableModel):
                             int(sample[sample_field]), "Unknown"
                         )
                     if sample_field == "sex":
-                        sample_field_value = cst.SEX_DESC.get(
-                            int(sample[sample_field]), "Unknown"
-                        )
+                        sample_field_value = cst.SEX_DESC.get(int(sample[sample_field]), "Unknown")
                     if sample_field == "classification":
                         sample_field_value = ""
                         style = None
@@ -153,9 +149,7 @@ class SampleModel(QAbstractTableModel):
                             if "name" in style:
                                 sample_field_value += style["name"]
                                 if "description" in style:
-                                    sample_field_value += (
-                                        f" (" + style["description"].strip() + ")"
-                                    )
+                                    sample_field_value += f" (" + style["description"].strip() + ")"
                     info += f"<tr><td>{sample_field}</td><td width='20'></td><td>{sample_field_value}</td></tr>"
         info += f"</table>"
         return info
@@ -240,9 +234,7 @@ class SampleVerticalHeader(QHeaderView):
 
             painter.restore()
 
-            style = next(
-                i for i in self.model().classifications if i["number"] == classification
-            )
+            style = next(i for i in self.model().classifications if i["number"] == classification)
             color = style.get("color", "white")
             # selected_samples = self.mainwindow.get_state_data("selected_samples") or []
             # if name in selected_samples:
@@ -254,9 +246,7 @@ class SampleVerticalHeader(QHeaderView):
             pen.setWidth(6)
             painter.setPen(pen)
             painter.setBrush(QBrush(color))
-            painter.drawLine(
-                rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1
-            )
+            painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
             target = QRect(0, 0, 20, 20)
             pix = FIcon(icon, color).pixmap(target.size())
@@ -310,15 +300,9 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.view.horizontalHeader().hide()
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            3, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.view.doubleClicked.connect(self.on_edit)
         # self.view.clicked.connect(self.on_run)
 
@@ -346,9 +330,7 @@ class SamplesWidget(plugin.PluginWidget):
         else:
             self.stack_layout.setCurrentIndex(0)
 
-        self.mainwindow.set_state_data(
-            "samples", copy.deepcopy(self.model.get_samples())
-        )
+        self.mainwindow.set_state_data("samples", copy.deepcopy(self.model.get_samples()))
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_add_samples(self, samples: list):
@@ -383,9 +365,7 @@ class SamplesWidget(plugin.PluginWidget):
             FIcon(0xF120A), "Clear sample(s)", self.on_clear_samples
         )
 
-        self.edit_action = self.tool_bar.addAction(
-            FIcon(0xF0FFB), "Edit  sample", self.on_edit
-        )
+        self.edit_action = self.tool_bar.addAction(FIcon(0xF0FFB), "Edit  sample", self.on_edit)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -395,23 +375,17 @@ class SamplesWidget(plugin.PluginWidget):
             FIcon(0xF0A75), "Create source", self.on_create_all_source
         )
 
-        self.tool_bar.widgetForAction(source_action).setToolButtonStyle(
-            Qt.ToolButtonTextBesideIcon
-        )
+        self.tool_bar.widgetForAction(source_action).setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         source_action.setToolTip(self.tr("Create subset from all samples and use it"))
 
         self.select_action = QAction(FIcon(0xF0349), "Select variants for the sample")
         self.select_action.triggered.connect(self.on_show_variant)
 
-        self.create_filter_action = QAction(
-            FIcon(0xF0EF1), "Create filters for the sample"
-        )
+        self.create_filter_action = QAction(FIcon(0xF0EF1), "Create filters for the sample")
         self.create_filter_action.triggered.connect(self.on_create_filter)
 
-        self.clear_filter_action = QAction(
-            FIcon(0xF0234), "Clear all filters for the sample"
-        )
+        self.clear_filter_action = QAction(FIcon(0xF0234), "Clear all filters for the sample")
         self.clear_filter_action.triggered.connect(self.on_clear_filters)
 
         self.source_action = QAction(FIcon(0xF0A75), "Create a source for the sample")
@@ -429,9 +403,7 @@ class SamplesWidget(plugin.PluginWidget):
         fields_menu = menu.addMenu("Add genotype fields ...")
 
         for field in sql.get_field_by_category(self.model.conn, "samples"):
-            field_action = fields_menu.addAction(
-                QIcon(), field["name"], self.on_add_field
-            )
+            field_action = fields_menu.addAction(QIcon(), field["name"], self.on_add_field)
             field_action.setData(field)
 
         menu.addAction(self.select_action)
@@ -554,18 +526,14 @@ class SamplesWidget(plugin.PluginWidget):
             sample_name = indexes[0].siblingAtColumn(0).data()
 
             filters = self.mainwindow.get_state_data("filters")
-            filters = querybuilder.remove_field_in_filter(
-                filters, f"samples.{sample_name}.gt"
-            )
+            filters = querybuilder.remove_field_in_filter(filters, f"samples.{sample_name}.gt")
 
             self.mainwindow.set_state_data("filters", filters)
             self.mainwindow.refresh_plugins(sender=self)
 
     def on_create_all_source(self):
 
-        sql.insert_selection_from_samples(
-            self.model.conn, self.model.get_samples(), name="samples"
-        )
+        sql.insert_selection_from_samples(self.model.conn, self.model.get_samples(), name="samples")
 
         self.mainwindow.set_state_data("source", "samples")
         self.mainwindow.refresh_plugins(sender=self)
@@ -628,6 +596,9 @@ class SamplesWidget(plugin.PluginWidget):
         self.model.set_samples(copy.deepcopy(samples))
         self.model.load()
         self.on_model_changed()
+
+    def on_close_project(self):
+        self.model.clear()
 
     def _create_filters(self, copy_existing_filters: bool = True) -> dict:
         """
