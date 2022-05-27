@@ -75,7 +75,9 @@ class SamplesEditorModel(QAbstractTableModel):
 
         return None
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
+    ):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
 
@@ -123,7 +125,6 @@ class SamplesEditor(QWidget):
         v_layout.addWidget(self.toolbar)
         v_layout.addWidget(self.line)
         v_layout.addWidget(self.view)
-        v_layout.addStretch()
         v_layout.addWidget(self.btn_box)
 
         self._setup_actions()
@@ -157,7 +158,9 @@ class SamplesEditor(QWidget):
         self.toolbar.addWidget(self.tag_choice)
 
         self.toolbar.addSeparator()
-        clear_action = self.toolbar.addAction(QIcon(), "Clear filters", self.clear_filters)
+        clear_action = self.toolbar.addAction(
+            QIcon(), "Clear filters", self.clear_filters
+        )
 
     def _load_filters(self):
         if self.conn:
@@ -187,7 +190,9 @@ class SamplesEditor(QWidget):
     def _on_filter_changed(self):
         tag_list = self.tag_choice._model.get_checked()
         fam_list = self.family_choice._model.get_checked()
-        class_list = [str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]]
+        class_list = [
+            str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]
+        ]
 
         query = []
         if tag_list:
