@@ -178,6 +178,8 @@ class FiltersPresetModel(QAbstractListModel):
         # config["presets"] = {
         #     preset_name: filters for preset_name, filters in self._presets
         # }
+        if "presets" not in config:
+            config["presets"]={}
         for preset_name, filters in self._presets:
             config["presets"][preset_name] = filters
         config.save()
@@ -566,6 +568,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
             return
 
         config = Config("filters_editor")
+        if "presets" not in config:
+            config["presets"]={}
         presets = config["presets"]
         if name in presets:
             del presets[name]
@@ -601,6 +605,8 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if ok:
             self.mainwindow: MainWindow
             config = Config("filters_editor")
+            if "presets" not in config:
+                config["presets"]={}
             if name in config["presets"]:
                 ret = QMessageBox.warning(
                     self,
