@@ -253,7 +253,7 @@ MANDATORY_FIELDS = [
     },
     {
         "name": "control_freq_var",
-        "type": "int",
+        "type": "float",
         "constraint": "DEFAULT 0",
         "category": "variants",
         "description": "Frequency of variants for all samples (0/1 and 1/1) in control",
@@ -295,7 +295,7 @@ MANDATORY_FIELDS = [
     },
     {
         "name": "case_freq_var",
-        "type": "int",
+        "type": "float",
         "category": "variants",
         "constraint": "DEFAULT 0",
         "description": "Number of variants (0/1 or 1/1) in control",
