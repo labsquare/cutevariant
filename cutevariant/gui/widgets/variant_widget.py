@@ -61,8 +61,6 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
 
-        self.tag_choice = TagEdit()
-
         self.edit_comment_btn = QPushButton("Edit comment")
         self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
 
@@ -89,7 +87,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         variant = {
             "favorite": self.favorite.isChecked(),
             "classification": self.class_combo.currentData(),
-            "tags": self.tag_edit.text(),
+            "tags": "&".join([tag for tag in self.tag_edit.text().split(",") if tag]),
             "comment": self.comment.toPlainText(),
         }
 

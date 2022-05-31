@@ -16,9 +16,9 @@ class TagEditSyntaxHighlighter(QSyntaxHighlighter):
         f.setBackground(QBrush(QColor("#D5E9F5")))
         f.setForeground(QBrush(QColor("D5E9F5").darker().darker()))
         f.setFontWeight(QFont.Bold)
-        for match in re.finditer(r"(\w+),", text):
+        for match in re.finditer(r"([^,]+)", text):
             start, end = match.span()
-            self.setFormat(start, (end - start) - 1, f)
+            self.setFormat(start, (end - start), f)
 
 
 class TagEdit(QTextEdit):
