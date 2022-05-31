@@ -113,6 +113,19 @@ class EvaluationSectionWidget(AbstractSectionWidget):
             self.comment.setPlainText(variant["comment"])
             self.comment.preview_btn.setChecked(True)
 
+        # Load classification
+        if "classification" in variant:
+            self.class_combo.setCurrentText(
+                next(
+                    (
+                        item["name"]
+                        for item in self.variant_classification
+                        if item["number"] == variant["classification"]
+                    ),
+                    "Unknown",
+                )
+            )
+
 
 class VariantSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
