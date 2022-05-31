@@ -20,11 +20,11 @@ jobs:
   
   # LINUX JOB 
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        python_version: ['3.10.2']
+        python_version: ['3.10.4']
     steps:
       - uses: actions/checkout@v2
       - name: Install OS dependencies

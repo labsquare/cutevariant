@@ -228,14 +228,7 @@ MANDATORY_FIELDS = [
         "type": "float",
         "constraint": "DEFAULT 0",
         "category": "variants",
-        "description": "Frequency of variants for samples with genotypes (0/0, 0/1 and 1/1)",
-    },
-    {
-        "name": "freq_var_full",
-        "type": "float",
-        "constraint": "DEFAULT 0",
-        "category": "variants",
-        "description": "Frequency of variants for samples with genotypes (0/0, 0/1 and 1/1) or without genotypes (./.)",
+        "description": "Frequency of variants for samples with genotypes (0/1 and 1/1)",
     },
     {
         "name": "control_count_hom",
@@ -1908,6 +1901,11 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
         "CREATE INDEX IF NOT EXISTS `idx_genotypes` ON genotypes (`variant_id`, `sample_id`)"
     )
 
+    # Complementary index of the primary key (sample_id, variant_id)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS `idx_genotypes_gt` ON genotypes (`gt`)"
+    )
+
     for field in indexed_fields:
         conn.execute(f"CREATE INDEX IF NOT EXISTS `idx_variants_{field}` ON variants (`{field}`)")
 
@@ -2173,7 +2171,7 @@ def get_variants_tree(
     #     yield item
 
 
-def update_variants_counts(conn: sqlite3.Connection):
+def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable = None,):
     """Update all variants counts information from sample data.
 
     It computes count_var,count_hom, count_het, count_ref for each variants by reading how many samples belong to.
@@ -2182,40 +2180,98 @@ def update_variants_counts(conn: sqlite3.Connection):
     Args:
         conn (sqlite3.Connection)
     """
-    conn.execute(
-        """
-        UPDATE variants
-        SET count_var = ifnull(
-        (SELECT  COUNT(*) FROM genotypes WHERE gt > 1 AND variant_id = variants.id)
-        , 0)"""
-    )
 
     # Update count_het
+    if progress_callback:
+        progress_callback("Variants count_het")
     conn.execute(
         """
         UPDATE variants
-        SET count_het = ifnull(
-        (SELECT  COUNT(*) FROM genotypes WHERE gt = 1 AND variant_id = variants.id)
-        , 0)"""
-    )
+        SET count_het = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes
+            WHERE genotypes.gt = 1
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
 
     # Update count_hom
+    if progress_callback:
+        progress_callback("Variants count_hom")
     conn.execute(
         """
         UPDATE variants
-        SET count_var = ifnull(
-        (SELECT  COUNT(*) FROM genotypes WHERE gt = 2 AND variant_id = variants.id)
-        , 0)"""
-    )
+        SET count_hom = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes
+            WHERE genotypes.gt = 2
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
 
     # Update count_ref
+    if progress_callback:
+        progress_callback("Variants count_ref")
     conn.execute(
         """
         UPDATE variants
-        SET count_var = ifnull(
-        (SELECT  COUNT(*) FROM genotypes WHERE gt = 0 AND variant_id = variants.id)
-        , 0)"""
+        SET count_ref = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes
+            WHERE genotypes.gt = 0
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
+
+    # Update count_var
+    if progress_callback:
+        progress_callback("Variants count_var")
+    conn.execute(
+        """
+        UPDATE variants
+        SET count_var = count_het + count_hom
+        """
     )
+
+    # sample_count
+    sample_count = conn.execute(
+        "SELECT COUNT(id) FROM samples"
+    ).fetchone()[0]
+
+    # Update count_tot
+    if progress_callback:
+        progress_callback("Variants count_tot")
+    conn.execute(
+        f"""
+        UPDATE variants
+        SET count_tot = {sample_count}
+        """
+    )
+
+    # Update count_none
+    if progress_callback:
+        progress_callback("Variants count_none")
+    conn.execute(
+        f"""
+        UPDATE variants
+        SET count_none = count_tot - count_var
+        """
+    )
+
+    # Update freq_var
+    if progress_callback:
+        progress_callback("Variants freq_var")
+    conn.execute(
+        """
+        UPDATE variants
+        SET freq_var = ( cast ( ( (count_hom * 2) + count_het ) as real) / ( cast ( (count_tot * 2) as real ) ) )
+        """
+    )
+
+    conn.commit()
 
     # CASE and CONTROL
 
@@ -2227,59 +2283,85 @@ def update_variants_counts(conn: sqlite3.Connection):
         LOGGER.warning("No phenotype. Do not compute case/control count")
         return
 
-    # case homo
+    # case hom
     conn.execute(
         """
         UPDATE variants
-        SET case_count_hom = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
-        WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
-    """
-    )
+        SET case_count_hom = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes, samples
+            WHERE genotypes.sample_id=samples.id AND genotypes.gt = 2 AND samples.phenotype=2
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
 
-    # case hetero
+    # case het
     conn.execute(
         """
-       UPDATE variants
-       SET case_count_het = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
-       WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
-   """
-    )
+        UPDATE variants
+        SET case_count_het = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes, samples
+            WHERE genotypes.sample_id=samples.id AND genotypes.gt = 1 AND samples.phenotype=2
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
 
     # case ref
     conn.execute(
         """
         UPDATE variants
-        SET case_count_ref = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
-        WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=2 ), 0)
-    """
-    )
+        SET case_count_ref = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes, samples
+            WHERE genotypes.sample_id=samples.id AND genotypes.gt = 0 AND samples.phenotype=2
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
 
-    # control homo
+    # control hom
     conn.execute(
         """
         UPDATE variants
-        SET control_count_hom = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
-        WHERE sv.gt = 2 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
-    """
-    )
+        SET control_count_hom = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes, samples
+            WHERE genotypes.sample_id=samples.id AND genotypes.gt = 2 AND samples.phenotype=1
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
 
-    # control hetero
+    # control het
     conn.execute(
         """
         UPDATE variants
-        SET control_count_het = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
-        WHERE sv.gt = 1 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
-    """
-    )
+        SET control_count_het = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes, samples
+            WHERE genotypes.sample_id=samples.id AND genotypes.gt = 1 AND samples.phenotype=1
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
 
     # control ref
     conn.execute(
         """
         UPDATE variants
-        SET control_count_ref = ifnull( (SELECT  COUNT(*) FROM genotypes sv, samples s 
-        WHERE sv.gt = 0 AND sv.variant_id = variants.id AND s.id = sv.sample_id AND s.phenotype=1 ), 0)
-    """
-    )
+        SET control_count_ref = geno.count
+        FROM (SELECT variant_id, count(sample_id) as count
+            FROM genotypes, samples
+            WHERE genotypes.sample_id=samples.id AND genotypes.gt = 0 AND samples.phenotype=1
+            GROUP BY variant_id) as geno
+        WHERE id = geno.variant_id;
+        """
+    ) 
+
+    conn.commit()
 
 
 def insert_variants(
@@ -2875,116 +2957,29 @@ def update_genotypes(conn: sqlite3.Connection, data: dict):
 
 def create_triggers(conn):
 
-    ### TRIGGER count_hom
+    # variants count case/control on samples update
     conn.execute(
         """
-        CREATE TRIGGER count_hom AFTER INSERT ON genotypes
-        WHEN new.gt = 2 BEGIN
-        UPDATE variants SET count_hom = count_hom + 1 WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        case_count_hom = case_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=2 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        control_count_hom = control_count_hom + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-    ### TRIGGER count_var
-    conn.execute(
-        """
-        CREATE TRIGGER count_var AFTER INSERT ON genotypes
-        WHEN new.gt > 0 BEGIN
-        UPDATE variants SET count_var = count_var + 1 WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-    # TRIGGER count_het
-    conn.execute(
-        """
-        CREATE TRIGGER count_het AFTER INSERT ON genotypes
-        WHEN new.gt = 1 BEGIN
-        UPDATE variants SET count_het = count_het + 1 WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        case_count_het = case_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=2 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        control_count_het = control_count_het + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-    ### TRIGGER count_ref
-    conn.execute(
-        """
-        CREATE TRIGGER count_ref AFTER INSERT ON genotypes
-        WHEN new.gt = 0 BEGIN
-        UPDATE variants SET count_ref = count_ref + 1 WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        case_count_ref = case_count_ref + (SELECT COUNT(*) FROM samples WHERE phenotype=1 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        UPDATE variants SET
-        control_count_ref = control_count_ref + (SELECT COUNT(*) FROM samples WHERE phenotype=0 and samples.id = new.sample_id)
-        WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-    ### TRIGGER count_none
-    conn.execute(
-        """
-        CREATE TRIGGER count_none AFTER INSERT ON genotypes
-        WHEN new.gt = -1 BEGIN
-        UPDATE variants SET count_none = count_none + 1 WHERE variants.id = new.variant_id ;
-
-        END;"""
-    )
-
-    ### TRIGGER count_tot
-    conn.execute(
-        """
-        CREATE TRIGGER count_tot AFTER INSERT ON genotypes
+        CREATE TRIGGER IF NOT EXISTS count_after_update_on_samples AFTER UPDATE ON samples
+        WHEN new.phenotype <> old.phenotype
         BEGIN
-        UPDATE variants SET count_tot = count_tot + 1 WHERE variants.id = new.variant_id ;
+            UPDATE variants
+            SET 
+                case_count_ref = case_count_ref + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
+                
+                case_count_het = case_count_het + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
+                
+                case_count_hom = case_count_hom + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 ),
 
-        END;"""
-    )
-
-    ### TRIGGER freq_var_update
-    conn.execute(
+                control_count_ref = control_count_ref + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
+                
+                control_count_het = control_count_het + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
+                
+                control_count_hom = control_count_hom + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 )
+                
+            WHERE variants.id IN (SELECT shv2.variant_id FROM genotypes as shv2 WHERE shv2.sample_id=new.id) ;
+        END;
         """
-        CREATE TRIGGER freq_var_update AFTER UPDATE ON variants 
-        WHEN old.count_hom <> new.count_hom
-              OR old.count_het <> new.count_het
-              OR old.count_ref <> new.count_ref
-        BEGIN
-
-        UPDATE variants SET
-        freq_var = ( cast((new.count_hom*2 + new.count_het) as real) / ( ( cast(new.count_hom as real) + cast(new.count_het as real) + cast(new.count_ref as real) ) *2 ) ) WHERE variants.id = new.id ;
-        
-        END;"""
-    )
-
-    ### TRIGGER freq_var_full_update_on_variants
-    conn.execute(
-        """
-        CREATE TRIGGER freq_var_full_update_on_variants AFTER UPDATE ON variants 
-        WHEN old.count_tot <> new.count_tot
-        BEGIN
-
-        UPDATE variants SET
-        freq_var_full = ( cast((new.count_hom*2 + new.count_het) as real) / (cast(new.count_tot as real)*2) ) WHERE variants.id = new.id ;
-        
-        END;"""
     )
 
     ###### trigers on validation
@@ -3182,7 +3177,7 @@ def create_triggers(conn):
         END;"""
     )
 
-    ### SAMPLE_HAS_VARIANT
+    ### GENOTYPES
 
     ### TRIGGER history_genotypes_classification
     conn.execute(
@@ -3345,6 +3340,8 @@ def import_reader(
 
     # insert variants
     # Create index for annotation ( performance reason)
+    if progress_callback:
+        progress_callback("Insert variants. This can take a while")
     create_annotations_indexes(conn)
     insert_variants(
         conn,
@@ -3366,6 +3363,11 @@ def import_reader(
         create_indexes(conn, vindex, aindex, sindex, progress_callback=progress_callback)
     except:
         LOGGER.info("Index already exists")
+
+    # update variants count
+    if progress_callback:
+        progress_callback("Variants counts. This can take a while")
+    update_variants_counts(conn, progress_callback)
 
     # database creation complete
     if progress_callback:

@@ -401,14 +401,16 @@ def test_update_variants_counts(conn):
     samples = VARIANTS[0]["samples"]
 
     expected = {}
-    expected["count_var"] = sum(sample["gt"] for sample in samples if sample["gt"] > 1)
+    expected["count_var"] = sum(sample["gt"] for sample in samples if sample["gt"] >= 1)
     expected["count_het"] = sum(sample["gt"] for sample in samples if sample["gt"] == 1)
     expected["count_hom"] = sum(sample["gt"] for sample in samples if sample["gt"] == 2)
     expected["count_ref"] = sum(sample["gt"] for sample in samples if sample["gt"] == 0)
+    expected["count_tot"] = len(samples)
+    expected["freq_var"] = (expected["count_hom"]*2 + expected["count_het"] ) / (expected["count_tot"]*2)
 
     observed = dict(
         conn.execute(
-            "SELECT count_var, count_het, count_hom, count_ref FROM variants WHERE id = 1"
+            "SELECT count_var, count_het, count_hom, count_ref, count_tot, freq_var FROM variants WHERE id = 1"
         ).fetchone()
     )
 
