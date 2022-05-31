@@ -2924,19 +2924,19 @@ def create_triggers(conn):
         BEGIN
             UPDATE variants
             SET 
-                case_count_ref = case_count_ref + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
+                case_count_ref = case_count_ref + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
                 
-                case_count_het = case_count_het + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
+                case_count_het = case_count_het + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
                 
-                case_count_hom = case_count_hom + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 ),
+                case_count_hom = case_count_hom + IIF( new.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 2 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 ),
 
-                control_count_ref = control_count_ref + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
+                control_count_ref = control_count_ref + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=0) = 1, -1, 0 ),
                 
-                control_count_het = control_count_het + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
+                control_count_het = control_count_het + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=1) = 1, -1, 0 ),
                 
-                control_count_hom = control_count_hom + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM sample_has_variant as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 )
+                control_count_hom = control_count_hom + IIF( new.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, 1, 0 ) + IIF( old.phenotype = 1 AND (SELECT count(shv.variant_id) FROM genotypes as shv WHERE sample_id=new.id AND variant_id=variants.id AND gt=2) = 1, -1, 0 )
                 
-            WHERE variants.id IN (SELECT shv2.variant_id FROM sample_has_variant as shv2 WHERE shv2.sample_id=new.id) ;
+            WHERE variants.id IN (SELECT shv2.variant_id FROM genotypes as shv2 WHERE shv2.sample_id=new.id) ;
         END;
         """
     )
@@ -2967,17 +2967,17 @@ def create_triggers(conn):
         """
     )
 
-    # # variants count validations on sample_has_variant update
+    # # variants count validations on genotypes update
     # conn.execute(
     #     """
-    #     CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_after_update_on_sample_has_variant AFTER UPDATE ON sample_has_variant
+    #     CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_after_update_on_genotypes AFTER UPDATE ON genotypes
     #     WHEN new.classification <> old.classification
     #     BEGIN
     #         UPDATE variants
-    #         SET count_validation_positive = (SELECT count(shv.sample_id) FROM sample_has_variant as shv WHERE shv.variant_id=new.variant_id AND shv.classification>0), 
-    #             count_validation_negative = (SELECT count(shv.sample_id) FROM sample_has_variant as shv WHERE shv.variant_id=new.variant_id AND shv.classification<0),
-    #             count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM sample_has_variant as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=new.variant_id AND shv.classification>0), 
-    #             count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM sample_has_variant as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=new.variant_id AND shv.classification<0)
+    #         SET count_validation_positive = (SELECT count(shv.sample_id) FROM genotypes as shv WHERE shv.variant_id=new.variant_id AND shv.classification>0), 
+    #             count_validation_negative = (SELECT count(shv.sample_id) FROM genotypes as shv WHERE shv.variant_id=new.variant_id AND shv.classification<0),
+    #             count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=new.variant_id AND shv.classification>0), 
+    #             count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=new.variant_id AND shv.classification<0)
     #         WHERE id=new.variant_id;
     #     END;
     #     """
@@ -2990,9 +2990,9 @@ def create_triggers(conn):
     #     WHEN new.valid <> old.valid
     #     BEGIN
     #         UPDATE variants
-    #         SET count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM sample_has_variant as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=variants.id AND shv.classification>0), 
-    #             count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM sample_has_variant as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=variants.id AND shv.classification<0)
-    #         WHERE id IN (SELECT shv2.variant_id FROM sample_has_variant as shv2 WHERE shv2.sample_id=new.id);
+    #         SET count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=variants.id AND shv.classification>0), 
+    #             count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.valid>0 AND shv.variant_id=variants.id AND shv.classification<0)
+    #         WHERE id IN (SELECT shv2.variant_id FROM genotypes as shv2 WHERE shv2.sample_id=new.id);
     #     END;
     #     """
     # )
@@ -3192,7 +3192,7 @@ def create_triggers(conn):
         END;"""
     )
 
-    ### SAMPLE_HAS_VARIANT
+    ### genotypes
 
     ### TRIGGER history_genotypes_classification
     conn.execute(
