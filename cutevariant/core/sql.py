@@ -2903,6 +2903,32 @@ def update_genotypes(conn: sqlite3.Connection, data: dict):
 
 def create_triggers(conn):
 
+    # variants nb_samples on samples insert
+    # conn.execute(
+    #     """
+    #     CREATE TRIGGER IF NOT EXISTS nb_samples_after_insert_on_samples AFTER INSERT ON samples
+    #     BEGIN
+    #         UPDATE variants
+    #         SET nb_samples = nb_samples + 1, 
+    #             case_nb_samples = case_nb_samples + IIF( new.phenotype = 2, 1, 0 ), 
+    #             control_nb_samples = control_nb_samples + IIF( new.phenotype = 1, 1, 0 );
+    #     END;
+    #     """
+    # )
+
+    # # variants nb_samples on variants insert
+    # conn.execute(
+    #     """
+    #     CREATE TRIGGER IF NOT EXISTS nb_samples_after_insert_on_variants AFTER INSERT ON variants
+    #     BEGIN
+    #         UPDATE variants
+    #         SET nb_samples = (SELECT count(`id`) FROM samples), 
+    #             case_nb_samples = (SELECT count(`id`) FROM samples WHERE phenotype = 2), 
+    #             control_nb_samples = (SELECT count(`id`) FROM samples WHERE phenotype = 1);
+    #     END;
+    #     """
+    # )
+
     # variants nb_samples case/control on samples update
     conn.execute(
         """
