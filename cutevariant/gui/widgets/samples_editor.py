@@ -177,7 +177,13 @@ class SamplesEditor(QWidget):
             # Load Tags
             self.tag_choice.clear()
             tags = sql.get_tags_from_samples(self.conn)
+            tags_list=[]
             for tag in tags:
+                tag_list=tag.split(",")
+                for t in tag_list:
+                    if t not in tags_list:
+                        tags_list.append(t)
+            for tag in tags_list:
                 self.tag_choice.add_item(QIcon(), tag, data=tag)
 
     def clear_filters(self):
@@ -194,26 +200,51 @@ class SamplesEditor(QWidget):
             str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]
         ]
 
+        # clean previous query line
+        previous_query_line_list = []
+        previous_query_line_text = self.line.text()
+        before_query_line_list = []
+        if previous_query_line_text:
+            previous_query_line_list = previous_query_line_text.split(" ")
+            for q in previous_query_line_list:
+                if not q.startswith('tags:') and not q.startswith('classification:') and not q.startswith('family_id:') and not q == "":
+                    before_query_line_list.append(q)
+
+        if before_query_line_list:
+            previous_query_line_text_clean = " ".join(before_query_line_list)
+        else:
+            previous_query_line_text_clean = ""
+
+        # start query
         query = []
+
+        # tag
         if tag_list:
-            query += ["tags:" + ",".join(tag_list)]
+            for tag in tag_list:
+                query += ["tags:" + tag]
 
+        # family
         if fam_list:
-            query += ["family:" + ",".join(fam_list)]
+            query += ["family_id:" + ",".join(fam_list)]
 
+        # classification
         if class_list:
             query += ["classification:" + ",".join(class_list)]
 
+        # construct query
         query = " ".join(query)
 
+        # change query
         if not self.line.text():
+        #if not previous_query_line_text_clean:
             self.line.setText(query)
         else:
-            self.line.setText(self.line.text() + " " + query)
+            #self.line.setText(self.line.text() + " " + query)
+            self.line.setText(previous_query_line_text_clean + " " + query)
 
     def _on_search(self):
         """Start a search query"""
-        self.model.query = self.line.text()
+        self.model.query = self.line.text().strip()
         self.model.load()
 
     def get_selected_samples(self) -> typing.List[str]:
