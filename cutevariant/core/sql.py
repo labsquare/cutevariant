@@ -93,6 +93,7 @@ import os
 import getpass
 
 from typing import List, Callable, Iterable
+from datetime import datetime
 
 # Custom imports
 import cutevariant.constants as cst
@@ -2754,19 +2755,49 @@ def insert_sample(conn, name="no_name"):
     return cursor.lastrowid
 
 
-def insert_samples(conn, samples: list):
+def insert_samples(conn, samples: list, import_id: str = None, import_vcf: str = None):
     """Insert many samples at a time in samples table.
     Set genotype to -1 in genotypes for all pre-existing variants.
 
     :param samples: List of samples names
-        .. todo:: only names in this list ?
-    :type samples: <list <str>>
+    :param import_id: importID tag for each samples
     """
+
+    current_date=datetime.today().strftime('%Y%m%d-%H%M%S')
+
+    # import VCF
+    import_vcf_tag = None
+    if import_vcf:
+        import_vcf_tag="importVCF#"+import_vcf
+
+    # import DATE
+    import_date_tag = None
+    import_date_tag="importDATE#"+current_date
+    
+    # import ID
+    import_id_tag = None
+    if not import_id:
+        import_id=current_date
+    import_id_tag="importID#"+import_id
+
+    # cursor
     cursor = conn.cursor()
-    cursor.executemany(
-        "INSERT OR IGNORE INTO samples (name) VALUES (?)",
-        ((sample,) for sample in samples),
-    )
+
+    for sample in samples:
+        # insert Sample
+        cursor.execute(f"INSERT OR IGNORE INTO samples (name) VALUES ('{sample}') ")
+        # insert tags
+        if import_vcf_tag:
+            cursor.execute(f"UPDATE samples SET tags = '{import_vcf_tag}' WHERE name = '{sample}' AND tags = '' ")
+            cursor.execute(f"UPDATE samples SET tags = tags || ',' || '{import_vcf_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_vcf_tag},%' ")
+        if import_date_tag:
+            cursor.execute(f"UPDATE samples SET tags = '{import_date_tag}' WHERE name = '{sample}' AND tags = '' ")
+            cursor.execute(f"UPDATE samples SET tags = tags || ',' || '{import_date_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_date_tag},%' ")
+        if import_id_tag:
+            cursor.execute(f"UPDATE samples SET tags = '{import_id_tag}' WHERE name = '{sample}' AND tags = '' ")
+            cursor.execute(f"UPDATE samples SET tags = tags || ',' || '{import_id_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_id_tag},%' ")
+    
+    # commit
     conn.commit()
 
 
@@ -3305,6 +3336,7 @@ def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
     pedfile: str = None,
+    import_id: str = None,
     ignored_fields: list = [],
     indexed_fields: list = [],
     progress_callback: Callable = None,
@@ -3327,7 +3359,11 @@ def import_reader(
     # insert samples
     if progress_callback:
         progress_callback("Insert samples")
-    insert_samples(conn, reader.get_samples())
+    if reader.filename:
+        import_vcf=os.path.basename(reader.filename)
+    else:
+        import_vcf=None
+    insert_samples(conn, samples=reader.get_samples(), import_id=import_id, import_vcf=import_vcf)
 
     # insert ped
     if pedfile:
