@@ -194,9 +194,10 @@ class SampleVariantWidget(QWidget):
 
 
         config = Config("classifications")
-        classifications = config.get("genotypes", [])
+        self.CLASSIFICATIONS = config.get("genotypes", [])
+        self.CLASSIFICATIONS = sorted(self.CLASSIFICATIONS, key= lambda c: c["number"])
 
-        for item in classifications:
+        for item in self.CLASSIFICATIONS:
             self.classification.addItem(FIcon(0xF012F, item["color"]), item["name"], item["number"])
 
         index = self.classification.findData(self.sample_has_var_data["classification"])
@@ -214,31 +215,24 @@ class SampleVariantWidget(QWidget):
 
         # # self.var_title.setText(var_name)
         # # tabs stuff
-        # self.sample_has_var_info.set_dict(
-        #     {
-        #         k: v
-        #         for k, v in self.sample_has_var_data.items()
-        #         if k not in ("variant_id", "sample_id", "classification", "tags", "comment")
-        #     }
-        # )
-        # self.var_info.set_dict({k: v for k, v in var.items() if k not in ("id")})
+        self.sample_has_var_info.set_dict(
+            {
+                k: v
+                for k, v in self.sample_has_var_data.items()
+                if k not in ("variant_id", "sample_id", "classification", "tags", "comment")
+            }
+        )
+        self.var_info.set_dict({k: v for k, v in var.items() if k not in ("id")})
 
-        # sample_info_dict = {k: v for k, v in sample.items() if k not in ("id")}
-        # for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-        #     sample_info_dict[v["name"]] = sql.get_sample_variant_classification_count(
-        #         self.conn, sample["id"], k
-        #     )
-        # self.sample_info.set_dict(sample_info_dict)
-        # self.sample_info.view.horizontalHeader().setSectionResizeMode(
-        #     0, QHeaderView.ResizeToContents
-        # )
-
-        # # req = get_sample_variant_classification_count(self.conn, sample["id"], 2)
-        # # self.info_var.setText("Total of validated variants for this sample: 0")
-        # valid_dict = {}
-
-        # # self.general_info.set_dict(valid_dict)
-        # # self.general_info.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        sample_info_dict = {k: v for k, v in sample.items() if k not in ("id")}
+        for item in self.CLASSIFICATIONS:
+            sample_info_dict["Total " + item["name"]] = sql.get_sample_variant_classification_count(
+                self.conn, sample["id"], item["number"]
+            )
+        self.sample_info.set_dict(sample_info_dict)
+        self.sample_info.view.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
 
         # if sample["classification"] in (None, 0):
         #     self.info_lock.hide()

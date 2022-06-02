@@ -175,6 +175,7 @@ class SampleWidget(QWidget):
 
         config = Config("classifications")
         self.CLASSIFICATIONS = config.get("samples", [])
+        self.CLASSIFICATIONS = sorted(self.CLASSIFICATIONS, key= lambda c: c["number"])
 
         for item in self.CLASSIFICATIONS:
             self.classification.addItem(FIcon(0xF012F, item["color"]), item["name"], item["number"])
