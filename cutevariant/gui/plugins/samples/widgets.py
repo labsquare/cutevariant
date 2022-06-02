@@ -1,6 +1,7 @@
 from logging import Logger
 import sqlite3
 import functools
+from typing import List
 
 from cutevariant import LOGGER
 from cutevariant.config import Config
@@ -448,12 +449,25 @@ class SamplesWidget(plugin.PluginWidget):
         self.model.add_samples(samples)
         self.on_model_changed()
 
-    def _create_classification_menu(self):
+    def _create_classification_menu(self, sample: List = None):
+
+        # Sample Classification
+        if "classification" in sample:
+            sample_classification = sample["classification"]
+        else:
+            sample_classification = 0
 
         menu = QMenu(self)
         menu.setTitle("Classification")
         for i in self.model.classifications:
-            action = menu.addAction(FIcon(0xF012F, i["color"]), i["name"])
+
+            if sample_classification == i["number"]:
+                icon = 0xF0133
+                #menu.setIcon(FIcon(icon, item["color"]))
+            else:
+                icon = 0xF012F
+
+            action = menu.addAction(FIcon(icon, i["color"]), i["name"])
             action.setData(i["number"])
             on_click = functools.partial(self.update_classification, i["number"])
             action.triggered.connect(on_click)
@@ -508,7 +522,9 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu.addAction(self.edit_action)
 
-        menu.addMenu(self._create_classification_menu())
+        sample = self.model.get_sample(self.view.currentIndex().row())
+
+        menu.addMenu(self._create_classification_menu(sample))
         menu.addSeparator()
 
         fields_menu = menu.addMenu("Add genotype fields ...")
