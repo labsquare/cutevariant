@@ -240,7 +240,8 @@ class SampleVerticalHeader(QHeaderView):
             # if name in selected_samples:
             #     icon = 0xF0133
             # else:
-            icon = 0xF012F
+            # icon = 0xF012F # or 0xF0009 or 0xF0B55
+            icon = 0xF0009
 
             pen = QPen(QColor(color))
             pen.setWidth(6)
