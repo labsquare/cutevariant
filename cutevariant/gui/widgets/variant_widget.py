@@ -63,8 +63,6 @@ class VariantWidget(QWidget):
         self._conn = conn
 
         # Title
-        self.title = QLabel()
-        self.title.setTextFormat(Qt.RichText)
         self.title_variant = QLineEdit()
         self.title_variant.setReadOnly(True)
         title_layout = QHBoxLayout()

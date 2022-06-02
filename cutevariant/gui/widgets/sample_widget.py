@@ -11,6 +11,7 @@ from cutevariant.gui.ficon import FIcon
 
 from cutevariant.gui.widgets.edit_box_table import EditBoxTableModel, EditBoxTableView
 from cutevariant.gui.widgets.edit_box_table import get_variants_classif_stats, get_variants_valid_stats, get_variant_name_select
+from cutevariant.gui.widgets.variant_widget import QHLine
 from cutevariant.gui.widgets import ChoiceButton, DictWidget, TagEdit
 
 
@@ -48,11 +49,14 @@ class SampleWidget(QWidget):
         self.conn = conn
         self.TAG_SEPARATOR = "&"
 
-        # self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
+        # Title
+        self.title_sample = QLineEdit()
+        self.title_sample.setReadOnly(True)
+        title_layout = QHBoxLayout()
+        title_layout.addWidget(QLabel("Sample"))
+        title_layout.addWidget(self.title_sample)
 
         # Identity
-        self.name_edit = QLineEdit()
-        self.name_edit.setReadOnly(True)
         self.fam_edit = QLineEdit()
         self.father_edit = QLineEdit()
         self.mother_edit = QLineEdit()
@@ -72,7 +76,6 @@ class SampleWidget(QWidget):
         identity_widget = QWidget()
         identity_layout = QFormLayout(identity_widget)
 
-        identity_layout.addRow("Name", self.name_edit)
         identity_layout.addRow("Family", self.fam_edit)
         identity_layout.addRow("Father", self.father_edit)
         identity_layout.addRow("Mother", self.mother_edit)
@@ -89,12 +92,6 @@ class SampleWidget(QWidget):
 
         self.tag_button.setMenu(self.menu)
         self.tag_button.setPopupMode(QToolButton.InstantPopup)
-
-        # validation
-        val_layout = QFormLayout()
-
-        # val_layout.addWidget(self.lock_button)
-        # val_layout.addWidget(QComboBox())
 
         # phenotype
         self.sex_combo = QComboBox()
@@ -149,11 +146,9 @@ class SampleWidget(QWidget):
         self.history_view.set_headers(["Date", "Modifications"])
         self.tab_widget.addTab(self.history_view, "History")
 
-        header_layout = QHBoxLayout()
-        header_layout.addLayout(val_layout)
-
         vLayout = QVBoxLayout()
-        vLayout.addLayout(header_layout)
+        vLayout.addLayout(title_layout)
+        vLayout.addWidget(QHLine())
         vLayout.addWidget(self.tab_widget)
 
         button_layout = QHBoxLayout()
@@ -171,7 +166,7 @@ class SampleWidget(QWidget):
         data = sql.get_sample(self.conn, sample_id)
         self.initial_db_validation = self.get_validation_from_data(data)
         print("loaded data:", data)
-        self.name_edit.setText(data.get("name", "?"))
+        self.title_sample.setText(data.get("name", "?"))
         self.fam_edit.setText(data.get("family_id", "?"))
         self.father_edit.setText(self.get_parent_name(data.get("father_id", "?")))
         self.mother_edit.setText(self.get_parent_name(data.get("mother_id", "?")))
