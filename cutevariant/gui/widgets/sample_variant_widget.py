@@ -121,7 +121,7 @@ class SampleVariantWidget(QWidget):
 
         self.tab_widget.addTab(validation_box, "Edit")
         # self.tab_widget.addTab(self.general_info, "Information")
-        self.tab_widget.addTab(self.sample_has_var_info, "Genotyping")
+        self.tab_widget.addTab(self.sample_has_var_info, "Genotype")
         self.tab_widget.addTab(self.var_info, "Variant")
         self.tab_widget.addTab(self.sample_info, "Sample")
         self.tab_widget.addTab(self.history_view, "History")
@@ -187,7 +187,7 @@ class SampleVariantWidget(QWidget):
         #     + str(sample["name"])
         #     + "</span></p></body></html>"
         # )
-        self.setWindowTitle("Variant validation")
+        self.setWindowTitle("Genotype")
 
         self.title_sample.setText(sample["name"])
         self.title_variant.setText(variant_name)

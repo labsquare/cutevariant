@@ -137,10 +137,10 @@ class SampleWidget(QWidget):
         genotypes_box.setLayout(genotypes_box_layout)
         stats_layout.addWidget(genotypes_box)
         stats_widget.setLayout(stats_layout)
-        self.tab_widget.addTab(stats_widget, "Variants stats")
+        self.tab_widget.addTab(stats_widget, "Statistics")
 
         self.validated_view = EditBoxTableView()
-        self.tab_widget.addTab(self.validated_view, "Validated variants")
+        self.tab_widget.addTab(self.validated_view, "Genotype")
 
         self.history_view = DictWidget()
         self.history_view.view.horizontalHeader().setSectionResizeMode(
