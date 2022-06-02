@@ -2,10 +2,10 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 
+from cutevariant.config import Config
+from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.gui.widgets import TagEdit
-from cutevariant.gui.style import CLASSIFICATION, SAMPLE_VARIANT_CLASSIFICATION
-from cutevariant.config import Config
 from cutevariant.gui.widgets.edit_box_table import EditBoxTableModel, EditBoxTableView, get_deja_vu
 
 from cutevariant.core import sql
@@ -59,7 +59,6 @@ class VariantWidget(QWidget):
         super().__init__()
 
         self.TAG_SEPARATOR = "&"
-        self.REVERSE_CLASSIF = {v["name"]: k for k, v in CLASSIFICATION.items()}
         self._conn = conn
 
         # Title
@@ -244,13 +243,6 @@ class VariantWidget(QWidget):
                 else:
                     self.ann_combo.addItem(f"Annotation {i}")
 
-        if "samples" in self.data:
-            sdata = {
-                i["name"]: SAMPLE_VARIANT_CLASSIFICATION[i["classification"]]["name"]
-                for i in self.data["samples"]
-                if i["classification"] > 0
-            }
-
         deja_vu, header = get_deja_vu(self._conn, variant_id)
         self.deja_vu_model = EditBoxTableModel(deja_vu, header)
         self.sample_view.setModel(self.deja_vu_model)
@@ -258,9 +250,13 @@ class VariantWidget(QWidget):
         if self.data["favorite"] == 1:
             self.favorite.setCheckState(Qt.CheckState(2))
 
-        for k, v in CLASSIFICATION.items():
-            self.classification.addItem(v["name"], k)
-        index = int(self.classification.findData(self.data["classification"]))
+        config = Config("classifications")
+        self.CLASSIFICATIONS = config.get("variants", [])
+
+        for item in self.CLASSIFICATIONS:
+            self.classification.addItem(FIcon(0xF012F, item["color"]), item["name"], item["number"])
+
+        index = self.classification.findData(self.data["classification"])
         self.classification.setCurrentIndex(index)
 
         if self.data["tags"] is not None:
