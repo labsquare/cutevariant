@@ -96,20 +96,67 @@ class SampleModel(QAbstractTableModel):
                     return QIcon(FIcon(0xF001A, color_alpha))
 
             if col == SampleModel.COMMENT_COLUMN:
+                sample = self._samples[index.row()]
+                sample_id=sample["id"]
+                sample_nb_genotype_by_classification=sql.get_sample_nb_genotype_by_classification(self.conn, sample_id)
+                nb_validated_genotype=0
+                for classification in sample_nb_genotype_by_classification:
+                    nb_genotype_by_classification=sample_nb_genotype_by_classification[classification]
+                    if classification>0:
+                        nb_validated_genotype+=nb_genotype_by_classification
+                if nb_validated_genotype>0:
+                    return QIcon(FIcon(0xF017F, color))
                 if sample["comment"]:
                     return QIcon(FIcon(0xF017A, color))
                 else:
                     return QIcon(FIcon(0xF017A, color_alpha))
-                # return QIcon(FIcon(0xF02FD, color))
 
         if role == Qt.ToolTipRole:
 
             sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
+                config = Config("classifications")
+                genotype_classifications=config.get("genotypes", [])
+                sample_id=sample["id"]
+                sample_name=sample["name"]
+                sample_nb_genotype_by_classification=sql.get_sample_nb_genotype_by_classification(self.conn, sample_id)
+                nb_validated_genotype=0
+                nb_validation_genotype_message=""
+                for classification in sample_nb_genotype_by_classification:
+                    nb_validation_genotype_text=""
+                    nb_validation_genotype_color=""
+                    nb_genotype_by_classification=sample_nb_genotype_by_classification[classification]
+                    if classification>0:
+                        nb_validated_genotype+=nb_genotype_by_classification
+                    style = None
+                    for i in genotype_classifications:
+                        if i["number"] == classification:
+                            style = i
+                    if style:
+                        if "name" in style:
+                            nb_validation_genotype_text += style["name"]
+                            if "description" in style:
+                                nb_validation_genotype_text += f" (" + style["description"].strip() + ")"
+                        if "color" in style:
+                            nb_validation_genotype_color=style["color"]
+                    nb_validation_genotype_message+=f"<tr><td style='color:{nb_validation_genotype_color}' align='right'>{nb_genotype_by_classification}</td><td width='10'></td><td>{nb_validation_genotype_text}</td></tr>"
+                sample_comment=f"Comment on sample <b>{sample_name}</b><hr>"
                 comment = sample["comment"].replace("\n", "<br>")
                 if comment:
-                    return comment
+                    sample_comment+=""+comment+"<br>"
+                else:
+                    sample_comment+="<i>No comment</i><br>"
+                if nb_validation_genotype_message:
+                    sample_comment+=f"""
+                        <hr>
+                        Genotypes classification
+                        <table>
+                            {nb_validation_genotype_message}
+                        </table>
+                    """
+
+                return sample_comment
 
             if col == SampleModel.NAME_COLUMN:
                 return self.get_tooltip(index.row())
@@ -128,18 +175,67 @@ class SampleModel(QAbstractTableModel):
             if sample["name"]:
                 name = sample["name"]
                 info += f"Sample <b>{name}</b><hr>"
-        info += f"<table>"
+
+        # genotype classification
+        config = Config("classifications")
+        genotype_classifications=config.get("genotypes", [])
+        sample_id=sample["id"]
+        sample_nb_genotype_by_classification=sql.get_sample_nb_genotype_by_classification(self.conn, sample_id)
+        nb_validated_genotype=0
+        nb_validation_genotype_message=""
+        for classification in sample_nb_genotype_by_classification:
+            nb_validation_genotype_text=""
+            nb_validation_genotype_color=""
+            nb_genotype_by_classification=sample_nb_genotype_by_classification[classification]
+            if classification>0:
+                nb_validated_genotype+=nb_genotype_by_classification
+            style = None
+            for i in genotype_classifications:
+                if i["number"] == classification:
+                    style = i
+            if style:
+                if "name" in style:
+                    nb_validation_genotype_text += style["name"]
+                    if "description" in style:
+                        nb_validation_genotype_text += f" (" + style["description"].strip() + ")"
+                if "color" in style:
+                    nb_validation_genotype_color=style["color"]
+            nb_validation_genotype_message+=f"<tr><td style='color:{nb_validation_genotype_color}' align='right'>{nb_genotype_by_classification}</td><td width='10'></td><td>{nb_validation_genotype_text}</td></tr>"
+        if nb_validation_genotype_message:
+            nb_validation_genotype_message=f"""
+                <hr>
+                Genotypes classification
+                <table>
+                    {nb_validation_genotype_message}
+                </table>
+            """
+
+        info_all_fields=""
+        info_classification=""
         for sample_field in sample:
-            if sample_field not in ["id"]:
-                if sample_field != "name":
-                    sample_field_value = str(sample[sample_field]).replace("\n", "<br>")
-                    if sample_field == "phenotype":
-                        sample_field_value = cst.PHENOTYPE_DESC.get(
-                            int(sample[sample_field]), "Unknown"
-                        )
-                    if sample_field == "sex":
-                        sample_field_value = cst.SEX_DESC.get(int(sample[sample_field]), "Unknown")
-                    if sample_field == "classification":
+            sample_field_value = str(sample[sample_field]).replace("\n", "<br>")
+            sample_field_value_color = ""
+            # all fields
+            if sample_field not in ["id", "name", "classification", "tags", "comment"]:
+                if sample_field == "phenotype":
+                    sample_field_value = cst.PHENOTYPE_DESC.get(
+                        int(sample[sample_field]), "Unknown"
+                    )
+                if sample_field == "sex":
+                    sample_field_value = cst.SEX_DESC.get(int(sample[sample_field]), "Unknown")
+                info_all_fields += f"<tr><td>{sample_field}</td><td width='20'></td><td style='color:{sample_field_value_color}'>{sample_field_value}</td></tr>"
+            # classification fields
+            if sample_field in ["classification", "tags", "comment"]:
+                if sample_field == "tags":
+                    if sample_field_value:
+                        sample_field_value = sample_field_value.replace(","," ")
+                    else:
+                        sample_field_value = "<i>no tag</i>"
+                if sample_field == "comment":
+                    if not sample_field_value:
+                        sample_field_value = "<i>no comment</i>"
+                if sample_field == "classification":
+                    if sample_field_value:
                         sample_field_value = ""
                         style = None
                         for i in self.classifications:
@@ -150,7 +246,21 @@ class SampleModel(QAbstractTableModel):
                                 sample_field_value += style["name"]
                                 if "description" in style:
                                     sample_field_value += f" (" + style["description"].strip() + ")"
-                    info += f"<tr><td>{sample_field}</td><td width='20'></td><td>{sample_field_value}</td></tr>"
+                            if "color" in style:
+                                sample_field_value_color=style["color"]
+                    else:
+                        sample_field_value = "<i>no classification</i>"
+                info_classification += f"<tr><td>{sample_field}</td><td width='20'></td><td style='color:{sample_field_value_color}'>{sample_field_value}</td></tr>"
+        info += f"""
+            <table>
+                {info_all_fields}
+            </table>
+            <hr>
+            <table>
+                {info_classification}
+            </table>
+            {nb_validation_genotype_message}
+        """
         info += f"</table>"
         return info
 
