@@ -149,6 +149,7 @@ class ImportPage(QWizardPage):
         self.thread.db_filename = self.wizard().page(0).db_filename()
         self.thread.filename = self.wizard().page(1).filename()
         self.thread.pedfile = self.wizard().page(1).pedfile()
+        self.thread.import_id = self.wizard().page(1).widget.get_import_id()
         self.thread.ignored_fields = self.wizard().page(1).widget.get_ignored_fields()
         self.thread.indexed_fields = self.wizard().page(1).widget.get_indexed_fields()
         self.thread.start()

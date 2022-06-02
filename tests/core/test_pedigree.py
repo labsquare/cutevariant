@@ -29,6 +29,9 @@ def test_import_pedfile():
     sql.import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
 
     samples = [dict(row) for row in conn.execute("SELECT * FROM samples")]
+    # remove tags field due to changing date value (not tracable)
+    for sample in samples:
+        sample.pop("tags")
     print("Found samples:", samples)
 
     expected_first_sample = {
@@ -41,7 +44,6 @@ def test_import_pedfile():
         "phenotype": 1,
         "classification": 0,
         "comment": "",
-        "tags": "",
     }
     expected_second_sample = {
         "id": 2,
@@ -53,7 +55,6 @@ def test_import_pedfile():
         "phenotype": 2,
         "classification": 0,
         "comment": "",
-        "tags": "",
     }
 
     # Third sample is not conform
