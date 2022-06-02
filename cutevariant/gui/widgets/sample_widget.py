@@ -54,6 +54,10 @@ class SampleWidget(QWidget):
         self.name_edit = QLineEdit()
         self.name_edit.setReadOnly(True)
         self.fam_edit = QLineEdit()
+        self.father_edit = QLineEdit()
+        self.mother_edit = QLineEdit()
+        self.father_edit.setReadOnly(True) #because it displays a name but stores an ID --> conversion on saving not implemented yet
+        self.mother_edit.setReadOnly(True)
         self.tab_widget = QTabWidget()
         self.classification = QComboBox()
         self.tag_edit = TagEdit()
@@ -70,6 +74,8 @@ class SampleWidget(QWidget):
 
         identity_layout.addRow("Name", self.name_edit)
         identity_layout.addRow("Family", self.fam_edit)
+        identity_layout.addRow("Father", self.father_edit)
+        identity_layout.addRow("Mother", self.mother_edit)
 
         identity_layout.addRow("Tags", self.tag_layout)
         identity_layout.addRow("Statut", self.classification)
@@ -106,7 +112,7 @@ class SampleWidget(QWidget):
 
         pheno_widget = QWidget()
         pheno_layout = QFormLayout(pheno_widget)
-        pheno_layout.addRow("Sexe", self.sex_combo)
+        pheno_layout.addRow("Sex", self.sex_combo)
         pheno_layout.addRow("Affected", self.phenotype_combo)
         # pheno_layout.addRow("HPO", self.hpo_widget) #hidden for now
         self.tab_widget.addTab(identity_widget, "Edit")
@@ -167,6 +173,8 @@ class SampleWidget(QWidget):
         print("loaded data:", data)
         self.name_edit.setText(data.get("name", "?"))
         self.fam_edit.setText(data.get("family_id", "?"))
+        self.father_edit.setText(self.get_parent_name(data.get("father_id", "?")))
+        self.mother_edit.setText(self.get_parent_name(data.get("mother_id", "?")))
         self.sex_combo.setCurrentIndex(data.get("sex", 0))
         self.phenotype_combo.setCurrentIndex(data.get("phenotype", 0))
 
@@ -235,6 +243,8 @@ class SampleWidget(QWidget):
             "id": sample_id,
             "name": self.name_edit.text(),
             "family_id": self.fam_edit.text(),
+            "family_id": self.father_edit.text(),
+            "family_id": self.mother_edit.text(),
             "sex": self.sex_combo.currentIndex(),
             "phenotype": self.phenotype_combo.currentIndex(),
             "classification": self.classification.currentData(),
@@ -247,6 +257,8 @@ class SampleWidget(QWidget):
     def get_validation_from_data(self, data):
         return {
             "fam": data["family_id"],
+            "father": data["father_id"],
+            "mother": data["mother_id"],
             "tags": data["tags"],
             "comment": data["comment"],
             "classification": int("{classification}".format(**data)),
@@ -276,6 +288,15 @@ class SampleWidget(QWidget):
             results[record["timestamp"]] = message
 
         return results
+
+    def get_parent_name(self, sample_id: int):
+        """displays asked ID if sample not found in DB"""
+        if sample_id == 0:
+            return "0"
+        data = sql.get_sample(self.conn, sample_id)
+        if "name" in data.keys():
+            return data["name"]
+        return str(sample_id)
 
 
 class SampleDialog(QDialog):
