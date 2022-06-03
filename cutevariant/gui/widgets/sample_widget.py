@@ -1,4 +1,6 @@
 import sqlite3
+import typing
+
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
@@ -13,6 +15,11 @@ from cutevariant.gui.widgets import DictWidget, TagEdit
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 from cutevariant.gui.widgets import ChoiceButton
+
+from cutevariant import gui
+
+import cutevariant.constants as cst
+from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
 
 class AbstractSectionWidget(QWidget):
@@ -59,16 +66,23 @@ class HpoWidget(QWidget):
 class EvaluationSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.TAG_SEPARATOR = "&"
+        if hasattr(cst, 'HAS_OPERATOR'):
+            self.TAG_SEPARATOR = cst.HAS_OPERATOR
+        else:
+            self.TAG_SEPARATOR = ","
         self.setWindowTitle("Evaluation")
         self.setToolTip("You can edit sample information")
         main_layout = QFormLayout()
 
+        self.name_label = QLabel()
+
         self.family_edit = QLineEdit()
+        self.father_edit = QLineEdit()
+        self.mother_edit = QLineEdit()
 
         self.class_combo = QComboBox()
         self.tag_edit = TagEdit()
-        self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma ..."))
+        self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma..."))
         self.tag_layout = QHBoxLayout()
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
@@ -79,7 +93,10 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
+        main_layout.addRow("Sample", self.name_label)
         main_layout.addRow("Family", self.family_edit)
+        main_layout.addRow("Father", self.father_edit)
+        main_layout.addRow("Mother", self.mother_edit)
         main_layout.addRow("Classification", self.class_combo)
         main_layout.addRow("Tags", self.tag_layout)
         main_layout.addRow("Comment", self.comment)
@@ -98,9 +115,12 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
     def get_sample(self) -> dict:
         sample = {
+            "name": self.name_label.text(),
             "family_id": self.family_edit.text(),
+            "father_id": self.father_edit.text(),
+            "mother_id": self.mother_edit.text(),
             "classification": self.class_combo.currentData(),
-            "tags": "&".join([tag for tag in self.tag_edit.text().split(",") if tag]),
+            "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]),
             "comment": self.comment.toPlainText(),
         }
 
@@ -108,9 +128,21 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
     def set_sample(self, sample: dict):
 
+        # Load sample name
+        if "name" in sample:
+            self.name_label.setText(str(sample["name"]))
+
         # Load family
         if "family_id" in sample:
-            self.family_edit.setText(sample["family_id"])
+            self.family_edit.setText(str(sample["family_id"]))
+
+        # Load father
+        if "father_id" in sample:
+            self.father_edit.setText(str(sample["father_id"]))
+
+        # Load mother
+        if "mother_id" in sample:
+            self.mother_edit.setText(str(sample["mother_id"]))
 
         # Load tags
         if "tags" in sample:
@@ -202,6 +234,213 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
             )
 
 
+
+class OccurenceVerticalHeader(QHeaderView):
+    # TODO
+    def __init__(self, parent=None):
+        super().__init__(Qt.Vertical, parent)
+
+    def sizeHint(self):
+        return QSize(30, super().sizeHint().height())
+
+    def paintSection(self, painter: QPainter, rect: QRect, section: int):
+
+        if painter is None:
+            return
+
+        painter.save()
+        super().paintSection(painter, rect, section)
+
+        number = self.model().variant(section)["classification"]
+
+        painter.restore()
+
+        # try:
+        #     classification = next(i for i in self.model().classifications if i["number"] == number)
+
+        #     color = classification.get("color")
+        #     icon = 0xF0130
+
+        #     icon_favorite = 0xF0133
+
+        #     pen = QPen(QColor(classification.get("color")))
+        #     pen.setWidth(6)
+        #     painter.setPen(pen)
+        #     painter.setBrush(QBrush(classification.get("color")))
+        #     painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+
+        #     target = QRect(0, 0, 20, 20)
+        #     pix = FIcon(icon_favorite if favorite else icon, color).pixmap(target.size())
+        #     target.moveCenter(rect.center() + QPoint(1, 1))
+
+        #     painter.drawPixmap(target, pix)
+
+        # except Exception as e:
+        #     LOGGER.debug("Cannot draw classification: " + str(e))
+
+
+class OccurenceModel(QAbstractTableModel):
+
+    VARIANT_COLUMN = 0
+    CLASSIFICATION_COLUMN = 1
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._parent = parent
+        self._items = []
+        self._headers = ["variant", "classification"]
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        if parent == QModelIndex():
+            return len(self._items)
+
+        return 0
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        if parent == QModelIndex():
+            return 2
+
+        return 0
+
+    def item(self, row: int):
+        return self._items[row]
+
+    def load(self, conn: sqlite3.Connection, sample_id: int):
+
+        self.beginResetModel()
+        self._items = []
+        for item in sql.get_sample_variant_classification(conn, sample_id):
+            if "classification" in item:
+                if item["classification"] > 0:
+                    self._items.append(item)
+        self.endResetModel()
+
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
+
+        if not index.isValid():
+            return None
+
+        item = self.item(index.row())
+
+        if role == Qt.DisplayRole:
+            if index.column() == OccurenceModel.VARIANT_COLUMN:
+                variant_id = item.get("variant_id", "error")
+                variant_text = str(variant_id)
+
+                # Get variant_name_pattern
+                variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
+                config = Config("variables") or {}
+                if "variant_name_pattern" in config:
+                    variant_name_pattern = config["variant_name_pattern"]
+                else:
+                    config["variant_name_pattern"] = variant_name_pattern
+                    config.save()
+
+                # Get fields
+                variant = sql.get_variant(self._parent.conn, variant_id, with_annotations=True)
+                if len(variant["annotations"]):
+                    for ann in variant["annotations"][0]:
+                        variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+                variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+                variant_text = variant_name_pattern.format(**variant)
+                return variant_text
+
+            if index.column() == OccurenceModel.CLASSIFICATION_COLUMN:
+                classification = item.get("classification", 0)
+                classification_text = str(classification)
+                config = Config("classifications")
+                self.genotype_classification = config.get("genotypes")
+                for item in self.genotype_classification:
+                    if item["number"] == classification:
+                        classification_text = item["name"]
+
+                return classification_text
+
+        if role == Qt.ToolTipRole:
+            return self.create_tooltip(index.row())
+
+    def headerData(self, section: int, orientation: Qt.Orientation, role) -> typing.Any:
+
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self._headers[section]
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+
+    def create_tooltip(self, row: int):
+        """Return tooltip
+
+        TODO:
+            Get data from sql, not from memory
+
+        Args:
+            row (int): Description
+
+        Returns:
+            TYPE: Description
+        """
+        tooltip = "Genotype<hr>"
+        tooltip += "<table>"
+        for key in self.item(row):
+            if key not in ["variant_id", "sample_id"]:
+                value = self.item(row)[key]
+                if value is not None:
+                    value = str(value).replace("\n","<br>")
+                    tooltip += f"<tr><td>{key}</td><td width='10'><td>{value}</td></tr>"
+        tooltip += f"</table>"
+        return tooltip
+
+
+class OccurrenceSectionWidget(AbstractSectionWidget):
+
+    WINDOW_TITLE_PREFIX = "Validated Variants"
+
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX)
+        self.setToolTip("List of validated variants for the current sample")
+        main_layout = QVBoxLayout(self)
+        self.model = OccurenceModel(self)
+        self.delegate = gui.FormatterDelegate()
+        self.delegate.set_formatter(CutestyleFormatter())
+        self.view = QTableView()
+        self.view.setItemDelegate(self.delegate)
+        self.view.setModel(self.model)
+        self.view.horizontalHeader().hide()
+        self.view.setAlternatingRowColors(True)
+
+        self.view.verticalHeader().hide()
+        self.view.setAlternatingRowColors(True)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.setShowGrid(False)
+        self.summary_label = QLabel()
+        main_layout.addWidget(self.view)
+        main_layout.addWidget(self.summary_label)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+    #def set_variant(self, variant: dict):
+    def set_sample(self, sample: dict):
+
+        self.model.load(self.conn, sample["id"])
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+
+        count = self.model.rowCount()
+        #total = len(list(sql.get_samples(self.conn)))
+        total = len(list(sql.get_sample_variant_classification(self.conn,sample["id"])))
+
+        self.setWindowTitle(
+            OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})"
+        )
+
+        ## Get samples count
+
+    def get_sample(self) -> dict:
+        return {}
+
+
+
 class HistorySectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -252,6 +491,7 @@ class SampleWidget(QWidget):
 
         self.add_section(EvaluationSectionWidget())
         self.add_section(PhenotypeSectionWidget())
+        self.add_section(OccurrenceSectionWidget())
         self.add_section(HistorySectionWidget())
 
     def add_section(self, widget: AbstractSectionWidget):

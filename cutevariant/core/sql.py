@@ -92,7 +92,7 @@ import json
 import os
 import getpass
 
-from typing import List, Callable, Iterable
+from typing import Dict, List, Callable, Iterable
 from datetime import datetime
 
 # Custom imports
@@ -2086,6 +2086,19 @@ def get_sample_variant_classification_count(
         f"SELECT COUNT(*) FROM genotypes sv WHERE sv.sample_id={sample_id} AND classification = {classification}"
     ).fetchone()[0]
     return int(r)
+
+def get_sample_variant_classification(
+    conn: sqlite3.Connection, sample_id: int
+):
+    """
+    Used for edit boxes
+    Returns variants for a given sample
+    """
+    # r = conn.execute(f"SELECT COUNT(*) FROM variants v LEFT JOIN genotypes sv WHERE sv.sample_id={sample_id} AND sv.variant_id = v.id AND v.classification = {classification}").fetchone()[0]
+    r = conn.execute(
+        f"SELECT * FROM genotypes sv WHERE sv.sample_id={sample_id}"
+    )
+    return (dict(data) for data in r)
 
 
 def get_samples_from_query(conn: sqlite3.Connection, query: str):
