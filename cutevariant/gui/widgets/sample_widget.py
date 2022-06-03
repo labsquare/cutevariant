@@ -309,7 +309,7 @@ class OccurenceModel(QAbstractTableModel):
 
         self.beginResetModel()
         self._items = []
-        for item in sql.get_sample_variant_classification(conn, sample_id):
+        for item in sql.get_sample_variant_classification(conn, sample_id = sample_id):
             if "classification" in item:
                 if item["classification"] > 0:
                     self._items.append(item)

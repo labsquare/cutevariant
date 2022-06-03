@@ -2087,16 +2087,26 @@ def get_sample_variant_classification_count(
     ).fetchone()[0]
     return int(r)
 
+
 def get_sample_variant_classification(
-    conn: sqlite3.Connection, sample_id: int
+    conn: sqlite3.Connection, sample_id: int = None, variant_id: int = None
 ):
     """
     Used for edit boxes
-    Returns variants for a given sample
+    Returns genotypes for a given sample or a given variant
     """
-    # r = conn.execute(f"SELECT COUNT(*) FROM variants v LEFT JOIN genotypes sv WHERE sv.sample_id={sample_id} AND sv.variant_id = v.id AND v.classification = {classification}").fetchone()[0]
+    where_clause = " 1=1 "
+    if sample_id:
+        where_clause += f" AND genotypes.sample_id={sample_id} "
+    if variant_id:
+        where_clause += f" AND genotypes.variant_id={variant_id} "
     r = conn.execute(
-        f"SELECT * FROM genotypes sv WHERE sv.sample_id={sample_id}"
+        f"""
+        SELECT samples.name, genotypes.* 
+        FROM genotypes
+        INNER JOIN samples ON samples.id = genotypes.sample_id 
+        WHERE {where_clause}
+        """
     )
     return (dict(data) for data in r)
 
