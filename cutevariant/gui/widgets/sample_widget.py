@@ -221,8 +221,8 @@ class HistorySectionWidget(AbstractSectionWidget):
 
         for rec in sql.get_histories(self.conn, "samples", sample["id"]):
 
-            key = rec["timestamp"]
-            value = "{user} change {field} from {before} to {after}".format(**rec)
+            key = rec["timestamp"] + " [" + str(rec["id"]) + "]"
+            value = "{user} change {field} from '{before}' to '{after}'".format(**rec)
             results[key] = value
 
         self.view.set_dict(results)
