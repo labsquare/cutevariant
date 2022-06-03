@@ -3082,283 +3082,43 @@ def create_triggers(conn):
     )
 
 
-    ###### trigers on validation
+    ###### trigers for history
 
-    ### VARIANTS
+    tables_fields_triggered={
+        "variants": ["favorite", "classification", "tags", "comment"],
+        "samples": ["classification", "tags", "comment", "family_id", "father_id", "mother_id", "sex", "phenotype"],
+        "genotypes": ["classification", "tags", "comment"],
+    }
 
-    ### TRIGGER history_variants_favorite
-    conn.execute(
-        """
-        CREATE TRIGGER history_variants_favorite
-        AFTER UPDATE ON variants
-        WHEN old.favorite !=  new.favorite
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
+    for table in tables_fields_triggered:
+
+        for field in tables_fields_triggered[table]:
+
+            conn.execute(
+                f"""
+                CREATE TRIGGER IF NOT EXISTS history_{table}_{field}
+                AFTER UPDATE ON {table}
+                WHEN old.{field} !=  new.{field}
+                BEGIN
+                    INSERT INTO history (
+                        `user`,
+                        `table`,
+                        `table_rowid`,
+                        `field`,
+                        `before`,
+                        `after`
+                    )
+                VALUES
+                    (
+                    current_user(),
+                    "{table}",
+                    new.rowid,
+                    "{field}",
+                    old.{field},
+                    new.{field}
+                    ) ;
+                END;"""
             )
-        VALUES
-            (
-            current_user(),
-            "variants",
-            new.rowid,
-            "favorite",
-            old.favorite,
-            new.favorite
-            ) ;
-        END;"""
-    )
-
-    ### TRIGGER history_variants_classification
-    conn.execute(
-        """
-        CREATE TRIGGER history_variants_classification
-        AFTER UPDATE ON variants
-        WHEN old.classification !=  new.classification
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "variants",
-            new.rowid,
-            "classification",
-            old.classification,
-            new.classification
-            ) ;
-        END;"""
-    )
-
-    ### TRIGGER history_variants_tags
-    conn.execute(
-        """
-        CREATE TRIGGER history_variants_tags
-        AFTER UPDATE ON variants
-        WHEN old.tags !=  new.tags
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "variants",
-            new.rowid,
-            "tags",
-            old.tags,
-            new.tags
-            ) ;
-        END;"""
-    )
-
-    ### TRIGGER history_variants_comment
-    conn.execute(
-        """
-        CREATE TRIGGER history_variants_comment
-        AFTER UPDATE ON variants
-        WHEN old.comment !=  new.comment
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "variants",
-            new.rowid,
-            "comment",
-            old.comment,
-            new.comment
-            ) ;
-        END;"""
-    )
-
-    ### SAMPLES
-
-    ### TRIGGER history_samples_classification
-    conn.execute(
-        """
-        CREATE TRIGGER history_samples_classification 
-        AFTER UPDATE ON samples
-        WHEN old.classification !=  new.classification
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "samples",
-            new.rowid,
-            "classification",
-            old.classification,
-            new.classification
-            ) ;
-        END;"""
-    )
-
-    ### TRIGGER history_samples_tags
-    conn.execute(
-        """
-        CREATE TRIGGER history_samples_tags 
-        AFTER UPDATE ON samples
-        WHEN old.tags !=  new.tags
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "samples",
-            new.rowid,
-            "tags",
-            old.tags,
-            new.tags
-            ) ;
-        END;"""
-    )
-
-    ### TRIGGER history_samples_comment
-    conn.execute(
-        """
-        CREATE TRIGGER history_samples_comment
-        AFTER UPDATE ON samples
-        WHEN old.comment !=  new.comment
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "samples",
-            new.rowid,
-            "comment",
-            old.comment,
-            new.comment
-            ) ;
-        END;"""
-    )
-
-    ### GENOTYPES
-
-    ### TRIGGER history_genotypes_classification
-    conn.execute(
-        """
-        CREATE TRIGGER history_genotypes_classification
-        AFTER UPDATE ON genotypes
-        WHEN old.classification !=  new.classification
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "genotypes",
-            new.rowid,
-            "classification",
-            old.classification,
-            new.classification
-            ) ;
-        END;"""
-    )
-
-    ### TRIGGER history_genotypes_tags
-    conn.execute(
-        """
-        CREATE TRIGGER history_genotypes_tags 
-        AFTER UPDATE ON genotypes
-        WHEN old.tags !=  new.tags
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "genotypes",
-            new.rowid,
-            "tags",
-            old.tags,
-            new.tags
-            ) ;
-        END;"""
-    )
-
-    ### TRIGGER history_genotypes_comment
-    conn.execute(
-        """
-        CREATE TRIGGER history_genotypes_comment
-        AFTER UPDATE ON genotypes
-        WHEN old.comment !=  new.comment
-        BEGIN
-            INSERT INTO history (
-                `user`,
-                `table`,
-                `table_rowid`,
-                `field`,
-                `before`,
-                `after`
-            )
-        VALUES
-            (
-            current_user(),
-            "genotypes",
-            new.rowid,
-            "comment",
-            old.comment,
-            new.comment
-            ) ;
-        END;"""
-    )
 
 
 def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = None):
