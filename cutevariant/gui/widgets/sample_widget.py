@@ -567,8 +567,8 @@ class SampleWidget(QWidget):
         self.last_sample_hash = self.get_sample_hash(sample)
 
         # # Set name
-        name = "{name}".format(**sample)
-        self.setWindowTitle("Sample edition: " + name)
+        #name = "{name}".format(**sample)
+        self.setWindowTitle("Sample edition")
 
         for widget in self._section_widgets:
             widget.set_sample(sample)
