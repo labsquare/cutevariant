@@ -714,13 +714,19 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.get_genotype(row)
 
         if sample["gt"]:
-            menu.addAction("Edit variant validation ...", self._show_sample_variant_dialog)
+            menu.addAction("Edit Genotype classification...", self._show_sample_variant_dialog)
 
             cat_menu = menu.addMenu("Classifications")
 
             for item in self.model.classifications:
-                # action = cat_menu.addAction(value["name"])
-                action = cat_menu.addAction(FIcon(0xF012F, item["color"]), item["name"])
+                
+                if sample["classification"] == item["number"]:
+                    icon = 0xF0133
+                    #cat_menu.setIcon(FIcon(icon, item["color"]))
+                else:
+                    icon = 0xF012F
+
+                action = cat_menu.addAction(FIcon(icon, item["color"]), item["name"])
                 action.setData(item["number"])
                 action.triggered.connect(self._on_classification_changed)
 
