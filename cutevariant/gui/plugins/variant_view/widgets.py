@@ -1295,7 +1295,7 @@ class VariantView(QWidget):
 
         # Classification menu
 
-        menu.addMenu(self.create_classification_menu())
+        menu.addMenu(self.create_classification_menu(index))
         menu.addMenu(self.create_external_links_menu())
 
         menu.addAction(self.favorite_action)
@@ -1593,13 +1593,21 @@ class VariantView(QWidget):
 
         self._show_variant_dialog()
 
-    def create_classification_menu(self):
+    def create_classification_menu(self, index: QModelIndex):
         # Create classication action
         class_menu = QMenu(self.tr("Classification"))
 
+        variant = self.model.variant(index.row())
+
         for item in self.model.classifications:
 
-            action = class_menu.addAction(FIcon(0xF012F, item["color"]), item["name"])
+            if variant["classification"] == item["number"]:
+                icon = 0xF0133
+                #class_menu.setIcon(FIcon(icon, item["color"]))
+            else:
+                icon = 0xF012F
+
+            action = class_menu.addAction(FIcon(icon, item["color"]), item["name"])
             action.setData(item["number"])
             on_click = functools.partial(self.update_classification, item["number"])
             action.triggered.connect(on_click)
