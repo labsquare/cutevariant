@@ -37,6 +37,7 @@ from cutevariant.gui.widgets import (
     MarkdownDialog,
     VariantDialog,
     FilterDialog,
+    SampleVariantDialog,
 )
 
 from cutevariant.config import Config
@@ -1241,6 +1242,34 @@ class VariantView(QWidget):
                 self.parent.mainwindow.refresh_plugin("variant_view")
                 self.parent.mainwindow.refresh_plugin("sample_view")
 
+    def _show_sample_variant_dialog(self):
+
+        # current index
+        index = self.view.currentIndex()
+
+        # find variant_id
+        variant_id=None
+        current_variant = self.model.variant(index.row())
+        variant_id=current_variant["id"]
+
+        # find sample_id
+        sample_id=None
+        _header_name=self.model.headers[index.column()]
+        match = re.findall(r"^samples.(\w+)\.(.*)$", _header_name)
+        if match:
+            sample_name = match[0][0]
+            sample_infos=sql.search_samples(self.conn, name=sample_name)
+            for sample_info in sample_infos:
+                sample_id=sample_info["id"]
+
+        # validation dialog
+        if variant_id and sample_id:
+            dialog = SampleVariantDialog(
+                self.conn, sample_id, variant_id
+            )
+            if dialog.exec_() == QDialog.Accepted:
+                self.on_refresh()
+
     def _create_header_menu(self, column: int) -> QMenu:
         """Create a menu when clicking on a header"""
 
@@ -1300,6 +1329,57 @@ class VariantView(QWidget):
 
         menu.addAction(self.favorite_action)
         menu.addAction(self.comment_action)
+
+        # Validation menu
+
+        # Find variant id
+        variant_id=current_variant["id"]
+
+        # Find sample id
+        sample_name=None
+        sample_id=None
+        sample_valid=None
+        header_name=self.model.headers[index.column()]
+        match = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
+        if match:
+            sample_name = match[0][0]
+            sample_infos=sql.search_samples(self.conn, name=sample_name)
+            for sample_info in sample_infos:
+                sample_id=sample_info["id"]
+                sample_valid=sample_info["classification"]
+
+        # Menu Validation for sample
+        if sample_id and sample_name and variant_id:
+
+            # find genotype
+            genotype=sql.get_sample_annotations(self.conn, variant_id, sample_id)
+
+            # find sample lock/unlock
+            validation_menu_lock = False
+            validation_menu_text = f"Sample {sample_name} Genotype..."
+            if style.SAMPLE_CLASSIFICATION[sample_valid].get("lock"):
+                validation_menu_lock = True
+                validation_menu_text = "Sample {sample_name} locked"
+
+            menu.addSeparator()
+
+            sample_validation_menu = QMenu(self.tr(f"{validation_menu_text}"))
+            
+            menu.addMenu(sample_validation_menu)
+        
+            if validation_menu_lock:
+
+                # Validation for sample locked
+                sample_validation_menu.setIcon(FIcon(0xF0009))
+                sample_validation_menu.setEnabled(False)
+                
+            else:
+
+                # Validation for sample Unlocked
+                sample_validation_menu.setIcon(FIcon(0xF0009))
+                sample_validation_menu.addMenu(self.create_validation_menu(genotype))
+                sample_validation_menu.addAction(f"Edit Genotype...", self._show_sample_variant_dialog)
+                menu.addMenu(sample_validation_menu)
 
         # Edit menu
         menu.addSeparator()
@@ -1464,6 +1544,51 @@ class VariantView(QWidget):
             self.model.update_variant(index.row(), update_data)
             self.parent.mainwindow.refresh_plugin("variant_edit")
 
+    def update_validation(self, value: int = 0):
+        """Update validation of the variant for a given sample ID
+        This function applies the same level to all the variants selected in the view
+        Args:
+            value (int, optional): Sample Variant classification value to apply. Defaults to 0.
+            sample_id (int, optional): Sample ID. Defaults to None.
+        """
+
+        # current index
+        index = self.view.currentIndex()
+
+        # find sample_id
+        sample_id=None
+        _header_name=self.model.headers[index.column()]
+        match = re.findall(r"^samples.(\w+)\.(.*)$", _header_name)
+        if match:
+            sample_name = match[0][0]
+            sample_infos=sql.search_samples(self.conn, name=sample_name)
+            for sample_info in sample_infos:
+                sample_id=sample_info["id"]
+
+        # Do not update the same variant multiple times
+        unique_ids = set()
+        for index in self.view.selectionModel().selectedRows():
+            if not index.isValid():
+                continue
+
+            # Get variant id
+            variant = self.model.variants[index.row()]
+            variant_id = variant["id"]
+
+            if variant_id in unique_ids:
+                continue
+            unique_ids.add(variant_id)            
+
+            data={}
+            data["variant_id"] = variant_id
+            data["sample_id"] = sample_id
+            data["classification"] = value
+
+            sql.update_genotypes(self.conn, data)
+
+            self.parent.mainwindow.refresh_plugin("genotypes")
+
+
     def update_tags(self, tags: list = []):
         """Update tags of the variant
 
@@ -1613,6 +1738,28 @@ class VariantView(QWidget):
             action.triggered.connect(on_click)
 
         return class_menu
+
+    def create_validation_menu(self, genotype):
+        # Create classication action
+        validation_menu = QMenu(self.tr(f"Genotype Classification"))
+
+        config = Config("classifications")
+        genotypes_classifications = config.get("genotypes", [])
+
+        for item in genotypes_classifications:
+
+            if genotype["classification"] == item["number"]:
+                icon=0xF0133
+                #validation_menu.setIcon(FIcon(icon, item["color"]))
+            else:
+                icon=0xF012F
+
+            action = validation_menu.addAction(FIcon(icon, item["color"]), item["name"])
+            action.setData(item["number"])
+            on_click = functools.partial(self.update_validation, value=item["number"])
+            action.triggered.connect(on_click)                
+
+        return validation_menu
 
     def create_external_links_menu(self):
         menu = QMenu(self.tr("Browse to ..."))
