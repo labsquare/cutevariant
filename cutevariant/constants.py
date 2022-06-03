@@ -51,6 +51,9 @@ OPERATORS_SQL_2_PY = {
     "OR": "$or",
 }
 
+# OPERATOR HAS
+HAS_OPERATOR=","
+
 # Phenotype
 PHENOTYPE_DESC = {2: "Affected", 1: "Unaffected"}
 
