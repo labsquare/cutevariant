@@ -14,6 +14,8 @@ from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 from cutevariant.gui.widgets import ChoiceButton
 
+import cutevariant.constants as cst
+
 
 class HpoWidget(QWidget):
     def __init__(self, parent=None):
@@ -47,7 +49,7 @@ class SampleWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
         self.conn = conn
-        self.TAG_SEPARATOR = "&"
+        self.TAG_SEPARATOR = cst.HAS_OPERATOR
 
         # self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
 
