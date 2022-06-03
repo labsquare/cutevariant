@@ -88,6 +88,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         # Load classification
         config = Config("classifications")
         self.sample_classification = config.get("samples")
+        self.sample_classification = sorted(self.sample_classification, key= lambda c: c["number"])
         for item in self.sample_classification:
             self.class_combo.addItem(
                 FIcon(0xF012F, item.get("color", "gray")),
