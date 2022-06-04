@@ -11,16 +11,21 @@ from cutevariant.gui.ficon import FIcon
 #     "description": "sdfsdf"
 # }
 
+LOCKED_SECTION=["samples"]
+
 
 class ClassificationDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, section=None):
         super().__init__()
+
+        self.section = section
 
         self.number_edit = QLineEdit()
         self.number_edit.setPlaceholderText("Classification id")
         self.number_edit.setValidator(QIntValidator())
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("Classification Name ...")
+        self.lock_edit = QCheckBox(self.tr("Locked Classification"))
         self.color_edit = QPushButton()
         self.descr_edit = QTextEdit()
         self.descr_edit.setPlaceholderText("Description ...")
@@ -30,6 +35,8 @@ class ClassificationDialog(QDialog):
         form_layout = QVBoxLayout()
         form_layout.addWidget(self.number_edit)
         form_layout.addWidget(self.name_edit)
+        if self.section in LOCKED_SECTION:
+            form_layout.addWidget(self.lock_edit)
         form_layout.addWidget(self.color_edit)
 
         v_layout = QVBoxLayout(self)
@@ -48,6 +55,7 @@ class ClassificationDialog(QDialog):
 
         self.number_edit.setText(str(classification.get("number", 0)))
         self.name_edit.setText(str(classification.get("name", "")))
+        self.lock_edit.setChecked(bool(classification.get("lock", False)))
         self.descr_edit.setPlainText(str(classification.get("description", "")))
         self._set_color(classification.get("color", "black"))
 
@@ -56,6 +64,7 @@ class ClassificationDialog(QDialog):
         classification = {}
         classification["number"] = int(self.number_edit.text())
         classification["name"] = self.name_edit.text()
+        classification["lock"] = self.lock_edit.isChecked() or False
         classification["description"] = self.descr_edit.toPlainText()
         classification["color"] = self.color_edit.text()
         return classification
@@ -173,12 +182,14 @@ class ClassificationEditor(QWidget):
     DESCRIPTION_ROLE = Qt.UserRole + 1
     NUMBER_ROLE = Qt.UserRole + 2
 
-    def __init__(self, parent=None):
+    def __init__(self, section=None):
         super().__init__()
 
         self.model = ClassificationModel()
 
         self.delegate = ClassificationDelegate()
+
+        self.section = section
 
         self.view = QTableView()
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -216,7 +227,7 @@ class ClassificationEditor(QWidget):
 
     def _on_add_classification(self):
 
-        dialog = ClassificationDialog()
+        dialog = ClassificationDialog(section=self.section)
         if dialog.exec() == QDialog.Accepted:
             classification = dialog.get_classification()
             self.model.add_classification(classification)
@@ -226,7 +237,7 @@ class ClassificationEditor(QWidget):
         current_index = self.view.selectionModel().currentIndex()
         classification = self.model.classification(current_index)
 
-        dialog = ClassificationDialog()
+        dialog = ClassificationDialog(section=self.section)
         dialog.set_classification(classification)
         if dialog.exec() == QDialog.Accepted:
             classification = dialog.get_classification()
