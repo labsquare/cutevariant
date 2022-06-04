@@ -1,4 +1,6 @@
 import sqlite3
+import typing
+
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
@@ -13,6 +15,24 @@ from cutevariant.gui.widgets import DictWidget, TagEdit
 from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 
 from cutevariant.gui.widgets import ChoiceButton
+
+from cutevariant import gui
+
+import cutevariant.constants as cst
+from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
+
+
+class AbstractSectionWidget(QWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__()
+
+        self.conn = None
+
+    def set_sample(self, sample: dict):
+        raise NotImplementedError
+
+    def get_sample(self) -> dict:
+        raise NotImplementedError
 
 
 class HpoWidget(QWidget):
@@ -43,164 +63,486 @@ class HpoWidget(QWidget):
         vLayout.setContentsMargins(0, 0, 0, 0)
 
 
-class SampleWidget(QWidget):
-    def __init__(self, conn: sqlite3.Connection, parent=None):
-        super().__init__()
-        self.conn = conn
-        self.TAG_SEPARATOR = "&"
+class EvaluationSectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        if hasattr(cst, 'HAS_OPERATOR'):
+            self.TAG_SEPARATOR = cst.HAS_OPERATOR
+        else:
+            self.TAG_SEPARATOR = ","
+        self.setWindowTitle("Evaluation")
+        self.setToolTip("You can edit sample information")
+        main_layout = QFormLayout()
 
-        # self.REVERSE_CLASSIF = {v["name"]: k for k, v in self.SAMPLE_CLASSIFICATION.items()}
+        self.name_label = QLabel()
 
-        # Identity
-        self.name_edit = QLineEdit()
-        self.name_edit.setReadOnly(True)
-        self.fam_edit = QLineEdit()
-        self.tab_widget = QTabWidget()
-        self.classification = QComboBox()
+        self.family_edit = QLineEdit()
+        self.father_edit = QLineEdit()
+        self.mother_edit = QLineEdit()
+
+        self.class_combo = QComboBox()
         self.tag_edit = TagEdit()
-        self.tag_button = QToolButton()
-        self.tag_button.setAutoRaise(True)
-        self.tag_button.setIcon(FIcon(0xF0349))
-
+        self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma..."))
         self.tag_layout = QHBoxLayout()
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
 
-        identity_widget = QWidget()
-        identity_layout = QFormLayout(identity_widget)
+        self.edit_comment_btn = QPushButton("Edit comment")
+        self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
 
-        identity_layout.addRow("Name", self.name_edit)
-        identity_layout.addRow("Family", self.fam_edit)
-
-        identity_layout.addRow("Tags", self.tag_layout)
-        identity_layout.addRow("Statut", self.classification)
-
-        self.tag_choice = ChoiceButton()
-        # self.tag_choice_action = QWidgetAction(self)
-        # self.tag_choice_action.setDefaultWidget(self.tag_choice)
-
-        self.menu = QMenu()
-        # self.menu.addAction(self.tag_choice_action)
-
-        self.tag_button.setMenu(self.menu)
-        self.tag_button.setPopupMode(QToolButton.InstantPopup)
-
-        # validation
-        val_layout = QFormLayout()
-
-        # val_layout.addWidget(self.lock_button)
-        # val_layout.addWidget(QComboBox())
-
-        # phenotype
-        self.sex_combo = QComboBox()
-        self.sex_combo.addItems(["Unknown", "Male", "Female"])
-        self.phenotype_combo = QComboBox()  # case /control
-        self.phenotype_combo.addItems(["Missing", "Unaffected", "Affected"])
-
-        # comment
-        # self.tag_edit = QLineEdit()
-        # self.tag_edit.setPlaceholderText("Tags separated by comma ")
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
-        # comm_widget = QWidget()
-        # comm_layout = QVBoxLayout(comm_widget)
-        # comm_layout.addWidget(self.tag_edit)
-        # comm_layout.addWidget(self.comment)
 
-        identity_layout.addRow("Comment", self.comment)
+        main_layout.addRow("Sample", self.name_label)
+        main_layout.addRow("Family", self.family_edit)
+        main_layout.addRow("Father", self.father_edit)
+        main_layout.addRow("Mother", self.mother_edit)
+        main_layout.addRow("Classification", self.class_combo)
+        main_layout.addRow("Tags", self.tag_layout)
+        main_layout.addRow("Comment", self.comment)
+        self.setLayout(main_layout)
 
-        self.hpo_widget = HpoWidget()
-
-        pheno_widget = QWidget()
-        pheno_layout = QFormLayout(pheno_widget)
-        pheno_layout.addRow("Sexe", self.sex_combo)
-        pheno_layout.addRow("Affected", self.phenotype_combo)
-        # pheno_layout.addRow("HPO", self.hpo_widget) #hidden for now
-        self.tab_widget.addTab(identity_widget, "Edit")
-        self.tab_widget.addTab(pheno_widget, "Phenotype")
-        # Validated variant
-
-        self.variant_model = QStringListModel()
-        self.variant_view = QListView()
-        self.variant_view.setModel(self.variant_model)
-
-        # self.tab_widget.addTab(self.variant_view, "Validated variants")
-
-        self.history_view = DictWidget()
-        self.history_view.view.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
-        )
-        self.history_view.set_headers(["Date", "Modifications"])
-        self.tab_widget.addTab(self.history_view, "History")
-
-        header_layout = QHBoxLayout()
-        header_layout.addLayout(val_layout)
-
-        vLayout = QVBoxLayout()
-        vLayout.addLayout(header_layout)
-        vLayout.addWidget(self.tab_widget)
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        vLayout.addLayout(button_layout)
-
-        self.setLayout(vLayout)
-
-    def load(self, sample_id: int):
-
-        self.sample_id = sample_id
-        data = sql.get_sample(self.conn, sample_id)
-        self.initial_db_validation = self.get_validation_from_data(data)
-        print("loaded data:", data)
-        self.name_edit.setText(data.get("name", "?"))
-        self.fam_edit.setText(data.get("family_id", "?"))
-        self.sex_combo.setCurrentIndex(data.get("sex", 0))
-        self.phenotype_combo.setCurrentIndex(data.get("phenotype", 0))
-
+        # Load classification
         config = Config("classifications")
-        self.CLASSIFICATIONS = config.get("samples", [])
+        self.sample_classification = config.get("samples")
+        self.sample_classification = sorted(self.sample_classification, key= lambda c: c["number"])
+        for item in self.sample_classification:
+            self.class_combo.addItem(
+                FIcon(0xF012F, item.get("color", "gray")),
+                item["name"],
+                userData=item["number"],
+            )
 
-        for item in self.CLASSIFICATIONS:
-            self.classification.addItem(FIcon(0xF012F, item["color"]), item["name"], item["number"])
+    def get_sample(self) -> dict:
+        sample = {
+            "name": self.name_label.text(),
+            "family_id": self.family_edit.text(),
+            "father_id": self.father_edit.text(),
+            "mother_id": self.mother_edit.text(),
+            "classification": self.class_combo.currentData(),
+            "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]),
+            "comment": self.comment.toPlainText(),
+        }
 
-        index = self.classification.findData(data["classification"])
-        self.classification.setCurrentIndex(index)
+        return sample
 
-        # self.tag_edit.setText(self.TAG_LIST.index(tag)).setData(Qt.Checked, Qt.CheckStateRole)
+    def set_sample(self, sample: dict):
 
-        self.comment.setPlainText(data.get("comment", ""))
-        self.comment.preview_btn.setChecked(True)
-        self.history_view.set_dict(self.get_history_samples())
+        # Load sample name
+        if "name" in sample:
+            self.name_label.setText(str(sample["name"]))
 
-        self.setWindowTitle("Sample edition: " + data.get("name", "Unknown"))
-        self.initial_state = self.get_gui_state()
+        # Load family
+        if "family_id" in sample:
+            self.family_edit.setText(str(sample["family_id"]))
 
-        # Get validated variants
-        sample_name = sql.get_sample(self.conn, sample_id)["name"]
-        str_lists = []
-        for v in sql.get_variants(
-            self.conn,
-            ["chr", "pos", "ref", "alt"],
-            filters={"$and": [{f"samples.{sample_name}.classification": 2}]},
-        ):
-            str_lists.append("{chr}-{pos}-{ref}-{alt}".format(**v))
+        # Load father
+        if "father_id" in sample:
+            self.father_edit.setText(str(sample["father_id"]))
 
-        self.variant_model.setStringList(str_lists)
+        # Load mother
+        if "mother_id" in sample:
+            self.mother_edit.setText(str(sample["mother_id"]))
 
-    def save(self, sample_id: int):
-        """
-        Two checks to perform:
-         - did the user change any value through the interface?
-         - is the database state the same as when the dialog was first opened?
-        If yes and yes, update genotypes
-        """
-        current_state = self.get_gui_state()
-        if current_state == self.initial_state:
+        # Load tags
+        if "tags" in sample:
+            self.tag_edit.setText(",".join(sample["tags"].split(self.TAG_SEPARATOR)))
+
+        # Load comment
+        if "comment" in sample:
+            self.comment.setPlainText(sample["comment"])
+            self.comment.preview_btn.setChecked(True)
+
+        # Load classification
+        if "classification" in sample:
+            self.class_combo.setCurrentText(
+                next(
+                    (
+                        item["name"]
+                        for item in self.sample_classification
+                        if item["number"] == sample["classification"]
+                    ),
+                    "Unknown",
+                )
+            )
+
+
+class PhenotypeSectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Phenotype")
+        self.setToolTip("You can edit phenotype information")
+        self.view = QFormLayout()
+
+        #values based on https://gatk.broadinstitute.org/hc/en-us/articles/360035531972-PED-Pedigree-format
+        self.sex_combo = QComboBox()
+        self.sex_list = [{"name": "Unknown", "number": 0}, 
+                    {"name": "Male", "number": 1},
+                    {"name": "Female", "number":2}
+                ]
+        for item in self.sex_list:
+            self.sex_combo.addItem(item["name"], userData=item["number"])
+        
+        self.phenotype_combo = QComboBox()  # case /control
+        self.phenotype_list = [{"name": "Unknown", "number": 0}, 
+                    {"name": "Unaffected", "number": 1},
+                    {"name": "Affected", "number": 2}
+                ]
+        for item in self.phenotype_list:
+            self.phenotype_combo.addItem(item["name"], userData=item["number"])
+
+        self.view.addRow("Sex", self.sex_combo)
+        self.view.addRow("Affected", self.phenotype_combo)
+        
+        main_layout = QVBoxLayout(self)
+        main_layout.addLayout(self.view)
+        main_layout.addStretch()
+
+    def get_sample(self):
+
+        sample = {
+            "sex": self.sex_combo.currentData(),
+            "phenotype": self.phenotype_combo.currentData()
+        }
+
+        return sample
+
+    def set_sample(self, sample: dict):
+        if "sex" in sample:
+            self.sex_combo.setCurrentText(
+                next(
+                    (
+                        item["name"]
+                        for item in self.sex_list
+                        if item["number"] == sample["sex"]
+                    ),
+                    "Unknown",
+                )
+            )
+
+        if "phenotype" in sample:
+            self.sex_combo.setCurrentText(
+                next(
+                    (
+                        item["name"]
+                        for item in self.phenotype_list
+                        if item["number"] == sample["sex"]
+                    ),
+                    "No",
+                )
+            )
+
+
+
+class OccurenceVerticalHeader(QHeaderView):
+    # TODO
+    def __init__(self, parent=None):
+        super().__init__(Qt.Vertical, parent)
+
+    def sizeHint(self):
+        return QSize(30, super().sizeHint().height())
+
+    def paintSection(self, painter: QPainter, rect: QRect, section: int):
+
+        if painter is None:
             return
 
-        current_db_data = sql.get_sample(self.conn, self.sample_id)
-        current_db_validation = self.get_validation_from_data(current_db_data)
-        if current_db_validation != self.initial_db_validation:
+        painter.save()
+        super().paintSection(painter, rect, section)
+
+        number = self.model().variant(section)["classification"]
+
+        painter.restore()
+
+        # try:
+        #     classification = next(i for i in self.model().classifications if i["number"] == number)
+
+        #     color = classification.get("color")
+        #     icon = 0xF0130
+
+        #     icon_favorite = 0xF0133
+
+        #     pen = QPen(QColor(classification.get("color")))
+        #     pen.setWidth(6)
+        #     painter.setPen(pen)
+        #     painter.setBrush(QBrush(classification.get("color")))
+        #     painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
+
+        #     target = QRect(0, 0, 20, 20)
+        #     pix = FIcon(icon_favorite if favorite else icon, color).pixmap(target.size())
+        #     target.moveCenter(rect.center() + QPoint(1, 1))
+
+        #     painter.drawPixmap(target, pix)
+
+        # except Exception as e:
+        #     LOGGER.debug("Cannot draw classification: " + str(e))
+
+
+class OccurenceModel(QAbstractTableModel):
+
+    VARIANT_COLUMN = 0
+    CLASSIFICATION_COLUMN = 1
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._parent = parent
+        self._items = []
+        self._headers = ["variant", "classification"]
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        if parent == QModelIndex():
+            return len(self._items)
+
+        return 0
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        if parent == QModelIndex():
+            return 2
+
+        return 0
+
+    def item(self, row: int):
+        return self._items[row]
+
+    def load(self, conn: sqlite3.Connection, sample_id: int):
+
+        self.beginResetModel()
+        self._items = []
+        for item in sql.get_sample_variant_classification(conn, sample_id = sample_id):
+            if "classification" in item:
+                if item["classification"] > 0:
+                    self._items.append(item)
+        self.endResetModel()
+
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
+
+        if not index.isValid():
+            return None
+
+        item = self.item(index.row())
+
+        if role == Qt.DisplayRole:
+            if index.column() == OccurenceModel.VARIANT_COLUMN:
+                variant_id = item.get("variant_id", "error")
+                variant_text = str(variant_id)
+
+                # Get variant_name_pattern
+                variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
+                config = Config("variables") or {}
+                if "variant_name_pattern" in config:
+                    variant_name_pattern = config["variant_name_pattern"]
+                else:
+                    config["variant_name_pattern"] = variant_name_pattern
+                    config.save()
+
+                # Get fields
+                variant = sql.get_variant(self._parent.conn, variant_id, with_annotations=True)
+                if len(variant["annotations"]):
+                    for ann in variant["annotations"][0]:
+                        variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+                variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+                variant_text = variant_name_pattern.format(**variant)
+                return variant_text
+
+            if index.column() == OccurenceModel.CLASSIFICATION_COLUMN:
+                classification = item.get("classification", 0)
+                classification_text = str(classification)
+                config = Config("classifications")
+                self.genotype_classification = config.get("genotypes")
+                for item in self.genotype_classification:
+                    if item["number"] == classification:
+                        classification_text = item["name"]
+
+                return classification_text
+
+        if role == Qt.ToolTipRole:
+            return self.create_tooltip(index.row())
+
+    def headerData(self, section: int, orientation: Qt.Orientation, role) -> typing.Any:
+
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self._headers[section]
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+
+    def create_tooltip(self, row: int):
+        """Return tooltip
+
+        TODO:
+            Get data from sql, not from memory
+
+        Args:
+            row (int): Description
+
+        Returns:
+            TYPE: Description
+        """
+        tooltip = "Genotype<hr>"
+        tooltip += "<table>"
+        for key in self.item(row):
+            if key not in ["variant_id", "sample_id"]:
+                value = self.item(row)[key]
+                if value is not None:
+                    value = str(value).replace("\n","<br>")
+                    tooltip += f"<tr><td>{key}</td><td width='10'><td>{value}</td></tr>"
+        tooltip += f"</table>"
+        return tooltip
+
+
+class OccurrenceSectionWidget(AbstractSectionWidget):
+
+    WINDOW_TITLE_PREFIX = "Validated Variants"
+
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX)
+        self.setToolTip("List of validated variants for the current sample")
+        main_layout = QVBoxLayout(self)
+        self.model = OccurenceModel(self)
+        self.delegate = gui.FormatterDelegate()
+        self.delegate.set_formatter(CutestyleFormatter())
+        self.view = QTableView()
+        self.view.setItemDelegate(self.delegate)
+        self.view.setModel(self.model)
+        self.view.horizontalHeader().hide()
+        self.view.setAlternatingRowColors(True)
+
+        self.view.verticalHeader().hide()
+        self.view.setAlternatingRowColors(True)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.setShowGrid(False)
+        self.summary_label = QLabel()
+        main_layout.addWidget(self.view)
+        main_layout.addWidget(self.summary_label)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+    #def set_variant(self, variant: dict):
+    def set_sample(self, sample: dict):
+
+        self.model.load(self.conn, sample["id"])
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+
+        count = self.model.rowCount()
+        #total = len(list(sql.get_samples(self.conn)))
+        total = len(list(sql.get_sample_variant_classification(self.conn,sample["id"])))
+
+        self.setWindowTitle(
+            OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})"
+        )
+
+        ## Get samples count
+
+    def get_sample(self) -> dict:
+        return {}
+
+
+
+class HistorySectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("History")
+        self.setToolTip("Modification history of current sample")
+
+        self.view = DictWidget()
+        self.view.view.horizontalHeader().hide()
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.view)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+    def set_sample(self, sample: dict):
+
+        results = {}
+
+        for rec in sql.get_histories(self.conn, "samples", sample["id"]):
+
+            key = rec["timestamp"] + " [" + str(rec["id"]) + "]"
+            value = "{user} change {field} from '{before}' to '{after}'".format(**rec)
+            results[key] = value
+
+        self.view.set_dict(results)
+
+    def get_sample(self) -> dict:
+        return {}
+
+
+class SampleWidget(QWidget):
+    """A tab view with Strategy Pattern showing different view for the selected sample
+
+    w = SampleWidget()
+    w.load(id)
+    w.save(id)
+
+    """
+    def __init__(self, conn: sqlite3.Connection, parent=None):
+        super().__init__()
+
+        self._conn = conn
+        self._section_widgets = []
+
+        self.tab_widget = QTabWidget()
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.tab_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.add_section(EvaluationSectionWidget())
+        self.add_section(PhenotypeSectionWidget())
+        self.add_section(OccurrenceSectionWidget())
+        self.add_section(HistorySectionWidget())
+
+    def add_section(self, widget: AbstractSectionWidget):
+        """Add tab section
+
+        Args:
+            widget (AbstractSectionWidget): All subclass of AbstractSectionWidget
+        """
+        widget.conn = self.conn
+        self._section_widgets.append(widget)
+
+        subw = QWidget()
+        vbox = QVBoxLayout(subw)
+        label = QLabel("{}".format(widget.toolTip()))
+        vbox.addWidget(label)
+        vbox.addWidget(widget)
+
+        widget.windowTitleChanged.connect(self._on_section_name_changed)
+
+        self.tab_widget.addTab(subw, widget.windowTitle())
+
+    def _on_section_name_changed(self, text):
+
+        index = self._section_widgets.index(self.sender())
+
+        if index:
+            self.tab_widget.setTabText(index, text)
+
+    @property
+    def conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, c: sqlite3.Connection):
+        self._conn = conn
+        for widget in self._section_widgets:
+            widget.conn = conn
+
+    def save(self, sample_id: int):
+        """Save widget forms to the database
+
+        It also checks if another sqlite instance has changed data and trigger a messagebox if it is.
+
+        Args:
+            sample_id (int): sample sql id
+        """
+
+        sample = sql.get_sample(self.conn, sample_id)
+        current_sample_hash = self.get_sample_hash(sample)
+
+        if self.last_sample_hash != current_sample_hash:
             ret = QMessageBox.warning(
                 None,
                 "Database has been modified by another user.",
@@ -210,29 +552,32 @@ class SampleWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
-        # avoid losing tags who exist in DB but not in config.yml
+        for widget in self._section_widgets:
+            sample.update(widget.get_sample())
 
-        data = {
-            "id": sample_id,
-            "name": self.name_edit.text(),
-            "family_id": self.fam_edit.text(),
-            "sex": self.sex_combo.currentIndex(),
-            "phenotype": self.phenotype_combo.currentIndex(),
-            "classification": self.classification.currentData(),
-            "tags": self.TAG_SEPARATOR.join(self.tag_edit.text().split(",")),
-            "comment": self.comment.toPlainText(),
-        }
+        sql.update_sample(self.conn, sample)
 
-        sql.update_sample(self.conn, data)
+    def load(self, sample_id: int):
+        """Load widget forms from database
+
+        Args:
+            sample_id (int): sample sql id
+        """
+        sample = sql.get_sample(self._conn, sample_id)
+        self.last_sample_hash = self.get_sample_hash(sample)
+
+        # # Set name
+        #name = "{name}".format(**sample)
+        self.setWindowTitle("Sample edition")
+
+        for widget in self._section_widgets:
+            widget.set_sample(sample)
 
     def get_validation_from_data(self, data):
         return {
-            "fam": data["family_id"],
+            "classif_index": int("{classification}".format(**data)),
             "tags": data["tags"],
             "comment": data["comment"],
-            "classification": int("{classification}".format(**data)),
-            "sex": data["sex"],
-            "phenotype": data["phenotype"],
         }
 
     def get_gui_state(self):
@@ -240,24 +585,29 @@ class SampleWidget(QWidget):
         Used to identify if any writable value was changed by an user when closing the widget
         """
         values = []
-        values.append(self.fam_edit.text())
         values.append(self.classification.currentIndex())
         values.append(self.tag_edit.text())
         values.append(self.comment.toPlainText())
-        values.append(self.sex_combo.currentIndex())
-        values.append(self.phenotype_combo.currentIndex())
         return values
 
-    def get_history_samples(self):
-        """Get the history of samples"""
-        results = {}
-        for record in sql.get_histories(self.conn, "samples", self.sample_id):
+    def get_sample_hash(self, sample: dict) -> str:
+        """Return a footprint of a sample based on editable fields.
 
-            message = "{user} changed {field} from {before} to {after}".format(**record)
-            results[record["timestamp"]] = message
+        This is used to check if sample has been changed by other before to save into the database
 
-        return results
+        Args:
+            sample (dict): sample
 
+        Returns:
+            str: a string representation of a sample
+        """
+        return repr(
+            {
+                k: v
+                for k, v in sample.items()
+                if k in ["family, classification", "comment", "tags", "sex", "phenotype"]
+            }
+        )
 
 class SampleDialog(QDialog):
     def __init__(self, conn, sample_id, parent=None):
@@ -293,7 +643,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     # conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
-    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
+    conn = sql.get_sql_connection("L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/devel_june2022.db")
 
     w = SampleDialog(conn, 1)
 

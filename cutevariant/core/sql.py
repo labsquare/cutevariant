@@ -92,7 +92,7 @@ import json
 import os
 import getpass
 
-from typing import List, Callable, Iterable
+from typing import Dict, List, Callable, Iterable
 from datetime import datetime
 
 # Custom imports
