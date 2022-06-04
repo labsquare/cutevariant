@@ -23,6 +23,8 @@ from cutevariant import gui  # FormatterDelegate / cycle loop
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 from cutevariant import constants as cst
+from cutevariant import commons as cm
+from cutevariant.gui import style as Style
 
 # from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
@@ -109,13 +111,8 @@ class EvaluationSectionWidget(AbstractSectionWidget):
             variant_id = variant["id"]
 
             # Get variant_name_pattern
-            variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
             config = Config("variables") or {}
-            if "variant_name_pattern" in config:
-                variant_name_pattern = config["variant_name_pattern"]
-            else:
-                config["variant_name_pattern"] = variant_name_pattern
-                config.save()
+            variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
 
             # Get fields
             variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
@@ -269,13 +266,15 @@ class OccurenceVerticalHeader(QHeaderView):
 class OccurenceModel(QAbstractTableModel):
 
     NAME_COLUMN = 0
+    CLASSIFICATION_COLUMN = 2
     GENOTYPE_COLUMN = 1
 
     def __init__(self, parent=None, validated: bool = False):
-        super().__init__()
+        super().__init__(parent)
+        self._parent = parent
         self._items = []
         self._validated = validated
-        self._headers = ["sample", "gt"]
+        self._headers = ["sample", "gt", "classification"]
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent == QModelIndex():
@@ -285,7 +284,7 @@ class OccurenceModel(QAbstractTableModel):
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent == QModelIndex():
-            return 2
+            return 3
 
         return 0
 
@@ -303,6 +302,8 @@ class OccurenceModel(QAbstractTableModel):
                         self._items.append(item)
         else:
             self._items = list(sql.get_variant_occurences(conn, variant_id))
+        # sort (revert) by classification number
+        self._items = sorted(self._items, key= lambda c: c["classification"], reverse=True)
         
         self.endResetModel()
 
@@ -314,8 +315,20 @@ class OccurenceModel(QAbstractTableModel):
         item = self.item(index.row())
 
         if role == Qt.DisplayRole:
+
             if index.column() == OccurenceModel.NAME_COLUMN:
-                return item.get("name", "error")
+                sample_name = item.get("name", "error")
+                return sample_name
+
+            if index.column() == OccurenceModel.CLASSIFICATION_COLUMN:
+                classification = item.get("classification", 0)
+                classification_text = str(classification)
+                config = Config("classifications")
+                self.genotype_classification = config.get("genotypes")
+                for item in self.genotype_classification:
+                    if item["number"] == classification:
+                        classification_text = item["name"]
+                return classification_text
 
             if index.column() == OccurenceModel.GENOTYPE_COLUMN:
                 return item.get("gt", -1)
@@ -343,15 +356,8 @@ class OccurenceModel(QAbstractTableModel):
         Returns:
             TYPE: Description
         """
-        tooltip = "Genotype<hr>"
-        tooltip += "<table>"
-        for key in self.item(row):
-            if key not in ["variant_id", "sample_id"]:
-                value = self.item(row)[key]
-                if value is not None:
-                    value = str(value).replace("\n","<br>")
-                    tooltip += f"<tr><td>{key}</td><td width='10'><td>{value}</td></tr>"
-        tooltip += f"</table>"
+
+        tooltip = Style.genotype_tooltip(data = self.item(row), conn = self._parent.conn)
         return tooltip
 
 
@@ -464,7 +470,7 @@ class VariantWidget(QWidget):
         self.add_section(VariantSectionWidget())
         self.add_section(AnnotationsSectionWidget())
         self.add_section(OccurrenceSectionWidget())
-        self.add_section(OccurrenceSectionWidget(validated=True))
+        #self.add_section(OccurrenceSectionWidget(validated=True)) # depreciated
         self.add_section(HistorySectionWidget())
 
     def add_section(self, widget: AbstractSectionWidget):
