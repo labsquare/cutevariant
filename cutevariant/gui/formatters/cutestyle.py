@@ -121,7 +121,7 @@ class CutestyleFormatter(Formatter):
                 return {"text": value}
 
         if field == "ann.consequence":
-            values = str(value).split("&")
+            values = str(value).split(cst.HAS_OPERATOR)
             font = QFont()
             metrics = QFontMetrics(font)
             x = 0
