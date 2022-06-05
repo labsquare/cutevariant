@@ -15,6 +15,7 @@ def test_model(qtmodeltester):
 
     # Check samples
     sample = model.get_sample(0)
+    del sample["tags"]
     assert sample == {
         "id": 1,
         "name": "NORMAL",
@@ -24,7 +25,6 @@ def test_model(qtmodeltester):
         "sex": 0,
         "phenotype": 0,
         "classification": 0,
-        "tags": "",
         "comment": "",
     }
 
