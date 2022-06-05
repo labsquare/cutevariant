@@ -4,9 +4,9 @@ import math
 import csv
 import io
 import re
+import sqlite3
 import time
 import datetime
-import itertools as it
 from collections import defaultdict
 import copy
 import sys
@@ -32,6 +32,7 @@ from cutevariant.core import sql
 from cutevariant.core import command as cmd
 
 from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
+from cutevariant.gui.widgets import GroupbyDialog
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import (
     MarkdownDialog,
@@ -1265,6 +1266,12 @@ class VariantView(QWidget):
             functools.partial(lambda x: self.field_remove.emit(x), field),
         )
 
+        menu.addAction(
+            FIcon(0xF1860),
+            self.tr("Show unique values for this column"),
+            functools.partial(self.show_unique_values, field),
+        )
+
         return menu
 
     def _create_variant_menu(self, index: QModelIndex) -> QMenu:
@@ -1638,6 +1645,32 @@ class VariantView(QWidget):
 
         # Set the previously used/default formatter
         self.formatter_combo.setCurrentIndex(selected_formatter_index)
+
+    def show_unique_values(self, field: str):
+        groupby_dialog = GroupbyDialog(self.conn, self)
+        groupby_dialog.load(field, self.model.fields, self.model.source, self.model.filters)
+        if groupby_dialog.exec() == QDialog.Accepted:
+            selected_values = groupby_dialog.get_selected_values()
+            if selected_values:
+                self.add_condition_to_filters(
+                    {groupby_dialog.view.groupby_model.get_field_name(): {"$in": selected_values}}
+                )
+
+    def add_condition_to_filters(self, condition: dict):
+        filters = copy.deepcopy(self.parent.mainwindow.get_state_data("filters"))
+
+        if "$and" in filters:
+            for index, cond in enumerate(filters["$and"]):
+                if list(cond.keys())[0] == list(condition.keys())[0]:
+                    filters["$and"][index] = condition
+                    break
+            else:
+                filters["$and"].append(condition)
+        else:
+            filters = {"$and": [condition]}
+
+        self.parent.mainwindow.set_state_data("filters", filters)
+        self.parent.mainwindow.refresh_plugins(sender=self)
 
 
 class VariantViewWidget(plugin.PluginWidget):
