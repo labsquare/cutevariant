@@ -36,3 +36,5 @@ from .filters_widget import (
     FilterWidget,
     FilterDialog,
 )
+
+from .groupby_widget import GroupbyTable, GroupbyDialog
