@@ -67,25 +67,34 @@ class GenotypeVerticalHeader(QHeaderView):
         # classification color
         number = self.model().get_genotype(section).get("classification")
         if number:
-            classification = next(i for i in self.model().classifications if i["number"] == number)
+            classification = next(
+                i for i in self.model().classifications if i["number"] == number
+            )
             color = classification.get("color", default_color)
         else:
             color = default_color
 
         # genotype icon
         GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
-        genotype_sample_name=self.model().get_genotype(section)["name"]
-        genotype_variant_id=self.model().get_genotype(section)["variant_id"]
+        genotype_sample_name = self.model().get_genotype(section)["name"]
+        genotype_variant_id = self.model().get_genotype(section)["variant_id"]
 
-        genotype=""
+        genotype = ""
         if genotype_variant_id and genotype_sample_name:
-            genotype_infos = next(sql.get_genotypes(self.model().conn, genotype_variant_id, ["gt"], [genotype_sample_name]))
-            genotype=genotype_infos["gt"]
+            genotype_infos = next(
+                sql.get_genotypes(
+                    self.model().conn,
+                    genotype_variant_id,
+                    ["gt"],
+                    [genotype_sample_name],
+                )
+            )
+            genotype = genotype_infos["gt"]
         if genotype:
-            genotype_int=int(genotype)
+            genotype_int = int(genotype)
         else:
-            genotype_int=-1
-        pix_icon = GENOTYPE_ICONS.get(genotype_int) #, GENOTYPE_ICONS[-1])
+            genotype_int = -1
+        pix_icon = GENOTYPE_ICONS.get(genotype_int)  # , GENOTYPE_ICONS[-1])
         pix_icon.engine.setColor(color)
 
         # painter
@@ -149,8 +158,12 @@ class GenotypeModel(QAbstractTableModel):
         self._load_samples_thread = SqlThread(self.conn)
 
         # Connect samples loading thread's signals (started, finished, error, result ready)
-        self._load_samples_thread.started.connect(lambda: self.samples_are_loading.emit(True))
-        self._load_samples_thread.finished.connect(lambda: self.samples_are_loading.emit(False))
+        self._load_samples_thread.started.connect(
+            lambda: self.samples_are_loading.emit(True)
+        )
+        self._load_samples_thread.finished.connect(
+            lambda: self.samples_are_loading.emit(False)
+        )
         self._load_samples_thread.result_ready.connect(self.on_samples_loaded)
         self._load_samples_thread.error.connect(self.error_raised)
 
@@ -224,21 +237,31 @@ class GenotypeModel(QAbstractTableModel):
         genotype = next(sql.get_genotypes(self.conn, variant_id, fields, [sample]))
 
         # all genotype values
-        genotype_values_text=""
+        genotype_values_text = ""
         for f in genotype:
-            v=genotype[f]
-            if f not in ["sample_id", "variant_id", "name", "gt", "classification", "tags", "comment"]:
-                #f_upper=f.upper()
-                f_upper=f
-                genotype_values_text+=f"<tr><td>{f_upper}</td><td width='20'></td><td>{v}</td></tr>"
-        genotype["genotype_values_text"]=genotype_values_text
+            v = genotype[f]
+            if f not in [
+                "sample_id",
+                "variant_id",
+                "name",
+                "gt",
+                "classification",
+                "tags",
+                "comment",
+            ]:
+                # f_upper=f.upper()
+                f_upper = f
+                genotype_values_text += (
+                    f"<tr><td>{f_upper}</td><td width='20'></td><td>{v}</td></tr>"
+                )
+        genotype["genotype_values_text"] = genotype_values_text
 
         # classification
         config = Config("classifications")
-        classifications=config.get("genotypes", [])
-        classification=genotype["classification"]
+        classifications = config.get("genotypes", [])
+        classification = genotype["classification"]
         if not classification:
-            classification=0
+            classification = 0
         classification_text = ""
         classification_color = ""
         style = None
@@ -251,9 +274,9 @@ class GenotypeModel(QAbstractTableModel):
                 if "description" in style:
                     classification_text += f" (" + style["description"].strip() + ")"
             if "color" in style:
-                classification_color=style["color"]
-        genotype["classification_text"]=classification_text
-        genotype["classification_color"]=classification_color
+                classification_color = style["color"]
+        genotype["classification_text"] = classification_text
+        genotype["classification_color"] = classification_color
 
         # extract info from variant
         variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
@@ -262,21 +285,21 @@ class GenotypeModel(QAbstractTableModel):
                 variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
         variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
         variant_name = variant_name_pattern.format(**variant)
-        genotype["variant_name"]=variant_name
+        genotype["variant_name"] = variant_name
 
         # tags text
         if genotype["tags"]:
-            tags_text=genotype["tags"].replace(","," ")
+            tags_text = genotype["tags"].replace(",", " ")
         else:
-            tags_text="<i>no tag</i>"
-        genotype["tags_text"]=tags_text
+            tags_text = "<i>no tag</i>"
+        genotype["tags_text"] = tags_text
 
         # comment text
         if genotype["comment"]:
-            comment_text=genotype["comment"].replace("\n","<br>")
+            comment_text = genotype["comment"].replace("\n", "<br>")
         else:
-            comment_text="<i>no comment</i>"
-        genotype["comment_text"]=comment_text
+            comment_text = "<i>no comment</i>"
+        genotype["comment_text"] = comment_text
 
         # Message
         message = """
@@ -286,8 +309,8 @@ class GenotypeModel(QAbstractTableModel):
             </table>
             <hr>
             """.format(
-                **genotype
-            )
+            **genotype
+        )
         if genotype["gt"]:
             message += """
             <table>
@@ -333,7 +356,9 @@ class GenotypeModel(QAbstractTableModel):
 
         if len(self._genotypes) > 0:
             self._headers = [
-                i for i in self._genotypes[0].keys() if i not in ("sample_id", "variant_id")
+                i
+                for i in self._genotypes[0].keys()
+                if i not in ("sample_id", "variant_id")
             ]
 
         if "classification" not in self._fields:
@@ -363,7 +388,9 @@ class GenotypeModel(QAbstractTableModel):
             return
 
         if self.is_running():
-            LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
+            LOGGER.debug(
+                "Cannot load data. Thread is not finished. You can call interrupt() "
+            )
             self.interrupt()
 
         # mandatory field
@@ -395,7 +422,9 @@ class GenotypeModel(QAbstractTableModel):
         #     self.on_samples_loaded()
         # else:
         self._load_samples_thread.conn = self.conn
-        self._load_samples_thread.start_function(lambda conn: list(load_samples_func(conn)))
+        self._load_samples_thread.start_function(
+            lambda conn: list(load_samples_func(conn))
+        )
 
     def sort(self, column: int, order: Qt.SortOrder) -> None:
         self.beginResetModel()
@@ -470,7 +499,9 @@ class GenotypeModel(QAbstractTableModel):
             del new_data["name"]
 
             sql.update_genotypes(self.conn, new_data)
-            self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount()))
+            self.dataChanged.emit(
+                self.index(row, 0), self.index(row, self.columnCount())
+            )
             self.headerDataChanged.emit(Qt.Vertical, row, row)
 
     def clear(self):
@@ -560,9 +591,9 @@ class GenotypesWidget(plugin.PluginWidget):
         vlayout = QVBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.toolbar)
-        vlayout.addWidget(self.label)
         vlayout.addLayout(self.stack_layout)
         vlayout.addWidget(self.error_label)
+        vlayout.addWidget(self.label)
         vlayout.setSpacing(0)
         self.setLayout(vlayout)
 
@@ -575,7 +606,9 @@ class GenotypesWidget(plugin.PluginWidget):
     def on_model_reset(self):
         if self.model.rowCount() > 0:
             self.stack_layout.setCurrentIndex(1)
-            self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+            self.view.horizontalHeader().setSectionResizeMode(
+                QHeaderView.ResizeToContents
+            )
             self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         else:
             self.stack_layout.setCurrentIndex(0)
@@ -673,7 +706,9 @@ class GenotypesWidget(plugin.PluginWidget):
                 ret = QMessageBox.warning(
                     self,
                     self.tr("Overwrite preset"),
-                    self.tr(f"Preset {name} already exists. Do you want to overwrite it ?"),
+                    self.tr(
+                        f"Preset {name} already exists. Do you want to overwrite it ?"
+                    ),
                     QMessageBox.Yes | QMessageBox.No,
                 )
 
@@ -714,15 +749,17 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.get_genotype(row)
 
         if sample["gt"]:
-            menu.addAction("Edit Genotype classification...", self._show_sample_variant_dialog)
+            menu.addAction(
+                "Edit Genotype classification...", self._show_sample_variant_dialog
+            )
 
             cat_menu = menu.addMenu("Classifications")
 
             for item in self.model.classifications:
-                
+
                 if sample["classification"] == item["number"]:
                     icon = 0xF0133
-                    #cat_menu.setIcon(FIcon(icon, item["color"]))
+                    # cat_menu.setIcon(FIcon(icon, item["color"]))
                 else:
                     icon = 0xF012F
 
@@ -750,7 +787,9 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.get_genotype(row)
         if sample:
 
-            dialog = SampleVariantDialog(self.conn, sample["sample_id"], self.current_variant["id"])
+            dialog = SampleVariantDialog(
+                self.conn, sample["sample_id"], self.current_variant["id"]
+            )
 
             if dialog.exec_() == QDialog.Accepted:
                 # self.load_all_filters()
@@ -873,7 +912,9 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.sample_selector.clear()
         for sample in sql.get_samples(self.conn):
-            self.sample_selector.add_item(FIcon(0xF0B55), sample["name"], data=sample["name"])
+            self.sample_selector.add_item(
+                FIcon(0xF0B55), sample["name"], data=sample["name"]
+            )
 
     def load_fields(self):
         self.fields_button.clear()
@@ -906,8 +947,12 @@ class GenotypesWidget(plugin.PluginWidget):
             variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
             if len(variant["annotations"]):
                 for ann in variant["annotations"][0]:
-                    variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+                    variant["annotations___" + str(ann)] = variant["annotations"][0][
+                        ann
+                    ]
+            variant_name_pattern = variant_name_pattern.replace(
+                "ann.", "annotations___"
+            )
             variant_name = variant_name_pattern.format(**variant)
 
             # Troncate variant name
