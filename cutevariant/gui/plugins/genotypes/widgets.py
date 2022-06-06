@@ -230,10 +230,11 @@ class GenotypeModel(QAbstractTableModel):
             if section < len(self._headers):
                 return self._headers[section]
 
-        # if orientation == Qt.Vertical and role == Qt.DisplayRole:
-        #     item = self.get_genotype(section)
-        #     if "classification" in item:
-        #         return item["classification"]
+        # vertical header
+        if role == Qt.ToolTipRole  and orientation == Qt.Vertical:
+            genotype = self.get_genotype(section)
+            genotype_tooltip = toolTip.genotype_tooltip(data=genotype, conn=self.conn)
+            return genotype_tooltip
 
         return None
 
