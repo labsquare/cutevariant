@@ -481,7 +481,7 @@ class SamplesWidget(plugin.PluginWidget):
         )
 
         self.edit_action = self.tool_bar.addAction(
-            FIcon(0xF0FFB), "Edit  sample", self.on_edit
+            FIcon(0xF0FFB), "Edit Sample", self.on_edit
         )
 
         spacer = QWidget()
@@ -516,11 +516,23 @@ class SamplesWidget(plugin.PluginWidget):
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
 
+        sample = self.model.get_sample(self.view.currentIndex().row())
+        if "name" in sample:
+            sample_name = sample["name"]
+        else:
+            sample_name="unknown"
+
         menu = QMenu(self)
 
-        menu.addAction(self.edit_action)
+        menu.addAction(
+            FIcon(0xF0013), # 0xF0013
+            sample_name,
+            functools.partial(QApplication.instance().clipboard().setText, sample_name),
+        )
 
-        sample = self.model.get_sample(self.view.currentIndex().row())
+        menu.addSeparator()
+
+        menu.addAction(self.edit_action)
 
         menu.addMenu(self._create_classification_menu(sample))
         menu.addSeparator()
