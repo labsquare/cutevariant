@@ -1,5 +1,4 @@
 import sqlite3
-from matplotlib.pyplot import hist
 import pytest
 import tempfile
 import copy
@@ -407,7 +406,9 @@ def test_update_variants_counts(conn):
     expected["count_hom"] = sum(sample["gt"] for sample in samples if sample["gt"] == 2)
     expected["count_ref"] = sum(sample["gt"] for sample in samples if sample["gt"] == 0)
     expected["count_tot"] = len(samples)
-    expected["freq_var"] = (expected["count_hom"]*2 + expected["count_het"] ) / (expected["count_tot"]*2)
+    expected["freq_var"] = (expected["count_hom"] * 2 + expected["count_het"]) / (
+        expected["count_tot"] * 2
+    )
 
     observed = dict(
         conn.execute(
