@@ -21,7 +21,7 @@ from cutevariant import gui
 import cutevariant.constants as cst
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
-from cutevariant.gui import style as Style
+from cutevariant.gui import tooltip as toolTip
 
 class AbstractSectionWidget(QWidget):
     def __init__(self, parent: QWidget = None):
@@ -376,7 +376,7 @@ class OccurenceModel(QAbstractTableModel):
             TYPE: Description
         """
         
-        tooltip = Style.genotype_tooltip(data = self.item(row), conn = self._parent.conn)
+        tooltip = toolTip.genotype_tooltip(data = self.item(row), conn = self._parent.conn)
         return tooltip
 
 

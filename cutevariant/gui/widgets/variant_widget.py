@@ -24,7 +24,7 @@ from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 from cutevariant import constants as cst
 from cutevariant import commons as cm
-from cutevariant.gui import style as Style
+from cutevariant.gui import tooltip as toolTip
 
 # from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
@@ -357,7 +357,7 @@ class OccurenceModel(QAbstractTableModel):
             TYPE: Description
         """
 
-        tooltip = Style.genotype_tooltip(data = self.item(row), conn = self._parent.conn)
+        tooltip = toolTip.genotype_tooltip(data = self.item(row), conn = self._parent.conn)
         return tooltip
 
 
