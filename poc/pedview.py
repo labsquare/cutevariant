@@ -14,7 +14,7 @@ class Node(QGraphicsItem):
         self.edges = []
 
         self.color = "red" if name.startswith("union") else "#2FB4AE"
-        self.radius = 30 if name.startswith("union") else 30
+        self.radius = 30
         self._rect = QRect(0, 0, self.radius * 2, self.radius * 2)
 
         self.setFlag(self.ItemIsMovable)
@@ -153,9 +153,7 @@ class Edge(QGraphicsItem):
         vector = target - center
         length = math.sqrt(vector.x() ** 2 + vector.y() ** 2)
         normal = vector / length
-        target = QPointF(
-            center.x() + (normal.x() * radius), center.y() + (normal.y() * radius)
-        )
+        target = QPointF(center.x() + (normal.x() * radius), center.y() + (normal.y() * radius))
         return target
 
 
