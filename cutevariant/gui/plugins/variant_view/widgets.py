@@ -1312,19 +1312,30 @@ class VariantView(QWidget):
         # Update variant with currently displayed fields (not in variants table)
         full_variant.update(current_variant)
 
+        # Copy action: Copy the variant reference ID in to the clipboard
+        # Get variant_name_pattern
+        config = Config("variables") or {}
+        formatted_variant = (
+            config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+        )
+        if len(full_variant["annotations"]):
+            for ann in full_variant["annotations"][0]:
+                full_variant["annotations___" + str(ann)] = full_variant["annotations"][0][ann]
+        formatted_variant = formatted_variant.replace("ann.", "annotations___")
+        variant_name = formatted_variant.format(**full_variant)
+
         menu.addAction(
-            QIcon(),
-            "Edit variant ...",
-            self._show_variant_dialog,
+            FIcon(0xF014C),
+            variant_name,
+            functools.partial(QApplication.instance().clipboard().setText, variant_name),
         )
 
         menu.addSeparator()
-        # Copy action: Copy the variant reference ID in to the clipboard
-        formatted_variant = "{chr}:{pos}-{ref}-{alt}".format(**full_variant)
+
         menu.addAction(
-            FIcon(0xF014C),
-            formatted_variant,
-            functools.partial(QApplication.instance().clipboard().setText, formatted_variant),
+            FIcon(0xF14E6),
+            "Edit Variant",
+            self._show_variant_dialog,
         )
 
         # action menu
@@ -1347,9 +1358,9 @@ class VariantView(QWidget):
         sample_id=None
         sample_valid=None
         header_name=self.model.headers[index.column()]
-        match = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
-        if match:
-            sample_name = match[0][0]
+        header_name_match_sample = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
+        if header_name_match_sample:
+            sample_name = header_name_match_sample[0][0]
             sample_infos=sql.search_samples(self.conn, name=sample_name)
             for sample_info in sample_infos:
                 sample_id=sample_info["id"]
@@ -1723,7 +1734,29 @@ class VariantView(QWidget):
         TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
         """
 
-        self._show_variant_dialog()
+        # Check if Edit Genotype
+        header_name=self.model.headers[index.column()]
+        header_name_match_sample = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
+        validation_menu_lock = False
+        sample_name = "unknown"
+        if header_name_match_sample:
+            sample_name = header_name_match_sample[0][0]
+            sample_infos=sql.search_samples(self.conn, name=sample_name)
+            for sample_info in sample_infos:
+                sample_classification=sample_info["classification"]
+            if style.SAMPLE_CLASSIFICATION[sample_classification].get("lock"):
+                validation_menu_lock = True
+        
+        # Menu Validation for sample
+        if header_name_match_sample:
+            if validation_menu_lock:
+                QMessageBox.information(
+                    self, "sample locked", self.tr(f"Sample '{sample_name}' is locked")
+                )
+            else:
+                self._show_sample_variant_dialog()
+        else:
+            self._show_variant_dialog()
 
     def create_classification_menu(self, index: QModelIndex):
         # Create classication action
