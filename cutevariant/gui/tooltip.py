@@ -87,7 +87,7 @@ def genotype_tooltip(data: dict, conn: sqlite3.Connection):
 
     # tags text
     if genotype["tags"]:
-        tags_text = genotype["tags"].replace(",", " ")
+        tags_text = genotype["tags"].replace(cst.HAS_OPERATOR, "<br>")
     else:
         tags_text = "<i>no tag</i>"
     genotype["tags_text"] = tags_text
@@ -130,6 +130,13 @@ def genotype_tooltip(data: dict, conn: sqlite3.Connection):
             <tr><td><i>no genotype</i></td></tr> 
         </table>
         """
+
+    message_variant = None
+    message_variant = variant_tooltip(
+        dict(data), conn
+    )
+    if message_variant:
+        message += "<hr><hr>" + message_variant
 
     return message
 
@@ -207,7 +214,7 @@ def sample_tooltip(data: dict, conn: sqlite3.Connection):
         if sample_field in ["classification", "tags", "comment"]:
             if sample_field == "tags":
                 if sample_field_value:
-                    sample_field_value = sample_field_value.replace(",", " ")
+                    sample_field_value = sample_field_value.replace(cst.HAS_OPERATOR, "<br>")
                 else:
                     sample_field_value = "<i>no tag</i>"
             if sample_field == "comment":
@@ -245,3 +252,107 @@ def sample_tooltip(data: dict, conn: sqlite3.Connection):
     info += f"</table>"
 
     return info
+
+
+def variant_tooltip(data: dict, conn: sqlite3.Connection, fields = None):
+
+    message = "" #str(data)
+
+    variant = data
+
+    # if id come from genotype ad variant_id
+    if "id" not in variant and "variant_id" in variant:
+        variant["id"] = variant["variant_id"]
+        variant = variant | dict(sql.get_variant(conn=conn, variant_id=variant["id"], with_annotations=True, with_samples=True))
+
+    # Get variant_name_pattern
+    config = Config("variables") or {}
+    variant_name_pattern = (
+        config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+    )
+
+    # get varant classification
+    config = Config("classifications")
+    variant_classifications = config.get("variants", [])
+
+    # extract info from variant
+    variant_for_pattern = variant
+    if len(variant_for_pattern["annotations"]):
+        for ann in variant_for_pattern["annotations"][0]:
+            variant_for_pattern["annotations___" + str(ann)] = variant_for_pattern["annotations"][0][ann]
+    variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+    variant_name = variant_name_pattern.format(**variant_for_pattern)
+
+    # variant name
+    if variant_name:
+        message += f"Variant <b>{variant_name}</b>"
+
+    # variant classification
+    message_variant_classification = "<table>"
+    
+
+    # variant current infos in selected fields
+    message_variant_current_infos = None
+    if fields:
+        message_variant_current_infos = "<table>"
+        for field in fields:
+            if field.startswith("samples."):
+                k = field.split(".")
+                if k[2] == "gt":
+                    value = Style.GENOTYPE.get(int(variant[field]), "Unknown")["name"]
+                else:
+                    value = variant[field]
+            else:
+                value = str(variant[field]).replace(cst.HAS_OPERATOR,"<br>")
+            message_variant_current_infos += f"<tr><td>{field}</td><td width='20'></td><td>{value}</td></tr>"
+        message_variant_current_infos += "</table>"
+
+    # variant count and freq and classification
+    message_variant_counts = ""
+    message_variant_freqs = ""
+    message_variant_counts_freqs = "<table>"
+    message_variant_classification = "<table>"
+    for field in variant:
+        value = variant[field]
+        value_color = ""
+        if field.startswith("count_"):
+            message_variant_counts += f"<tr><td>{field}</td><td width='20'></td><td>{value}</td></tr>"
+        elif field.startswith("freq_"):
+            message_variant_freqs += f"<tr><td>{field}</td><td width='20'></td><td>{value}</td></tr>"
+        elif field in ["classification", "tags", "comment"]:
+            if field == "tags":
+                if value:
+                    value = value.replace(cst.HAS_OPERATOR, "<br>")
+                else:
+                    value = "<i>no tag</i>"
+            if field == "comment":
+                if not value:
+                    value = "<i>no comment</i>"
+                else:
+                    value = value.replace("\n","<br>")
+            if field == "classification":
+                value = "" #str(value)
+                style = None
+                for i in variant_classifications:
+                    if i["number"] == variant[field]:
+                        style = i
+                if style:
+                    if "name" in style:
+                        value += style["name"]
+                        if "description" in style:
+                            value += (
+                                f" (" + style["description"].strip().replace("\n","<br>") + ")"
+                            )
+                    if "color" in style:
+                        value_color = style["color"]
+            message_variant_classification += f"<tr><td>{field}</td><td width='20'></td><td style='color:{value_color}'>{value}</td></tr>"
+    message_variant_classification += "</table>"
+    message_variant_counts_freqs += f"{message_variant_counts}{message_variant_freqs}</table>"
+
+    # final message
+    message += f"""<hr>{message_variant_classification}"""
+    if message_variant_current_infos:
+        message += f"""<hr>{message_variant_current_infos}"""
+    message += f"""<hr>{message_variant_counts_freqs}"""
+
+    return message

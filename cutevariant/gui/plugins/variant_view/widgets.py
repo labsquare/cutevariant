@@ -47,6 +47,7 @@ import cutevariant.constants as cst
 import cutevariant.commons as cm
 from cutevariant.core.querybuilder import filters_to_flat
 
+from cutevariant.gui import tooltip as toolTip
 
 class VariantVerticalHeader(QHeaderView):
     def __init__(self, parent=None):
@@ -382,23 +383,12 @@ class VariantModel(QAbstractTableModel):
                 font.setBold(col_filtered)
                 return font
 
-        # if orientation == Qt.Vertical:
-        #     if role == Qt.DecorationRole:
-
-        #         pix = QPixmap(32, 32)
-        #         pix.fill(QColor("white"))
-        #         # pix.fill(Qt.transparent)
-        #         painter = QPainter()
-        #         painter.begin(pix)
-        #         pen = QPen(QColor("red"))
-        #         pen.setWidth(20)
-        #         painter.setPen(pen)
-        #         painter.drawLine(-2, -10, -2, 30)
-        #         painter.drawPixmap(0, 0, FIcon(0xF0ACD).pixmap(40, 40))
-        #         painter.end()
-        #         fav = self.variants[section]["favorite"]
-        #         return QIcon(pix)
-        #         # return QIcon(FIcon(0xF0ACD)) if fav else QIcon(FIcon(0xF0ACE))
+        # vertical header
+        if role == Qt.ToolTipRole  and orientation == Qt.Vertical:
+            variant = self.variant(section)
+            variant = variant | dict(sql.get_variant(conn=self.conn, variant_id=variant["id"], with_annotations=True, with_samples=True))
+            variant_tooltip = toolTip.variant_tooltip(data=variant, conn=self.conn, fields=self.fields)
+            return variant_tooltip
 
     def update_variant(self, row: int, variant: dict):
         """Update a variant at the given row with given content

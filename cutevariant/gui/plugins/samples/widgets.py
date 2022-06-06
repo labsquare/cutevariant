@@ -65,6 +65,12 @@ class SampleModel(QAbstractTableModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and section == 0:
             return self.tr("Samples")
 
+        # vertical header
+        if role == Qt.ToolTipRole  and orientation == Qt.Vertical:
+            sample = self._samples[section]
+            sample_tooltip = toolTip.sample_tooltip(data=sample, conn=self.conn)
+            return sample_tooltip
+
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
 
         col = index.column()
