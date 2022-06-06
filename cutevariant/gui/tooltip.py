@@ -5,6 +5,7 @@ Code needs improvement . Avoid multiple embbeded if
 import sqlite3
 
 from cutevariant.config import Config
+from cutevariant.gui import style as Style
 from cutevariant.core import sql
 from cutevariant import constants as cst
 
@@ -79,7 +80,7 @@ def genotype_tooltip(data: dict, conn: sqlite3.Connection):
 
     # tag genotype
     if genotype["gt"]:
-        genotype_text = GENOTYPE.get(genotype["gt"], "Unknown")["name"]
+        genotype_text = Style.GENOTYPE.get(genotype["gt"], "Unknown")["name"]
     else:
         genotype_text = "<i>no tag</i>"
     genotype["genotype_text"] = genotype_text

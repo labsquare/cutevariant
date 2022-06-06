@@ -21,7 +21,7 @@ from cutevariant.gui.widgets import (
     SamplesEditor,
 )
 
-from cutevariant.gui import style as Style
+from cutevariant.gui import tooltip as toolTip
 
 # from gui.style import SAMPLE_CLASSIFICATION
 
@@ -123,52 +123,7 @@ class SampleModel(QAbstractTableModel):
             sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
-                config = Config("classifications")
-                genotype_classifications = config.get("genotypes", [])
-                sample_id = sample["id"]
-                sample_name = sample["name"]
-                sample_nb_genotype_by_classification = (
-                    sql.get_sample_nb_genotype_by_classification(self.conn, sample_id)
-                )
-                nb_validated_genotype = 0
-                nb_validation_genotype_message = ""
-                for classification in sample_nb_genotype_by_classification:
-                    nb_validation_genotype_text = ""
-                    nb_validation_genotype_color = ""
-                    nb_genotype_by_classification = (
-                        sample_nb_genotype_by_classification[classification]
-                    )
-                    if classification > 0:
-                        nb_validated_genotype += nb_genotype_by_classification
-                    style = None
-                    for i in genotype_classifications:
-                        if i["number"] == classification:
-                            style = i
-                    if style:
-                        if "name" in style:
-                            nb_validation_genotype_text += style["name"]
-                            if "description" in style:
-                                nb_validation_genotype_text += (
-                                    f" (" + style["description"].strip() + ")"
-                                )
-                        if "color" in style:
-                            nb_validation_genotype_color = style["color"]
-                    nb_validation_genotype_message += f"<tr><td style='color:{nb_validation_genotype_color}' align='right'>{nb_genotype_by_classification}</td><td width='10'></td><td>{nb_validation_genotype_text}</td></tr>"
-                sample_comment = f"Comment on sample <b>{sample_name}</b><hr>"
-                comment = sample["comment"].replace("\n", "<br>")
-                if comment:
-                    sample_comment += "" + comment + "<br>"
-                else:
-                    sample_comment += "<i>No comment</i><br>"
-                if nb_validation_genotype_message:
-                    sample_comment += f"""
-                        <hr>
-                        Genotypes classification
-                        <table>
-                            {nb_validation_genotype_message}
-                        </table>
-                    """
-
+                sample_comment = toolTip.sample_tooltip(data=sample, conn=self.conn)
                 return sample_comment
 
             if col == SampleModel.NAME_COLUMN:
@@ -183,7 +138,7 @@ class SampleModel(QAbstractTableModel):
     def get_tooltip(self, row: int) -> str:
         """Return all samples info as a formatted text"""
 
-        tooltip = Style.sample_tooltip(data=self._samples[row], conn=self.conn)
+        tooltip = toolTip.sample_tooltip(data=self._samples[row], conn=self.conn)
         return tooltip
 
         # info = ""

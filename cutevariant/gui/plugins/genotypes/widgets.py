@@ -30,7 +30,7 @@ from cutevariant.gui.widgets import (
     PresetAction,
 )
 
-from cutevariant.gui import tooltip
+from cutevariant.gui import tooltip as toolTip
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
@@ -221,9 +221,8 @@ class GenotypeModel(QAbstractTableModel):
     def get_tooltip(self, row: int):
         """Return all samples info as a formatted text"""
 
-        return tooltip.genotype_tooltip(data=self.get_genotype(row), conn=self.conn)
+        return toolTip.genotype_tooltip(data=self.get_genotype(row), conn=self.conn)
 
-        # return message
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
 
