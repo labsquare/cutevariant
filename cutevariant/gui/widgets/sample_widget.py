@@ -21,6 +21,7 @@ from cutevariant import gui
 import cutevariant.constants as cst
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
+from cutevariant.gui import style as Style
 
 class AbstractSectionWidget(QWidget):
     def __init__(self, parent: QWidget = None):
@@ -328,13 +329,8 @@ class OccurenceModel(QAbstractTableModel):
                 variant_text = str(variant_id)
 
                 # Get variant_name_pattern
-                variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
                 config = Config("variables") or {}
-                if "variant_name_pattern" in config:
-                    variant_name_pattern = config["variant_name_pattern"]
-                else:
-                    config["variant_name_pattern"] = variant_name_pattern
-                    config.save()
+                variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
 
                 # Get fields
                 variant = sql.get_variant(self._parent.conn, variant_id, with_annotations=True)
@@ -379,15 +375,8 @@ class OccurenceModel(QAbstractTableModel):
         Returns:
             TYPE: Description
         """
-        tooltip = "Genotype<hr>"
-        tooltip += "<table>"
-        for key in self.item(row):
-            if key not in ["variant_id", "sample_id"]:
-                value = self.item(row)[key]
-                if value is not None:
-                    value = str(value).replace("\n","<br>")
-                    tooltip += f"<tr><td>{key}</td><td width='10'><td>{value}</td></tr>"
-        tooltip += f"</table>"
+        
+        tooltip = Style.genotype_tooltip(data = self.item(row), conn = self._parent.conn)
         return tooltip
 
 

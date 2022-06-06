@@ -223,109 +223,6 @@ class GenotypeModel(QAbstractTableModel):
 
         return tooltip.genotype_tooltip(data=self.get_genotype(row), conn=self.conn)
 
-        # fields = [f["name"] for f in sql.get_field_by_category(self.conn, "samples")]
-        # sample = self.get_genotype(row)["name"]
-        # variant_id = self.get_variant_id()
-
-        # # Get variant_name_pattern
-        # variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
-        # config = Config("variables") or {}
-        # if "variant_name_pattern" in config:
-        #     variant_name_pattern = config["variant_name_pattern"]
-        # else:
-        #     config["variant_name_pattern"] = variant_name_pattern
-        #     config.save()
-
-        # # extract all info for one sample
-        # genotype = next(sql.get_genotypes(self.conn, variant_id, fields, [sample]))
-
-        # # all genotype values
-        # genotype_values_text=""
-        # for f in genotype:
-        #     v=genotype[f]
-        #     if f not in ["sample_id", "variant_id", "name", "gt", "classification", "tags", "comment"]:
-        #         #f_upper=f.upper()
-        #         f_upper=f
-        #         genotype_values_text+=f"<tr><td>{f_upper}</td><td width='20'></td><td>{v}</td></tr>"
-        # genotype["genotype_values_text"]=genotype_values_text
-
-        # # classification
-        # config = Config("classifications")
-        # classifications=config.get("genotypes", [])
-        # classification=genotype["classification"]
-        # if not classification:
-        #     classification=0
-        # classification_text = ""
-        # classification_color = ""
-        # style = None
-        # for i in classifications:
-        #     if i["number"] == classification:
-        #         style = i
-        # if style:
-        #     if "name" in style:
-        #         classification_text += style["name"]
-        #         if "description" in style:
-        #             classification_text += f" (" + style["description"].strip() + ")"
-        #     if "color" in style:
-        #         classification_color=style["color"]
-        # genotype["classification_text"]=classification_text
-        # genotype["classification_color"]=classification_color
-
-        # # extract info from variant
-        # variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
-        # if len(variant["annotations"]):
-        #     for ann in variant["annotations"][0]:
-        #         variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-        # variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-        # variant_name = variant_name_pattern.format(**variant)
-        # genotype["variant_name"]=variant_name
-
-        # # tags text
-        # if genotype["tags"]:
-        #     tags_text=genotype["tags"].replace(","," ")
-        # else:
-        #     tags_text="<i>no tag</i>"
-        # genotype["tags_text"]=tags_text
-
-        # # comment text
-        # if genotype["comment"]:
-        #     comment_text=genotype["comment"].replace("\n","<br>")
-        # else:
-        #     comment_text="<i>no comment</i>"
-        # genotype["comment_text"]=comment_text
-
-        # # Message
-        # message = """
-        #     <table>
-        #         <tr><td>Sample</td><td width='0'></td><td><b>{name}</b></td></tr>
-        #         <tr><td>Variant</td><td width='0'></td><td><b>{variant_name}</b></td></tr>
-        #     </table>
-        #     <hr>
-        #     """.format(
-        #         **genotype
-        #     )
-        # if genotype["gt"]:
-        #     message += """
-        #     <table>
-        #         <tr><td>GT</td><td width='20'></td><td>{gt}</td></tr>
-        #         {genotype_values_text}
-        #     </table>
-        #     <hr>
-        #     <table>
-        #         <tr><td>Classification</td><td width='20'></td><td style='color:{classification_color}'>{classification_text}</td></tr>
-        #         <tr><td>Tags</td><td width='20'></td><td>{tags_text}</td></tr>
-        #         <tr><td>Comment</td><td width='20'></td><td>{comment_text}</td></tr>
-        #     </table>
-        #     """.format(
-        #         **genotype
-        #     )
-        # else:
-        #     message += """
-        #     <table>
-        #         <tr><td><i>no genotype</i></td></tr>
-        #     </table>
-        #     """
-
         # return message
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
@@ -584,9 +481,9 @@ class GenotypesWidget(plugin.PluginWidget):
         vlayout = QVBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.toolbar)
-        vlayout.addWidget(self.label)
         vlayout.addLayout(self.stack_layout)
         vlayout.addWidget(self.error_label)
+        vlayout.addWidget(self.label)
         vlayout.setSpacing(0)
         self.setLayout(vlayout)
 
