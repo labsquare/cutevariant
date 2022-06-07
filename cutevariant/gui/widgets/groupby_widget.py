@@ -31,7 +31,9 @@ class GroupbyModel(QAbstractTableModel):
 
     GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
 
-    def __init__(self, parent: QObject = None, conn: sqlite3.Connection = None) -> None:
+    def __init__(
+        self, parent: QObject = None, conn: sqlite3.Connection = None, is_checkable=True
+    ) -> None:
         super().__init__(parent)
         self._raw_data = []
         self._conn = conn
@@ -53,6 +55,8 @@ class GroupbyModel(QAbstractTableModel):
         # Load by config from on_openproject
         self.config_classifications = []
         self.config_sample_classifications = []
+
+        self.is_checkable = is_checkable
 
     def load_config(self):
         config = Config("classifications")
@@ -135,7 +139,7 @@ class GroupbyModel(QAbstractTableModel):
             if index.column() == 1:
                 return int(Qt.AlignmentFlag(Qt.AlignRight | Qt.AlignVCenter))
 
-        if role == Qt.CheckStateRole and index.column() == 0:
+        if role == Qt.CheckStateRole and index.column() == 0 and self.is_checkable:
             return int(Qt.Checked if self._raw_data[index.row()]["checked"] else Qt.Unchecked)
 
     def clear(self):
@@ -172,7 +176,7 @@ class GroupbyModel(QAbstractTableModel):
     def setData(
         self, index: QModelIndex, value: typing.Any, role: int = int(Qt.DisplayRole)
     ) -> bool:
-        if role == Qt.CheckStateRole and index.column() == 0:
+        if role == Qt.CheckStateRole and index.column() == 0 and self.is_checkable:
             self._raw_data[index.row()]["checked"] = bool(value)
             return True
         else:
@@ -238,16 +242,19 @@ class GroupbyModel(QAbstractTableModel):
         return self._field_name
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
-        return super().flags(index) | Qt.ItemIsUserCheckable
+        if self.is_checkable:
+            return super().flags(index) | Qt.ItemIsUserCheckable
+        else:
+            return super().flags(index)
 
     def get_selected_values(self):
         return [d[self._field_name] for d in self._raw_data if d["checked"]]
 
 
 class GroupbyTable(QWidget):
-    def __init__(self, conn=None, parent=None):
+    def __init__(self, conn=None, parent=None, is_checkable=True):
         super().__init__(parent=parent)
-        self.groupby_model = GroupbyModel(self)
+        self.groupby_model = GroupbyModel(self, is_checkable=is_checkable)
         self.proxy = FilterProxyModel(self)
         self.tableview = widgets.LoadingTableView(self)
         self.tableview.setModel(self.proxy)
@@ -317,14 +324,11 @@ class GroupbyDialog(QDialog):
         self.view = GroupbyTable(conn, self)
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
-        self.close_btn = QPushButton(self.tr("Close"))
         self.filter_btn = QPushButton(self.tr("Filter selected values"))
 
-        self.close_btn.clicked.connect(self.reject)
         self.filter_btn.clicked.connect(self.accept)
 
         self.bottom_layout = QHBoxLayout()
-        self.bottom_layout.addWidget(self.close_btn)
         self.bottom_layout.addWidget(self.filter_btn)
 
         self.conn = conn
