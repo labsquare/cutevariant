@@ -626,16 +626,17 @@ class SamplesWidget(plugin.PluginWidget):
         if not samples:
             samples = self.model.get_samples()
 
-        sql.insert_selection_from_samples(
-            self.model.conn, samples, name=source_name
-        )
+        if len(samples):
+            sql.insert_selection_from_samples(
+                self.model.conn, samples, name=source_name
+            )
 
-        self.mainwindow.set_state_data("source", source_name)
-        
-        if "source_editor" in self.mainwindow.plugins:
-                self.mainwindow.refresh_plugin("source_editor")
+            self.mainwindow.set_state_data("source", source_name)
+            
+            if "source_editor" in self.mainwindow.plugins:
+                    self.mainwindow.refresh_plugin("source_editor")
 
-        self.mainwindow.refresh_plugins(sender=self)
+            self.mainwindow.refresh_plugins(sender=self)
 
     # def on_create_source(self):
     #     name, success = QInputDialog.getText(
