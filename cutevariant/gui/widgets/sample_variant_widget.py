@@ -96,7 +96,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
     def get_genotype(self) -> dict:
         genotype = {
             "classification": self.class_combo.currentData(),
-            "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]),
+            "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().replace("\n",self.TAG_SEPARATOR).replace(" ",self.TAG_SEPARATOR).split(self.TAG_SEPARATOR) if tag]),
             "comment": self.comment.toPlainText(),
         }
 
@@ -106,7 +106,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load tags
         if "tags" in genotype:
-            self.tag_edit.setText(",".join(genotype["tags"].split(self.TAG_SEPARATOR)))
+            self.tag_edit.setText("\n".join(genotype["tags"].replace("\n",self.TAG_SEPARATOR).replace(" ",self.TAG_SEPARATOR).split(self.TAG_SEPARATOR)))
 
         # Load comment
         if "comment" in genotype:

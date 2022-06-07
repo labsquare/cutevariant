@@ -96,7 +96,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
             #"id": self.variant_label.text(),
             "favorite": self.favorite.isChecked(),
             "classification": self.class_combo.currentData(),
-            "tags": self.TAG_SEPARATOR.join([tag for tag in self.tag_edit.text().split(",") if tag]),
+            "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().replace("\n",self.TAG_SEPARATOR).replace(" ",self.TAG_SEPARATOR).split(self.TAG_SEPARATOR) if tag]),
             "comment": self.comment.toPlainText(),
         }
 
@@ -132,7 +132,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load tags
         if "tags" in variant:
-            self.tag_edit.setText(",".join(variant["tags"].split(self.TAG_SEPARATOR)))
+            self.tag_edit.setText("\n".join(variant["tags"].replace("\n",self.TAG_SEPARATOR).replace(" ",self.TAG_SEPARATOR).split(self.TAG_SEPARATOR)))
 
         # Load comment
         if "comment" in variant:
