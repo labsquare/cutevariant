@@ -1018,6 +1018,9 @@ class GeneViewerWidget(plugin.PluginWidget):
 
     def update_view(self):
 
+        if not self.current_variant:
+            return
+
         # Udpate gene view
         gene = self.gene_name_combo.currentText()
         transcript = self.transcript_name_combo.currentText()
