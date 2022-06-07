@@ -78,20 +78,20 @@ class GroupByViewWidget(PluginWidget):
         # self.apply_action.setText(self.tr("Create filter from selection"))
         # self.apply_action.setEnabled(False)
 
-        self.refresh_action = QAction(self)
-        self.refresh_action.setIcon(FIcon(0xF0450))
-        self.refresh_action.setText(self.tr("Rerfresh"))
-        self.refresh_action.triggered.connect(self.load)
+        # self.refresh_action = QAction(self)
+        # self.refresh_action.setIcon(FIcon(0xF0450))
+        # self.refresh_action.setText(self.tr("Refresh"))
+        # self.refresh_action.triggered.connect(self.load)
 
         # Create toolbar
         self.toolbar = QToolBar(self)
         self.toolbar.setIconSize(QSize(16, 16))
         self.toolbar.addWidget(self.field_select_combo)
-        self.toolbar.addAction(self.refresh_action)
+        # self.toolbar.addAction(self.refresh_action)
         # self.toolbar.addAction(self.apply_action)
 
         # Create view
-        self.view = GroupbyTable(conn, self)
+        self.view = GroupbyTable(conn, self, is_checkable=False)
         self.view.tableview.doubleClicked.connect(self.on_double_click)
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
         # Make sure that the combobox automatically gets enabled/disabled upon loading
@@ -212,6 +212,7 @@ class GroupByViewWidget(PluginWidget):
         self.mainwindow: MainWindow
         self.mainwindow.set_state_data("filters", filters)
         self.mainwindow.refresh_plugins(sender=self)
+        self.load()
 
     def on_loaded(self):
 
