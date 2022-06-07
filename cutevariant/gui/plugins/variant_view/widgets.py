@@ -64,12 +64,13 @@ class VariantVerticalHeader(QHeaderView):
         painter.save()
         super().paintSection(painter, rect, section)
 
-        favorite = self.model().variant(section)["favorite"]
-        number = self.model().variant(section)["classification"]
-
-        painter.restore()
-
         try:
+
+            favorite = self.model().variant(section).get("favorite", False)
+            number = self.model().variant(section).get("classification", 0)
+
+            painter.restore()
+
             classification = next(i for i in self.model().classifications if i["number"] == number)
 
             color = classification.get("color")

@@ -147,101 +147,6 @@ class SampleModel(QAbstractTableModel):
         tooltip = toolTip.sample_tooltip(data=self._samples[row], conn=self.conn)
         return tooltip
 
-        # info = ""
-        # sample = self._samples[row]
-        # if "name" in sample:
-        #     if sample["name"]:
-        #         name = sample["name"]
-        #         info += f"Sample <b>{name}</b><hr>"
-
-        # # genotype classification
-        # config = Config("classifications")
-        # genotype_classifications=config.get("genotypes", [])
-        # sample_id=sample["id"]
-        # sample_nb_genotype_by_classification=sql.get_sample_nb_genotype_by_classification(self.conn, sample_id)
-        # nb_validated_genotype=0
-        # nb_validation_genotype_message=""
-        # for classification in sample_nb_genotype_by_classification:
-        #     nb_validation_genotype_text=""
-        #     nb_validation_genotype_color=""
-        #     nb_genotype_by_classification=sample_nb_genotype_by_classification[classification]
-        #     if classification>0:
-        #         nb_validated_genotype+=nb_genotype_by_classification
-        #     style = None
-        #     for i in genotype_classifications:
-        #         if i["number"] == classification:
-        #             style = i
-        #     if style:
-        #         if "name" in style:
-        #             nb_validation_genotype_text += style["name"]
-        #             if "description" in style:
-        #                 nb_validation_genotype_text += f" (" + style["description"].strip() + ")"
-        #         if "color" in style:
-        #             nb_validation_genotype_color=style["color"]
-        #     nb_validation_genotype_message+=f"<tr><td style='color:{nb_validation_genotype_color}' align='right'>{nb_genotype_by_classification}</td><td width='10'></td><td>{nb_validation_genotype_text}</td></tr>"
-        # if nb_validation_genotype_message:
-        #     nb_validation_genotype_message=f"""
-        #         <hr>
-        #         Genotypes classification
-        #         <table>
-        #             {nb_validation_genotype_message}
-        #         </table>
-        #     """
-
-        # info_all_fields=""
-        # info_classification=""
-        # for sample_field in sample:
-        #     sample_field_value = str(sample[sample_field]).replace("\n", "<br>")
-        #     sample_field_value_color = ""
-        #     # all fields
-        #     if sample_field not in ["id", "name", "classification", "tags", "comment"]:
-        #         if sample_field == "phenotype":
-        #             sample_field_value = cst.PHENOTYPE_DESC.get(
-        #                 int(sample[sample_field]), "Unknown"
-        #             )
-        #         if sample_field == "sex":
-        #             sample_field_value = cst.SEX_DESC.get(int(sample[sample_field]), "Unknown")
-        #         info_all_fields += f"<tr><td>{sample_field}</td><td width='20'></td><td style='color:{sample_field_value_color}'>{sample_field_value}</td></tr>"
-        #     # classification fields
-        #     if sample_field in ["classification", "tags", "comment"]:
-        #         if sample_field == "tags":
-        #             if sample_field_value:
-        #                 sample_field_value = sample_field_value.replace(","," ")
-        #             else:
-        #                 sample_field_value = "<i>no tag</i>"
-        #         if sample_field == "comment":
-        #             if not sample_field_value:
-        #                 sample_field_value = "<i>no comment</i>"
-        #         if sample_field == "classification":
-        #             if sample_field_value:
-        #                 sample_field_value = ""
-        #                 style = None
-        #                 for i in self.classifications:
-        #                     if i["number"] == sample[sample_field]:
-        #                         style = i
-        #                 if style:
-        #                     if "name" in style:
-        #                         sample_field_value += style["name"]
-        #                         if "description" in style:
-        #                             sample_field_value += f" (" + style["description"].strip() + ")"
-        #                     if "color" in style:
-        #                         sample_field_value_color=style["color"]
-        #             else:
-        #                 sample_field_value = "<i>no classification</i>"
-        #         info_classification += f"<tr><td>{sample_field}</td><td width='20'></td><td style='color:{sample_field_value_color}'>{sample_field_value}</td></tr>"
-        # info += f"""
-        #     <table>
-        #         {info_all_fields}
-        #     </table>
-        #     <hr>
-        #     <table>
-        #         {info_classification}
-        #     </table>
-        #     {nb_validation_genotype_message}
-        # """
-        # info += f"</table>"
-        # return info
-
     def get_sample(self, row: int):
         if row >= 0 and row < len(self._samples):
             return self._samples[row]
@@ -433,6 +338,10 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data(
             "samples", copy.deepcopy(self.model.get_samples())
         )
+
+        # Automatically create source on all samples
+        self.on_create_samples_source(source_name = "samples")
+        self.mainwindow.set_state_data("source", "samples")
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_add_samples(self, samples: list):
@@ -488,8 +397,9 @@ class SamplesWidget(plugin.PluginWidget):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.tool_bar.addWidget(spacer)
 
+        # All samples button, create sources "samples"
         source_action = self.tool_bar.addAction(
-            FIcon(0xF0A75), "Create source", self.on_create_all_source
+            FIcon(0xF0A75), "Select all samples", self.on_create_samples_source
         )
 
         self.tool_bar.widgetForAction(source_action).setToolButtonStyle(
@@ -497,6 +407,17 @@ class SamplesWidget(plugin.PluginWidget):
         )
 
         source_action.setToolTip(self.tr("Create subset from all samples and use it"))
+
+        # Add genotypes for all samples
+        genotype_action = self.tool_bar.addAction(
+            FIcon(0xF0B38), "Show genotypes", self.on_add_genotypes
+        )
+
+        self.tool_bar.widgetForAction(genotype_action).setToolButtonStyle(
+            Qt.ToolButtonTextBesideIcon
+        )
+
+        genotype_action.setToolTip(self.tr("Add genotypes as fields from all samples"))
 
         self.select_action = QAction(FIcon(0xF0349), "Select variants for the sample")
         self.select_action.triggered.connect(self.on_show_variant)
@@ -512,7 +433,9 @@ class SamplesWidget(plugin.PluginWidget):
         self.clear_filter_action.triggered.connect(self.on_clear_filters)
 
         self.source_action = QAction(FIcon(0xF0A75), "Create a source for the sample")
-        self.source_action.triggered.connect(self.on_create_source)
+        self.source_action.triggered.connect(self.on_create_samples_source)
+        self.genotype_action = QAction(FIcon(0xF0B38), "Add genotypes from all samples")
+        self.genotype_action.triggered.connect(self.on_add_genotypes)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
 
@@ -624,17 +547,21 @@ class SamplesWidget(plugin.PluginWidget):
         if indexes:
             sample_name = indexes[0].siblingAtColumn(0).data()
 
-            fields = self.mainwindow.get_state_data("fields")
-            fields = [f for f in fields if not f.startswith("samples")]
-            fields += [f"samples.{sample_name}.gt"]
+            # Add GT field
+            # fields = self.mainwindow.get_state_data("fields")
+            # fields = [f for f in fields if not f.startswith("samples")]
+            # fields += [f"samples.{sample_name}.gt"]
+            self.on_add_genotypes(samples = [sample_name])
 
-            filters = self.mainwindow.get_state_data("filters")
+            # Create/Update current_sample source
+            self.on_create_samples_source(source_name = "current_sample", samples = [sample_name])
 
-            filters = {"$and": [{f"samples.{sample_name}.gt": {"$gt": 0}}]}
+            #self.mainwindow.set_state_data("fields", fields)
+            self.mainwindow.set_state_data("source", "current_sample")
+            
+            if "source_editor" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("source_editor")
 
-            # self.mainwindow.set_state_data("selected_samples", selected_samples)
-            self.mainwindow.set_state_data("fields", fields)
-            self.mainwindow.set_state_data("filters", filters)
             self.mainwindow.refresh_plugins(sender=self)
 
     def on_create_filter(self):
@@ -655,6 +582,10 @@ class SamplesWidget(plugin.PluginWidget):
             filters[root].append({f"samples.{sample_name}.gt": {"$gt": 0}})
 
             self.mainwindow.set_state_data("filters", filters)
+            
+            if "source_editor" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("source_editor")
+
             self.mainwindow.refresh_plugins(sender=self)
 
     def on_clear_filters(self):
@@ -670,33 +601,77 @@ class SamplesWidget(plugin.PluginWidget):
             )
 
             self.mainwindow.set_state_data("filters", filters)
-            self.mainwindow.refresh_plugins(sender=self)
-
-    def on_create_all_source(self):
-
-        sql.insert_selection_from_samples(
-            self.model.conn, self.model.get_samples(), name="samples"
-        )
-
-        self.mainwindow.set_state_data("source", "samples")
-        self.mainwindow.refresh_plugins(sender=self)
-
-    def on_create_source(self):
-        name, success = QInputDialog.getText(
-            self, self.tr("Source Name"), self.tr("Get a source name ")
-        )
-
-        # if not name:
-        #     return
-
-        if success and name:
-
-            sql.insert_selection_from_source(
-                self.model.conn, name, "variants", self._create_filters(False)
-            )
 
             if "source_editor" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("source_editor")
+
+            self.mainwindow.refresh_plugins(sender=self)
+
+    # def on_create_all_source(self):
+
+    #     sql.insert_selection_from_samples(
+    #         self.model.conn, self.model.get_samples(), name="samples"
+    #     )
+
+    #     self.mainwindow.set_state_data("source", "samples")
+    #     self.mainwindow.refresh_plugins(sender=self)
+
+    def on_create_samples_source(self, source_name: str = "samples", samples: dict = None):
+        """
+        Create source from a list of samples
+        args: 
+            - source_name: name of the source (default "samples")
+            - samples: list of samples for source (default all samples in the model)
+        """
+        if not samples:
+            samples = self.model.get_samples()
+
+        sql.insert_selection_from_samples(
+            self.model.conn, samples, name=source_name
+        )
+
+        self.mainwindow.set_state_data("source", source_name)
+        
+        if "source_editor" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("source_editor")
+
+        self.mainwindow.refresh_plugins(sender=self)
+
+    # def on_create_source(self):
+    #     name, success = QInputDialog.getText(
+    #         self, self.tr("Source Name"), self.tr("Get a source name ")
+    #     )
+
+    #     # if not name:
+    #     #     return
+
+    #     if success and name:
+
+    #         sql.insert_selection_from_source(
+    #             self.model.conn, name, "variants", self._create_filters(False)
+    #         )
+
+    #         if "source_editor" in self.mainwindow.plugins:
+    #             self.mainwindow.refresh_plugin("source_editor")
+
+    def on_add_genotypes(self, samples: dict = None):
+        """
+        Add from a list of samples
+        args: 
+            - samples: list of samples for source (default all samples in the model)
+        """
+        if not samples:
+            samples = self.model.get_samples()
+        
+        if samples:
+            fields = self.mainwindow.get_state_data("fields")
+            fields = [f for f in fields if not f.startswith("samples")]
+            for sample_name in samples:
+                # Add GT field
+                fields += [f"samples.{sample_name}.gt"]
+
+            self.mainwindow.set_state_data("fields", fields)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_register(self, mainwindow: MainWindow):
         """This method is called when the plugin is registered from the mainwindow.

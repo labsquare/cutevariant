@@ -299,7 +299,11 @@ def variant_tooltip(data: dict, conn: sqlite3.Connection, fields = None):
             if field.startswith("samples."):
                 k = field.split(".")
                 if k[2] == "gt":
-                    value = Style.GENOTYPE.get(int(variant[field]), "Unknown")["name"]
+                    if variant[field] is None:
+                        value_gt = -1
+                    else:
+                        value_gt = int(variant[field])
+                    value = Style.GENOTYPE.get(value_gt)["name"]
                 else:
                     value = variant[field]
             else:
