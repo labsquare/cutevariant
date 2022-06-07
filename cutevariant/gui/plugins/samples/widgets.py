@@ -106,11 +106,9 @@ class SampleModel(QAbstractTableModel):
 
             if col == SampleModel.COMMENT_COLUMN:
                 sample = self._samples[index.row()]
-                sample_id = sample["id"]
-                sample_has_classified_genotypes = (
-                    sql.get_if_sample_has_classified_genotypes(self.conn, sample_id)
-                )
-                if sample_has_classified_genotypes:
+                if sql.get_if_sample_has_classified_genotypes(
+                    self.conn, sample["id"]
+                    ):
                     return QIcon(FIcon(0xF017F, color))
                 if sample["comment"]:
                     return QIcon(FIcon(0xF017A, color))
