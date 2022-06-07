@@ -32,6 +32,29 @@ class AbstractSectionWidget(QWidget):
         raise NotImplementedError
 
 
+class GenotypeSectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Genotype")
+        self.setToolTip("Fields attached to the current genotype")
+        self.view = DictWidget()
+        self.view.view.horizontalHeader().hide()
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.view)
+
+    def set_genotype(self, genotype: dict):
+
+        self.view.set_dict(genotype)
+
+        self.view.view.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
+        self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+
+    def get_genotype(self):
+        return {}
+
 class EvaluationSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -156,6 +179,7 @@ class SampleVariantWidget(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.add_section(EvaluationSectionWidget())
+        self.add_section(GenotypeSectionWidget())
         self.add_section(HistorySectionWidget())
 
     def add_section(self, widget: AbstractSectionWidget):
@@ -250,7 +274,6 @@ class SampleVariantWidget(QWidget):
         """
         genotype = self.get_genotype(sample_id, variant_id)
         self.last_genotype_hash = self.get_genotype_hash(genotype)
-        print(genotype)
 
         self.setWindowTitle("Genotype edition")
 
