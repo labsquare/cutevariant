@@ -551,10 +551,10 @@ class SamplesWidget(plugin.PluginWidget):
             # fields = self.mainwindow.get_state_data("fields")
             # fields = [f for f in fields if not f.startswith("samples")]
             # fields += [f"samples.{sample_name}.gt"]
-            self.on_add_genotypes(samples = [sample_name])
+            self.on_add_genotypes(samples = {sample_name})
 
             # Create/Update current_sample source
-            self.on_create_samples_source(source_name = "current_sample", samples = [sample_name])
+            self.on_create_samples_source(source_name = "current_sample", samples = {sample_name})
 
             #self.mainwindow.set_state_data("fields", fields)
             self.mainwindow.set_state_data("source", "current_sample")
