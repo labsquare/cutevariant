@@ -141,7 +141,7 @@ def genotype_tooltip(data: dict, conn: sqlite3.Connection):
     return message
 
 
-def sample_tooltip(data: dict, conn: sqlite3.Connection):
+def sample_tooltip(data: dict, conn: sqlite3.Connection, genotype_classification: bool = False):
 
     info = ""
     sample = data
@@ -155,44 +155,47 @@ def sample_tooltip(data: dict, conn: sqlite3.Connection):
     sample_classifications = config.get("samples", [])
 
     # genotype classification
-    config = Config("classifications")
-    genotype_classifications = config.get("genotypes", [])
-    sample_id = sample["id"]
-    sample_nb_genotype_by_classification = sql.get_sample_nb_genotype_by_classification(
-        conn, sample_id
-    )
-    nb_validated_genotype = 0
     nb_validation_genotype_message = ""
-    for classification in sample_nb_genotype_by_classification:
-        nb_validation_genotype_text = ""
-        nb_validation_genotype_color = ""
-        nb_genotype_by_classification = sample_nb_genotype_by_classification[
-            classification
-        ]
-        if classification > 0:
-            nb_validated_genotype += nb_genotype_by_classification
-        style = None
-        for i in genotype_classifications:
-            if i["number"] == classification:
-                style = i
-        if style:
-            if "name" in style:
-                nb_validation_genotype_text += style["name"]
-                if "description" in style:
-                    nb_validation_genotype_text += (
-                        f" (" + style["description"].strip() + ")"
-                    )
-            if "color" in style:
-                nb_validation_genotype_color = style["color"]
-        nb_validation_genotype_message += f"<tr><td style='color:{nb_validation_genotype_color}' align='right'>{nb_genotype_by_classification}</td><td width='10'></td><td>{nb_validation_genotype_text}</td></tr>"
-    if nb_validation_genotype_message:
-        nb_validation_genotype_message = f"""
-            <hr>
-            Genotypes classification
-            <table>
-                {nb_validation_genotype_message}
-            </table>
-        """
+    # if genotype_classification:
+    #     config = Config("classifications")
+    #     genotype_classifications = config.get("genotypes", [])
+    #     sample_id = sample["id"]
+    #     sample_nb_genotype_by_classification = sql.get_sample_nb_genotype_by_classification(
+    #         conn, sample_id
+    #     )
+    #     nb_validated_genotype = 0
+    #     nb_validation_genotype_message = ""
+    #     for classification in sample_nb_genotype_by_classification:
+    #         nb_validation_genotype_text = ""
+    #         nb_validation_genotype_color = ""
+    #         nb_genotype_by_classification = sample_nb_genotype_by_classification[
+    #             classification
+    #         ]
+    #         if classification > 0:
+    #             nb_validated_genotype += nb_genotype_by_classification
+    #         style = None
+    #         for i in genotype_classifications:
+    #             if i["number"] == classification:
+    #                 style = i
+    #         if style:
+    #             if "name" in style:
+    #                 nb_validation_genotype_text += style["name"]
+    #                 if "description" in style:
+    #                     nb_validation_genotype_text += (
+    #                         f" (" + style["description"].strip() + ")"
+    #                     )
+    #             if "color" in style:
+    #                 nb_validation_genotype_color = style["color"]
+    #         nb_validation_genotype_message += f"<tr><td style='color:{nb_validation_genotype_color}' align='right'>{nb_genotype_by_classification}</td><td width='10'></td><td>{nb_validation_genotype_text}</td></tr>"
+    #     if nb_validation_genotype_message:
+    #         nb_validation_genotype_message = f"""
+    #             <hr>
+    #             Genotypes classification
+    #             <table>
+    #                 {nb_validation_genotype_message}
+    #             </table>
+    #         """
+        
 
     info_all_fields = ""
     info_classification = ""
@@ -299,7 +302,11 @@ def variant_tooltip(data: dict, conn: sqlite3.Connection, fields = None):
             if field.startswith("samples."):
                 k = field.split(".")
                 if k[2] == "gt":
-                    value = Style.GENOTYPE.get(int(variant[field]), "Unknown")["name"]
+                    if variant[field] is None:
+                        value_gt = -1
+                    else:
+                        value_gt = int(variant[field])
+                    value = Style.GENOTYPE.get(value_gt)["name"]
                 else:
                     value = variant[field]
             else:
