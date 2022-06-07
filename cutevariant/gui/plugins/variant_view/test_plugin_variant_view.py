@@ -56,7 +56,7 @@ def test_model_pagination(qtbot, conn):
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # Load asynchronously
-    with qtbot.waitSignals([model.variant_loaded, model.count_loaded], timeout=5000) as blocker:
+    with qtbot.waitSignals([model.variant_loaded, model.count_loaded], timeout=10000) as blocker:
         model.load()
 
     # Test default variants !
@@ -70,7 +70,7 @@ def test_model_pagination(qtbot, conn):
     assert model.hasPage(2)
     model.nextPage()
 
-    with qtbot.waitSignal(model.load_finished, timeout=5000):
+    with qtbot.waitSignal(model.load_finished, timeout=10000):
         model.load()
 
     assert model.total == 3
@@ -81,19 +81,19 @@ def test_model_pagination(qtbot, conn):
 
     # Move to previous page
     # model.previousPage()
-    # with qtbot.waitSignal(model.load_finished, timeout=5000):
+    # with qtbot.waitSignal(model.load_finished, timeout=10000):
     #     model.load()
     # assert model.page == 1
 
     # #  Move to last page
     # model.lastPage()
-    # with qtbot.waitSignal(model.load_finished, timeout=5000):
+    # with qtbot.waitSignal(model.load_finished, timeout=10000):
     #     model.load()
 
     # assert model.page == 2
 
     # # Move to first page
-    # with qtbot.waitSignal(model.load_finished, timeout=5000):
+    # with qtbot.waitSignal(model.load_finished, timeout=10000):
     #     model.firstPage()
     # assert model.page == 1
 
@@ -105,7 +105,7 @@ def test_model_data(qtbot, conn):
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # Load asynchronously
-    with qtbot.waitSignal(model.load_finished, timeout=5000) as blocker:
+    with qtbot.waitSignal(model.load_finished, timeout=10000) as blocker:
         model.load()
 
     #  Test read variant
@@ -131,11 +131,11 @@ def test_model_sort(qtbot, conn):
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # First load data
-    with qtbot.waitSignal(model.load_finished, timeout=5000):
+    with qtbot.waitSignal(model.load_finished, timeout=10000):
         model.load()
 
     # Then Sort position ( colonne 2 )
-    with qtbot.waitSignal(model.load_finished, timeout=5000) as blocker:
+    with qtbot.waitSignal(model.load_finished, timeout=10000) as blocker:
         model.sort(2, QtCore.Qt.DescendingOrder)
 
 
@@ -145,6 +145,6 @@ def test_view(qtbot, conn):
     view.conn = conn
 
     # with qtbot.waitSignals(
-    #     [view.model.variant_loaded, view.model.count_loaded], timeout=5000
+    #     [view.model.variant_loaded, view.model.count_loaded], timeout=10000
     # ) as blocker:
     #     view.load()
