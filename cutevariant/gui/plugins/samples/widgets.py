@@ -551,10 +551,10 @@ class SamplesWidget(plugin.PluginWidget):
             # fields = self.mainwindow.get_state_data("fields")
             # fields = [f for f in fields if not f.startswith("samples")]
             # fields += [f"samples.{sample_name}.gt"]
-            self.on_add_genotypes(samples = {sample_name})
+            self.on_add_genotypes(samples = [sample_name])
 
             # Create/Update current_sample source
-            self.on_create_samples_source(source_name = "current_sample", samples = {sample_name})
+            self.on_create_samples_source(source_name = "current_sample", samples = [sample_name])
 
             #self.mainwindow.set_state_data("fields", fields)
             self.mainwindow.set_state_data("source", "current_sample")
@@ -616,7 +616,7 @@ class SamplesWidget(plugin.PluginWidget):
     #     self.mainwindow.set_state_data("source", "samples")
     #     self.mainwindow.refresh_plugins(sender=self)
 
-    def on_create_samples_source(self, source_name: str = "samples", samples: dict = None):
+    def on_create_samples_source(self, source_name: str = "samples", samples: list = None):
         """Create source from a list of samples
 
         Args: 
@@ -654,7 +654,7 @@ class SamplesWidget(plugin.PluginWidget):
     #         if "source_editor" in self.mainwindow.plugins:
     #             self.mainwindow.refresh_plugin("source_editor")
 
-    def on_add_genotypes(self, samples: dict = None):
+    def on_add_genotypes(self, samples: list = None):
         """Add from a list of samples
 
         Args: 
