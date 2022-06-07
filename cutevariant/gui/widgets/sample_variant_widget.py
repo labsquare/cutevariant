@@ -1,19 +1,14 @@
-import html
 import sqlite3
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 
-from cutevariant.core import sql
-from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.config import Config
-
+from cutevariant.core import sql
 from cutevariant.gui.ficon import FIcon
+from cutevariant.gui.widgets import DictWidget, MarkdownEditor, TagEdit
 
-from cutevariant.gui.widgets.multi_combobox import MultiComboBox
-
-from cutevariant.gui.widgets import TagEdit
-
+from cutevariant import constants, LOGGER
 
 class QHLine(QFrame):
     def __init__(self):
@@ -22,220 +17,269 @@ class QHLine(QFrame):
         self.setFrameShadow(QFrame.Sunken)
 
 
-class SampleVariantWidget(QWidget):
-    def __init__(self, conn: sqlite3.Connection, parent=None):
+class AbstractSectionWidget(QWidget):
+    def __init__(self, parent: QWidget = None):
         super().__init__()
-        self.conn = conn
-        if Config("validation")["validation_tags"] != None:
-            self.TAG_LIST = [tag["name"] for tag in Config("validation")["validation_tags"]]
+
+        self.conn = None
+
+    def set_genotype(self, variant: dict):
+        raise NotImplementedError
+
+    def get_genotype(self) -> dict:
+        raise NotImplementedError
+
+
+class GenotypeSectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Genotype")
+        self.setToolTip("Fields attached to the current genotype")
+        self.view = DictWidget()
+        self.view.view.horizontalHeader().hide()
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.view)
+
+    def set_genotype(self, genotype: dict):
+
+        self.view.set_dict(genotype)
+
+        self.view.view.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
+        self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+
+    def get_genotype(self):
+        return {}
+
+class EvaluationSectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        if hasattr(constants, 'HAS_OPERATOR'):
+            self.TAG_SEPARATOR = constants.HAS_OPERATOR
         else:
-            self.TAG_LIST = []
-        self.TAG_SEPARATOR = "&"
+            self.TAG_SEPARATOR = ","
+        self.setWindowTitle("Evaluation")
+        self.setToolTip("Edit genotype information here")
+        main_layout = QFormLayout()
 
-        # Title
-        self.title = QLabel()
-        self.title.setTextFormat(Qt.RichText)
-        self.title_variant = QLineEdit()
-        self.title_sample = QLineEdit()
-        self.title_variant.setReadOnly(True)
-        self.title_sample.setReadOnly(True)
-        title_layout = QHBoxLayout()
-        title_layout.addWidget(self.title_sample)
-        title_layout.addWidget(QLabel("for"))
-        title_layout.addWidget(self.title_variant)
-
-        # Validation
-        self.classification = QComboBox()
-        self.tab_widget = QTabWidget()
+        self.class_combo = QComboBox()
         self.tag_edit = TagEdit()
-        self.tag_button = QToolButton()
-        self.tag_button.setAutoRaise(True)
-        self.tag_button.setIcon(FIcon(0xF0349))
-
+        self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma..."))
         self.tag_layout = QHBoxLayout()
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
 
-        self.tag_choice = TagEdit()
-        self.tag_choice_action = QWidgetAction(self)
-        self.tag_choice_action.setDefaultWidget(self.tag_choice)
+        self.edit_comment_btn = QPushButton("Edit comment")
+        self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
 
-        self.menu = QMenu()
-        self.menu.addAction(self.tag_choice_action)
-
-        self.tag_button.setMenu(self.menu)
-        self.tag_button.setPopupMode(QToolButton.InstantPopup)
-
-        # validation
-        # val_layout = QFormLayout()
-        # val_layout.addWidget(self.lock_button)
-        # val_layout.addWidget(QComboBox())
-
-        # self.edit_comment_btn = QPushButton("Edit comment")
-        # self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
-        self.info_lock = QLabel()
+        main_layout.addRow("Classification", self.class_combo)
+        main_layout.addRow("Tags", self.tag_layout)
+        main_layout.addRow("Comment", self.comment)
+        self.setLayout(main_layout)
 
-        validation_box = QGroupBox()
-        validation_layout = QFormLayout(validation_box)
-
-        validation_layout.addRow("Validation", self.classification)
-        validation_layout.addRow("Tags", self.tag_layout)
-        validation_layout.addRow("Comment", self.comment)
-        validation_layout.addRow("", self.info_lock)
-
-        ### <tabs block> ###
-        # sample and variant information
-        # self.general_info = DictWidget()
-        self.var_info = DictWidget()
-        self.sample_info = DictWidget()
-        self.sample_has_var_info = DictWidget()
-        self.history_view = DictWidget()
-
-        # info_widget = QWidget()
-        # info_layout = QVBoxLayout()
-
-        # info_widget = QWidget()
-        # info_layout = QFormLayout(info_widget)
-        # self.info_var = QLabel()
-        # info_layout.addRow("", self.info_var)
-        # info_layout.addRow("", self.info_lock)
-
-        # var_layout = QVBoxLayout()
-        # self.var_title = QLabel("Variant")
-        # self.var_title.setAlignment(Qt.AlignCenter)
-        # var_layout.addWidget(self.var_title)
-        # var_layout.addWidget(self.var_info)
-
-        # sample_layout = QVBoxLayout()
-        # self.sample_title = QLabel("Sample")
-        # self.sample_title.setAlignment(Qt.AlignCenter)
-        # sample_layout.addWidget(self.sample_title)
-        # sample_layout.addWidget(self.sample_info)
-
-        # info_layout.addLayout(var_layout)
-        # info_layout.addLayout(sample_layout)
-        # info_widget.setLayout(info_layout)
-
-        self.tab_widget.addTab(validation_box, "Edit")
-        # self.tab_widget.addTab(self.general_info, "Information")
-        self.tab_widget.addTab(self.sample_has_var_info, "Genotyping")
-        self.tab_widget.addTab(self.var_info, "Variant")
-        self.tab_widget.addTab(self.sample_info, "Sample")
-        self.tab_widget.addTab(self.history_view, "History")
-        ### </tabs block> ###
-
-        vLayout = QVBoxLayout()
-        # vLayout.addWidget(self.title)
-        vLayout.addLayout(title_layout)
-        vLayout.addWidget(QHLine())
-        # vLayout.addWidget(validation_box)
-        vLayout.addWidget(self.tab_widget)
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        vLayout.addLayout(button_layout)
-
-        self.setLayout(vLayout)
-
-    def load(self, var: dict, sample: dict):
-        self.sample_has_var_data = sql.get_sample_annotations(self.conn, var["id"], sample["id"])
-        self.initial_db_validation = self.get_validation_from_data(self.sample_has_var_data)
-
-        var_name = "{chr}-{pos}-{ref}-{alt}".format(**var)
-        if len(var_name) > 30:
-            var_name = var_name[0:20] + "..." + var_name[-10:]
-
-        self.title.setText(
-            '<html><head/><body><p align="center">Validation status of variant <span style=" font-weight:700;">'
-            + html.escape(var_name)
-            + '</span> in sample <span style=" font-weight:700;">'
-            + str(sample["name"])
-            + "</span></p></body></html>"
-        )
-        self.setWindowTitle("Variant validation")
-        self.title_variant.setText(var_name)
-        self.title_sample.setText(sample["name"])
-
+        # Load classification
         config = Config("classifications")
-        classifications = config.get("genotypes", [])
+        self.genotype_classification = config.get("genotypes")
+        self.genotype_classification = sorted(self.genotype_classification, key= lambda c: c["number"])
+        for item in self.genotype_classification:
+            self.class_combo.addItem(
+                FIcon(0xF012F, item.get("color", "gray")),
+                item["name"],
+                userData=item["number"],
+            )
 
-        for item in classifications:
-            self.classification.addItem(FIcon(0xF012F, item["color"]), item["name"], item["number"])
+    def get_genotype(self) -> dict:
+        genotype = {
+            "classification": self.class_combo.currentData(),
+            "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]),
+            "comment": self.comment.toPlainText(),
+        }
 
-        index = self.classification.findData(self.sample_has_var_data["classification"])
-        self.classification.setCurrentIndex(index)
+        return genotype
 
-        # if self.sample_has_var_data.get("tags") is not None:
-        #     for tag in self.sample_has_var_data.get("tags", "").split(self.TAG_SEPARATOR):
-        #         if tag in self.TAG_LIST:
-        #             self.tag_edit.model().item(self.TAG_LIST.index(tag)).setData(
-        #                 Qt.Checked, Qt.CheckStateRole
-        #             )
+    def set_genotype(self, genotype: dict):
 
-        self.comment.setPlainText(self.sample_has_var_data.get("comment", ""))
-        self.comment.preview_btn.setChecked(True)
+        # Load tags
+        if "tags" in genotype:
+            self.tag_edit.setText(",".join(genotype["tags"].split(self.TAG_SEPARATOR)))
 
-        # # self.var_title.setText(var_name)
-        # # tabs stuff
-        # self.sample_has_var_info.set_dict(
-        #     {
-        #         k: v
-        #         for k, v in self.sample_has_var_data.items()
-        #         if k not in ("variant_id", "sample_id", "classification", "tags", "comment")
-        #     }
-        # )
-        # self.var_info.set_dict({k: v for k, v in var.items() if k not in ("id")})
+        # Load comment
+        if "comment" in genotype:
+            self.comment.setPlainText(genotype["comment"])
+            self.comment.preview_btn.setChecked(True)
 
-        # sample_info_dict = {k: v for k, v in sample.items() if k not in ("id")}
-        # for k, v in SAMPLE_VARIANT_CLASSIFICATION.items():
-        #     sample_info_dict[v["name"]] = sql.get_sample_variant_classification_count(
-        #         self.conn, sample["id"], k
-        #     )
-        # self.sample_info.set_dict(sample_info_dict)
-        # self.sample_info.view.horizontalHeader().setSectionResizeMode(
-        #     0, QHeaderView.ResizeToContents
-        # )
+        # Load classification
+        if "classification" in genotype:
+            self.class_combo.setCurrentText(
+                next(
+                    (
+                        item["name"]
+                        for item in self.genotype_classification
+                        if item["number"] == genotype["classification"]
+                    ),
+                    "Unknown",
+                )
+            )
 
-        # # req = get_sample_variant_classification_count(self.conn, sample["id"], 2)
-        # # self.info_var.setText("Total of validated variants for this sample: 0")
-        # valid_dict = {}
+        if self.is_locked(genotype["sample_id"]):
+            self.setToolTip("Genotype can't be edited because the sample is locked")
+            self.tag_edit.setReadOnly(True)
+            self.comment.preview_btn.setDisabled(True)
+            self.class_combo.setDisabled(True)
 
-        # # self.general_info.set_dict(valid_dict)
-        # # self.general_info.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+    def is_locked(self, sample_id: int):
+        """Prevents editing genotype if sample is classified as locked
+        A sample is considered locked if its classification has the boolean "lock: true" set in the Config (yml) file.
 
-        # if sample["classification"] in (None, 0):
-        #     self.info_lock.hide()
-        # else:
-        #     self.info_lock.setText("Sample status: Locked (variant validation can't be edited)")
-        #     self.classification.setDisabled(True)
-        #     self.tag_edit.setDisabled(True)
-        #     self.comment.preview_btn.setDisabled(True)
+        Args:
+            sample_id (int): sql sample id
 
-        self.history_view.set_dict(self.get_history_genotypes())
-
-        self.initial_state = self.get_gui_state()
-
-    def save(self):
+        Returns:
+            locked (bool) : lock status of sample attached to current genotype
         """
-        Two checks to perform:
-         - did the user change any value through the interface?
-         - is the database state the same as when the dialog was first opened?
-        If yes and yes, update genotypes
-        """
-        current_state = self.get_gui_state()
-        if current_state == self.initial_state:
-            return
+        config_classif = Config("classifications").get("samples", None)
+        sample = sql.get_sample(self.conn, sample_id)
+        sample_classif = sample.get("classification", None)
 
-        current_db_data = sql.get_sample_annotations(
-            self.conn,
-            self.sample_has_var_data["variant_id"],
-            self.sample_has_var_data["sample_id"],
-        )
-        current_db_validation = self.get_validation_from_data(current_db_data)
-        if current_db_validation != self.initial_db_validation:
+        if config_classif == None or sample_classif == None:
+            return False
+        
+        locked = False
+        for config in config_classif:
+            if config["number"] == sample_classif and "lock" in config:
+                if config["lock"] == True:
+                    locked = True
+        return locked
+
+
+class HistorySectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("History")
+        self.setToolTip("Modification history of current genotype")
+
+        self.view = DictWidget()
+        self.view.view.horizontalHeader().hide()
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.view)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+    def set_genotype(self, genotype: dict):
+
+        results = {}
+        row_id = sql.get_genotype_rowid(self.conn, genotype["variant_id"], genotype["sample_id"])
+
+        for rec in sql.get_histories(self.conn, "genotypes", row_id):
+
+            key = rec["timestamp"] + " [" + str(rec["id"]) + "]"
+            value = "{user} change {field} from '{before}' to '{after}'".format(**rec)
+            results[key] = value
+
+        self.view.set_dict(results)
+
+    def get_genotype(self) -> dict:
+        return {}
+
+
+class SampleVariantWidget(QWidget):
+    """A tab view with Strategy Pattern showing different views for the selected genotype
+
+    w = SampleVariantWidget()
+    w.load(sample_id, variant_id)
+    w.save(sample_id, variant_id)
+
+    """
+    def __init__(self, conn: sqlite3.Connection, parent=None):
+        super().__init__()
+
+        self._conn = conn
+        self._section_widgets = []
+
+        self.tab_widget = QTabWidget()
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.tab_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.add_section(EvaluationSectionWidget())
+        self.add_section(GenotypeSectionWidget())
+        self.add_section(HistorySectionWidget())
+
+    def add_section(self, widget: AbstractSectionWidget):
+        """Add tab section
+
+        Args:
+            widget (AbstractSectionWidget): All subclass of AbstractSectionWidget
+        """
+        widget.conn = self.conn
+        self._section_widgets.append(widget)
+
+        subw = QWidget()
+        vbox = QVBoxLayout(subw)
+        label = QLabel("{}".format(widget.toolTip()))
+        vbox.addWidget(label)
+        vbox.addWidget(widget)
+
+        widget.windowTitleChanged.connect(self._on_section_name_changed)
+
+        self.tab_widget.addTab(subw, widget.windowTitle())
+
+    def _on_section_name_changed(self, text):
+
+        index = self._section_widgets.index(self.sender())
+
+        if index:
+            self.tab_widget.setTabText(index, text)
+
+    @property
+    def conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, c: sqlite3.Connection):
+        self._conn = conn
+        for widget in self._section_widgets:
+            widget.conn = conn
+
+    def get_genotype(self, sample_id: int, variant_id: int):
+        """Get dict representing selected row from "genotypes" table
+
+        Args:
+            sample_id (int): sql sample id
+            variant_id (int): sql variant id
+
+        Returns:
+            genotype (dict): all fields from "genotypes" table corresponding to sample_id and variant_id
+        """
+        sample = sql.get_sample(self._conn, sample_id)
+        fields = sql.get_table_columns(self._conn, "genotypes")
+        genotype = [g for g in sql.get_genotypes(self.conn, variant_id, fields=fields, samples=[sample["name"]])]
+        if len(genotype) > 1:
+            LOGGER.error(f"Multiple genotypes returned for variant_id:{variant_id} with sample_id:{sample_id}")
+            return None
+        #sql.get_genotypes keeps in output every field that was in samples={sample}
+        #If not removed, sql.update_genotype will crash because they don't exist in "genotypes" table
+        genotype[0].pop("name", None)
+        return genotype[0]
+
+    def save(self, sample_id: int, variant_id: int):
+        """Save widget forms to the database
+
+        It also checks if another sqlite instance has changed data and trigger a messagebox if it is.
+
+        Args:
+            sample_id (int): sample sql id
+        """
+
+        genotype = self.get_genotype(sample_id, variant_id)
+        current_genotype_hash = self.get_genotype_hash(genotype)
+
+        if self.last_genotype_hash != current_genotype_hash:
             ret = QMessageBox.warning(
                 None,
                 "Database has been modified by another user.",
@@ -245,26 +289,30 @@ class SampleVariantWidget(QWidget):
             if ret == QMessageBox.No:
                 return
 
-        # avoid losing tags who exist in DB but not in config.yml
-        missing_tags = []
-        for tag in self.initial_db_validation["tags"].split(self.TAG_SEPARATOR):
-            if tag not in self.TAG_LIST:
-                missing_tags.append(tag)
+        for widget in self._section_widgets:
+            genotype.update(widget.get_genotype())
 
-        update_data = {
-            "variant_id": self.sample_has_var_data["variant_id"],
-            "sample_id": self.sample_has_var_data["sample_id"],
-            "classification": self.classification.currentData(),
-            "tags": self.TAG_SEPARATOR.join(self.tag_edit.text()),
-            "comment": self.comment.toPlainText(),
-        }
-        sql.update_genotypes(self.conn, update_data)
+        sql.update_genotypes(self.conn, genotype)
+
+    def load(self, sample_id: int, variant_id: int):
+        """Load widget forms from database
+
+        Args:
+            sample_id (int): sample sql id
+        """
+        genotype = self.get_genotype(sample_id, variant_id)
+        self.last_genotype_hash = self.get_genotype_hash(genotype)
+
+        self.setWindowTitle("Genotype edition")
+
+        for widget in self._section_widgets:
+            widget.set_genotype(genotype)
 
     def get_validation_from_data(self, data):
         return {
             "classif_index": int("{classification}".format(**data)),
-            "tags": data.get("tags", ""),
-            "comment": data.get("comment", ""),
+            "tags": data["tags"],
+            "comment": data["comment"],
         }
 
     def get_gui_state(self):
@@ -277,32 +325,31 @@ class SampleVariantWidget(QWidget):
         values.append(self.comment.toPlainText())
         return values
 
-    def get_history_genotypes(self):
-        """Get the history of samples"""
-        results = {}
-        for record in self.conn.execute(
-            f"""SELECT  ('[' || `timestamp` || ']') as time,
-                        ('[' || `history`.`id` || ']') as id,
-                        ( '[' || `user` || ']' || ' - ' || '[' || `samples`.`name` || '|' || `variants`.`chr` || '-' || `variants`.`pos` || '-' || `variants`.`ref` || '-' || `variants`.`alt` || '] '  || ' - ' || '"' || `field` || '" from "' || `before` || '" to "' || `after` || '"') as 'change'
-                FROM `history`
-                INNER JOIN `genotypes` ON `history`.`table_rowid`=`genotypes`.`rowid`
-                INNER JOIN `variants` ON `genotypes`.`variant_id`=`variants`.`id`
-                INNER JOIN `samples` ON `genotypes`.`sample_id`=`samples`.`id` 
-                WHERE `table`='genotypes'"""
-        ):
-            results[record["time"] + " " + record["id"]] = record["change"]
+    def get_genotype_hash(self, sample: dict) -> str:
+        """Return a footprint of a sample based on editable fields.
 
-        return results
+        This is used to check if sample has been changed by other before to save into the database
 
+        Args:
+            sample (dict): sample
+
+        Returns:
+            str: a string representation of a sample
+        """
+        return repr(
+            {
+                k: v
+                for k, v in sample.items()
+                if k in ["classification", "comment", "tags"]
+            }
+        )
 
 class SampleVariantDialog(QDialog):
-    def __init__(self, conn, sample_id, var_id, parent=None):
+    def __init__(self, conn, sample_id, variant_id, parent=None):
         super().__init__()
 
         self.sample_id = sample_id
-        self.var_id = var_id
-        self.sample_data = sql.get_sample(conn, sample_id)
-        self.variant_data = sql.get_variant(conn, var_id)
+        self.variant_id = variant_id
 
         self.w = SampleVariantWidget(conn)
         self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
@@ -318,11 +365,11 @@ class SampleVariantDialog(QDialog):
         # self.resize(800, 600)
 
     def load(self):
-        self.w.load(self.variant_data, self.sample_data)
+        self.w.load(self.sample_id, self.variant_id)
         self.setWindowTitle(self.w.windowTitle())
 
     def save(self):
-        self.w.save()
+        self.w.save(self.sample_id, self.variant_id)
         self.accept()
 
 
@@ -332,9 +379,9 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("C:/Users/Ichtyornis/Projects/cutevariant/test2.db")
+    conn = sql.get_sql_connection("L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/devel_7june2022.db")
 
-    w = SampleVariantDialog(conn, 1, 1)
+    w = SampleVariantDialog(conn, 1, 7)
 
     w.show()
 

@@ -864,7 +864,6 @@ def get_histories(conn: sqlite3.Connection, table: str, table_id: int) -> dict:
     Todo: test function
     """
     conn.row_factory = sqlite3.Row
-
     for rec in conn.execute(
         f"SELECT * FROM `history` WHERE `table`=? AND `table_rowid` = ? ", (table, table_id)
     ):
@@ -2971,6 +2970,25 @@ def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List
         query += f"WHERE samples.name IN ({sample_clause})"
 
     return (dict(data) for data in conn.execute(query))
+
+
+def get_genotype_rowid(conn: sqlite3.Connection, variant_id: int, sample_id: int):
+    """
+    Used to determine rowid to fill the "history" table
+    
+    Args:
+        sample_id (int): sql sample id
+        variant_id (int): sql variant id
+
+    Returns:
+        rowid (int): rowid from "genotypes" table corresponding to sample_id and variant_id
+    """
+    conn.row_factory = sqlite3.Row
+    return dict(
+        conn.execute(
+            f"SELECT genotypes.rowid FROM genotypes WHERE variant_id = {variant_id} AND sample_id = {sample_id}"
+        ).fetchone()
+    )["rowid"]
 
 
 def update_sample(conn: sqlite3.Connection, sample: dict):
