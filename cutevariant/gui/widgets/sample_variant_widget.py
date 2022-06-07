@@ -1,4 +1,3 @@
-import html
 import sqlite3
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
@@ -7,7 +6,6 @@ from PySide6.QtGui import *
 from cutevariant.config import Config
 from cutevariant.core import sql
 from cutevariant.gui.ficon import FIcon
-from cutevariant.gui.widgets.multi_combobox import MultiComboBox
 from cutevariant.gui.widgets import DictWidget, MarkdownEditor, TagEdit
 
 from cutevariant import constants, LOGGER
@@ -322,8 +320,6 @@ class SampleVariantDialog(QDialog):
 
         self.sample_id = sample_id
         self.variant_id = variant_id
-        # self.sample_data = sql.get_sample(conn, sample_id)
-        # self.variant_data = sql.get_variant(conn, var_id)
 
         self.w = SampleVariantWidget(conn)
         self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
