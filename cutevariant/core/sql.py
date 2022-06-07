@@ -1073,7 +1073,7 @@ def insert_selection_from_samples(
     )
 
     query = f"""
-    SELECT id FROM variants INNER JOIN genotypes ON genotypes.variant_id = variants.id 
+    SELECT distinct(id) FROM variants INNER JOIN genotypes ON genotypes.variant_id = variants.id 
     WHERE genotypes.sample_id IN ({ids}) AND genotypes.gt > {gt_min}"""
 
     insert_selection_from_sql(
