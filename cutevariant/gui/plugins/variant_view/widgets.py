@@ -1740,12 +1740,12 @@ class VariantView(QWidget):
         
         # Menu Validation for sample
         if header_name_match_sample:
-            if validation_menu_lock:
-                QMessageBox.information(
-                    self, "sample locked", self.tr(f"Sample '{sample_name}' is locked")
-                )
-            else:
-                self._show_sample_variant_dialog()
+            # if validation_menu_lock:
+            #     QMessageBox.information(
+            #         self, "sample locked", self.tr(f"Sample '{sample_name}' is locked")
+            #     )
+            # else:
+            self._show_sample_variant_dialog()
         else:
             self._show_variant_dialog()
 

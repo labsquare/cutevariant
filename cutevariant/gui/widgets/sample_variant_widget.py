@@ -64,6 +64,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.setToolTip("Edit genotype information here")
         main_layout = QFormLayout()
 
+        self.sample_label = QLabel()
+        self.variant_label = QLabel()
+
         self.class_combo = QComboBox()
         self.tag_edit = TagEdit()
         self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma..."))
@@ -77,6 +80,8 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
+        main_layout.addRow("Sample", self.sample_label)
+        main_layout.addRow("Variant", self.variant_label)
         main_layout.addRow("Classification", self.class_combo)
         main_layout.addRow("Tags", self.tag_layout)
         main_layout.addRow("Comment", self.comment)
@@ -103,6 +108,26 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         return genotype
 
     def set_genotype(self, genotype: dict):
+
+        # Load Sample name
+        sample = sql.get_sample(self.conn, genotype.get("sample_id", 0))
+        #sample_name = sample.get("name", None)
+        if "name" in sample:
+            self.sample_label.setText(str(sample["name"]))
+
+        # Load variant
+        # Get variant_name_pattern
+        config = Config("variables") or {}
+        variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+
+        # Get fields
+        variant = sql.get_variant(self.conn, genotype.get("variant_id", 0), with_annotations=True)
+        if len(variant["annotations"]):
+            for ann in variant["annotations"][0]:
+                variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+        variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+        variant_text = variant_name_pattern.format(**variant)
+        self.variant_label.setText(variant_text)
 
         # Load tags
         if "tags" in genotype:
@@ -157,6 +182,60 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         return locked
 
 
+class VariantSectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Variant")
+        self.setToolTip("Annotation of the current variant")
+        self.view = DictWidget()
+        self.view.view.horizontalHeader().hide()
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.view)
+
+    def set_genotype(self, genotype: dict):
+
+        variant = sql.get_variant(self.conn, genotype["variant_id"], with_annotations=False)
+
+        self.view.set_dict(
+            {i: v for i, v in variant.items() if i not in ["variant_id", "annotations", "samples"]}
+        )
+
+        self.view.view.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
+        self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+
+    def get_genotype(self):
+        return {}
+
+class SampleSectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Sample")
+        self.setToolTip("Annotation of the current sample")
+        self.view = DictWidget()
+        self.view.view.horizontalHeader().hide()
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.view)
+
+    def set_genotype(self, genotype: dict):
+
+        sample = sql.get_sample(self.conn, genotype["sample_id"])
+
+        self.view.set_dict(
+            {i: v for i, v in sample.items() if i not in ["sample_id"]}
+        )
+
+        self.view.view.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
+        self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+
+    def get_genotype(self):
+        return {}
+
 class HistorySectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -208,6 +287,8 @@ class SampleVariantWidget(QWidget):
 
         self.add_section(EvaluationSectionWidget())
         self.add_section(GenotypeSectionWidget())
+        self.add_section(VariantSectionWidget())
+        self.add_section(SampleSectionWidget())
         self.add_section(HistorySectionWidget())
 
     def add_section(self, widget: AbstractSectionWidget):

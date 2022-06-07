@@ -163,8 +163,6 @@ class HistoryModel(QAbstractTableModel):
         self.records.insert(0, [tags, time, perf_time, query, count])
         self.endInsertRows()
 
-        print("TAGS", self.rowCount())
-
     def from_json(self, records: dict):
         """Load from a json serialisable object"""
 
