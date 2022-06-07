@@ -77,10 +77,6 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         self.name_label = QLabel()
 
-        self.family_edit = QLineEdit()
-        self.father_edit = QLineEdit()
-        self.mother_edit = QLineEdit()
-
         self.class_combo = QComboBox()
         self.tag_edit = TagEdit()
         self.tag_edit.setPlaceholderText(self.tr("Tag separated by comma..."))
@@ -95,9 +91,6 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.comment.preview_btn.setText("Preview/Edit comment")
 
         main_layout.addRow("Sample", self.name_label)
-        main_layout.addRow("Family", self.family_edit)
-        main_layout.addRow("Father", self.father_edit)
-        main_layout.addRow("Mother", self.mother_edit)
         main_layout.addRow("Classification", self.class_combo)
         main_layout.addRow("Tags", self.tag_layout)
         main_layout.addRow("Comment", self.comment)
@@ -117,9 +110,6 @@ class EvaluationSectionWidget(AbstractSectionWidget):
     def get_sample(self) -> dict:
         sample = {
             "name": self.name_label.text(),
-            "family_id": self.family_edit.text(),
-            "father_id": self.father_edit.text(),
-            "mother_id": self.mother_edit.text(),
             "classification": self.class_combo.currentData(),
             "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]),
             "comment": self.comment.toPlainText(),
@@ -132,18 +122,6 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         # Load sample name
         if "name" in sample:
             self.name_label.setText(str(sample["name"]))
-
-        # Load family
-        if "family_id" in sample:
-            self.family_edit.setText(str(sample["family_id"]))
-
-        # Load father
-        if "father_id" in sample:
-            self.father_edit.setText(str(sample["father_id"]))
-
-        # Load mother
-        if "mother_id" in sample:
-            self.mother_edit.setText(str(sample["mother_id"]))
 
         # Load tags
         if "tags" in sample:
@@ -172,11 +150,18 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
-        self.setWindowTitle("Phenotype")
-        self.setToolTip("You can edit phenotype information")
+        self.setWindowTitle("Pedigree")
+        self.setToolTip("You can edit pedigree information")
         self.view = QFormLayout()
 
         #values based on https://gatk.broadinstitute.org/hc/en-us/articles/360035531972-PED-Pedigree-format
+        
+        # Family
+        self.family_edit = QLineEdit()
+        self.father_edit = QLineEdit()
+        self.mother_edit = QLineEdit()
+
+        # Sex
         self.sex_combo = QComboBox()
         self.sex_list = [{"name": "Unknown", "number": 0}, 
                     {"name": "Male", "number": 1},
@@ -185,6 +170,7 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
         for item in self.sex_list:
             self.sex_combo.addItem(item["name"], userData=item["number"])
         
+        # Phenotype
         self.phenotype_combo = QComboBox()  # case /control
         self.phenotype_list = [{"name": "Unknown", "number": 0}, 
                     {"name": "Unaffected", "number": 1},
@@ -193,6 +179,10 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
         for item in self.phenotype_list:
             self.phenotype_combo.addItem(item["name"], userData=item["number"])
 
+        # Add rows
+        self.view.addRow("Family", self.family_edit)
+        self.view.addRow("Father", self.father_edit)
+        self.view.addRow("Mother", self.mother_edit)
         self.view.addRow("Sex", self.sex_combo)
         self.view.addRow("Affected", self.phenotype_combo)
         
@@ -203,6 +193,9 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
     def get_sample(self):
 
         sample = {
+            "family_id": self.family_edit.text(),
+            "father_id": self.father_edit.text(),
+            "mother_id": self.mother_edit.text(),
             "sex": self.sex_combo.currentData(),
             "phenotype": self.phenotype_combo.currentData()
         }
@@ -210,6 +203,20 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
         return sample
 
     def set_sample(self, sample: dict):
+
+        # Load family
+        if "family_id" in sample:
+            self.family_edit.setText(str(sample["family_id"]))
+
+        # Load father
+        if "father_id" in sample:
+            self.father_edit.setText(str(sample["father_id"]))
+
+        # Load mother
+        if "mother_id" in sample:
+            self.mother_edit.setText(str(sample["mother_id"]))
+
+        # Load sex
         if "sex" in sample:
             self.sex_combo.setCurrentText(
                 next(
@@ -222,6 +229,7 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
                 )
             )
 
+        # Load phenotype
         if "phenotype" in sample:
             self.sex_combo.setCurrentText(
                 next(
@@ -233,7 +241,6 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
                     "No",
                 )
             )
-
 
 
 class OccurenceVerticalHeader(QHeaderView):
@@ -255,29 +262,6 @@ class OccurenceVerticalHeader(QHeaderView):
         number = self.model().variant(section)["classification"]
 
         painter.restore()
-
-        # try:
-        #     classification = next(i for i in self.model().classifications if i["number"] == number)
-
-        #     color = classification.get("color")
-        #     icon = 0xF0130
-
-        #     icon_favorite = 0xF0133
-
-        #     pen = QPen(QColor(classification.get("color")))
-        #     pen.setWidth(6)
-        #     painter.setPen(pen)
-        #     painter.setBrush(QBrush(classification.get("color")))
-        #     painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
-
-        #     target = QRect(0, 0, 20, 20)
-        #     pix = FIcon(icon_favorite if favorite else icon, color).pixmap(target.size())
-        #     target.moveCenter(rect.center() + QPoint(1, 1))
-
-        #     painter.drawPixmap(target, pix)
-
-        # except Exception as e:
-        #     LOGGER.debug("Cannot draw classification: " + str(e))
 
 
 class OccurenceModel(QAbstractTableModel):
