@@ -61,7 +61,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         else:
             self.TAG_SEPARATOR = ","
         self.setWindowTitle("Evaluation")
-        self.setToolTip("You can edit genotype information")
+        self.setToolTip("Edit genotype information here")
         main_layout = QFormLayout()
 
         self.class_combo = QComboBox()
@@ -84,9 +84,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load classification
         config = Config("classifications")
-        self.sample_classification = config.get("genotypes")
-        self.sample_classification = sorted(self.sample_classification, key= lambda c: c["number"])
-        for item in self.sample_classification:
+        self.genotype_classification = config.get("genotypes")
+        self.genotype_classification = sorted(self.genotype_classification, key= lambda c: c["number"])
+        for item in self.genotype_classification:
             self.class_combo.addItem(
                 FIcon(0xF012F, item.get("color", "gray")),
                 item["name"],
@@ -119,12 +119,45 @@ class EvaluationSectionWidget(AbstractSectionWidget):
                 next(
                     (
                         item["name"]
-                        for item in self.sample_classification
+                        for item in self.genotype_classification
                         if item["number"] == genotype["classification"]
                     ),
                     "Unknown",
                 )
             )
+
+        if self.is_locked(genotype["sample_id"]):
+            self.setToolTip("Genotype can't be edited because the sample is locked")
+            self.tag_edit.setReadOnly(True)
+            self.tag_edit.setStyleSheet("""background-color: #D8D8D8;""")
+            self.comment.preview_btn.setDisabled(True)
+            self.class_combo.setDisabled(True)
+
+    def is_locked(self, sample_id: int):
+        """Prevents editing genotype if sample is classified as locked
+        A sample is considered locked if its classification has the boolean "lock: true" set in the Config (yml) file.
+
+        Args:
+            sample_id (int): sql sample id
+
+        Returns:
+            locked (bool) : lock status of sample attached to current genotype
+        """
+        config_classif = Config("classifications").get("samples", None)
+        sample = sql.get_sample(self.conn, sample_id)
+        sample_classif = sample.get("classification", None)
+
+        if config_classif == None or sample_classif == None:
+            return False
+        
+        locked = False
+        for config in config_classif:
+            if config["number"] == sample_classif:
+                if "lock" in config:
+                    if config["lock"] == True:
+                        locked = True
+        return locked
+
 
 
 class HistorySectionWidget(AbstractSectionWidget):
