@@ -151,12 +151,10 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         
         locked = False
         for config in config_classif:
-            if config["number"] == sample_classif:
-                if "lock" in config:
-                    if config["lock"] == True:
-                        locked = True
+            if config["number"] == sample_classif and "lock" in config:
+                if config["lock"] == True:
+                    locked = True
         return locked
-
 
 
 class HistorySectionWidget(AbstractSectionWidget):
