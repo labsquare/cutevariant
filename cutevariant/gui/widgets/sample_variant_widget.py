@@ -129,7 +129,6 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         if self.is_locked(genotype["sample_id"]):
             self.setToolTip("Genotype can't be edited because the sample is locked")
             self.tag_edit.setReadOnly(True)
-            self.tag_edit.setStyleSheet("""background-color: #D8D8D8;""")
             self.comment.preview_btn.setDisabled(True)
             self.class_combo.setDisabled(True)
 
