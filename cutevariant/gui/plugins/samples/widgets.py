@@ -617,11 +617,11 @@ class SamplesWidget(plugin.PluginWidget):
     #     self.mainwindow.refresh_plugins(sender=self)
 
     def on_create_samples_source(self, source_name: str = "samples", samples: dict = None):
-        """
-        Create source from a list of samples
-        args: 
-            - source_name: name of the source (default "samples")
-            - samples: list of samples for source (default all samples in the model)
+        """Create source from a list of samples
+
+        Args: 
+            source_name: name of the source (default "samples")
+            samples: list of samples for source (default all samples in the model)
         """
         if not samples:
             samples = self.model.get_samples()
@@ -655,10 +655,10 @@ class SamplesWidget(plugin.PluginWidget):
     #             self.mainwindow.refresh_plugin("source_editor")
 
     def on_add_genotypes(self, samples: dict = None):
-        """
-        Add from a list of samples
-        args: 
-            - samples: list of samples for source (default all samples in the model)
+        """Add from a list of samples
+
+        Args: 
+            samples: list of samples for source (default all samples in the model)
         """
         if not samples:
             samples = self.model.get_samples()
