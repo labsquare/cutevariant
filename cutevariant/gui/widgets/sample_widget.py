@@ -23,6 +23,7 @@ from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
 from cutevariant.gui import tooltip as toolTip
 
+
 class AbstractSectionWidget(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__()
@@ -67,7 +68,7 @@ class HpoWidget(QWidget):
 class EvaluationSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        if hasattr(cst, 'HAS_OPERATOR'):
+        if hasattr(cst, "HAS_OPERATOR"):
             self.TAG_SEPARATOR = cst.HAS_OPERATOR
         else:
             self.TAG_SEPARATOR = ","
@@ -99,7 +100,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         # Load classification
         config = Config("classifications")
         self.sample_classification = config.get("samples")
-        self.sample_classification = sorted(self.sample_classification, key= lambda c: c["number"])
+        self.sample_classification = sorted(
+            self.sample_classification, key=lambda c: c["number"]
+        )
         for item in self.sample_classification:
             self.class_combo.addItem(
                 FIcon(0xF012F, item.get("color", "gray")),
@@ -111,7 +114,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         sample = {
             "name": self.name_label.text(),
             "classification": self.class_combo.currentData(),
-            "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]),
+            "tags": self.TAG_SEPARATOR.join(
+                [tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]
+            ),
             "comment": self.comment.toPlainText(),
         }
 
@@ -125,6 +130,10 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load tags
         if "tags" in sample:
+            config = Config("tags")
+            if "samples" in config:
+                self.tag_edit.addItems(config["samples"])
+
             self.tag_edit.setText(",".join(sample["tags"].split(self.TAG_SEPARATOR)))
 
         # Load comment
@@ -154,8 +163,8 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
         self.setToolTip("You can edit pedigree information")
         self.view = QFormLayout()
 
-        #values based on https://gatk.broadinstitute.org/hc/en-us/articles/360035531972-PED-Pedigree-format
-        
+        # values based on https://gatk.broadinstitute.org/hc/en-us/articles/360035531972-PED-Pedigree-format
+
         # Family
         self.family_edit = QLineEdit()
         self.father_edit = QLineEdit()
@@ -163,19 +172,21 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
 
         # Sex
         self.sex_combo = QComboBox()
-        self.sex_list = [{"name": "Unknown", "number": 0}, 
-                    {"name": "Male", "number": 1},
-                    {"name": "Female", "number":2}
-                ]
+        self.sex_list = [
+            {"name": "Unknown", "number": 0},
+            {"name": "Male", "number": 1},
+            {"name": "Female", "number": 2},
+        ]
         for item in self.sex_list:
             self.sex_combo.addItem(item["name"], userData=item["number"])
-        
+
         # Phenotype
         self.phenotype_combo = QComboBox()  # case /control
-        self.phenotype_list = [{"name": "Unknown", "number": 0}, 
-                    {"name": "Unaffected", "number": 1},
-                    {"name": "Affected", "number": 2}
-                ]
+        self.phenotype_list = [
+            {"name": "Unknown", "number": 0},
+            {"name": "Unaffected", "number": 1},
+            {"name": "Affected", "number": 2},
+        ]
         for item in self.phenotype_list:
             self.phenotype_combo.addItem(item["name"], userData=item["number"])
 
@@ -185,7 +196,7 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
         self.view.addRow("Mother", self.mother_edit)
         self.view.addRow("Sex", self.sex_combo)
         self.view.addRow("Affected", self.phenotype_combo)
-        
+
         main_layout = QVBoxLayout(self)
         main_layout.addLayout(self.view)
         main_layout.addStretch()
@@ -197,7 +208,7 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
             "father_id": self.father_edit.text(),
             "mother_id": self.mother_edit.text(),
             "sex": self.sex_combo.currentData(),
-            "phenotype": self.phenotype_combo.currentData()
+            "phenotype": self.phenotype_combo.currentData(),
         }
 
         return sample
@@ -294,7 +305,7 @@ class OccurenceModel(QAbstractTableModel):
 
         self.beginResetModel()
         self._items = []
-        for item in sql.get_sample_variant_classification(conn, sample_id = sample_id):
+        for item in sql.get_sample_variant_classification(conn, sample_id=sample_id):
             if "classification" in item:
                 if item["classification"] > 0:
                     self._items.append(item)
@@ -314,14 +325,22 @@ class OccurenceModel(QAbstractTableModel):
 
                 # Get variant_name_pattern
                 config = Config("variables") or {}
-                variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+                variant_name_pattern = (
+                    config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+                )
 
                 # Get fields
-                variant = sql.get_variant(self._parent.conn, variant_id, with_annotations=True)
+                variant = sql.get_variant(
+                    self._parent.conn, variant_id, with_annotations=True
+                )
                 if len(variant["annotations"]):
                     for ann in variant["annotations"][0]:
-                        variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-                variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+                        variant["annotations___" + str(ann)] = variant["annotations"][
+                            0
+                        ][ann]
+                variant_name_pattern = variant_name_pattern.replace(
+                    "ann.", "annotations___"
+                )
                 variant_text = variant_name_pattern.format(**variant)
                 return variant_text
 
@@ -359,8 +378,8 @@ class OccurenceModel(QAbstractTableModel):
         Returns:
             TYPE: Description
         """
-        
-        tooltip = toolTip.genotype_tooltip(data = self.item(row), conn = self._parent.conn)
+
+        tooltip = toolTip.genotype_tooltip(data=self.item(row), conn=self._parent.conn)
         return tooltip
 
 
@@ -393,15 +412,17 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
         main_layout.addWidget(self.summary_label)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
-    #def set_variant(self, variant: dict):
+    # def set_variant(self, variant: dict):
     def set_sample(self, sample: dict):
 
         self.model.load(self.conn, sample["id"])
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
 
         count = self.model.rowCount()
-        #total = len(list(sql.get_samples(self.conn)))
-        total = len(list(sql.get_sample_variant_classification(self.conn,sample["id"])))
+        # total = len(list(sql.get_samples(self.conn)))
+        total = len(
+            list(sql.get_sample_variant_classification(self.conn, sample["id"]))
+        )
 
         self.setWindowTitle(
             OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})"
@@ -411,7 +432,6 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
 
     def get_sample(self) -> dict:
         return {}
-
 
 
 class HistorySectionWidget(AbstractSectionWidget):
@@ -451,6 +471,7 @@ class SampleWidget(QWidget):
     w.save(id)
 
     """
+
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
 
@@ -540,7 +561,7 @@ class SampleWidget(QWidget):
         self.last_sample_hash = self.get_sample_hash(sample)
 
         # # Set name
-        #name = "{name}".format(**sample)
+        # name = "{name}".format(**sample)
         self.setWindowTitle("Sample edition")
 
         for widget in self._section_widgets:
@@ -578,9 +599,11 @@ class SampleWidget(QWidget):
             {
                 k: v
                 for k, v in sample.items()
-                if k in ["family, classification", "comment", "tags", "sex", "phenotype"]
+                if k
+                in ["family, classification", "comment", "tags", "sex", "phenotype"]
             }
         )
+
 
 class SampleDialog(QDialog):
     def __init__(self, conn, sample_id, parent=None):
@@ -588,7 +611,9 @@ class SampleDialog(QDialog):
 
         self.sample_id = sample_id
         self.w = SampleWidget(conn)
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Save | QDialogButtonBox.Cancel
+        )
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)
@@ -616,7 +641,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     # conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
-    conn = sql.get_sql_connection("L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/devel_june2022.db")
+    conn = sql.get_sql_connection(
+        "L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/devel_june2022.db"
+    )
 
     w = SampleDialog(conn, 1)
 

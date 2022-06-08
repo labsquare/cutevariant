@@ -22,7 +22,11 @@ from .variant_widget import VariantWidget, VariantDialog
 
 from .preset_action import PresetAction
 
-from .classification_editor import ClassificationEditor, ClassificationDialog, ClassificationModel
+from .classification_editor import (
+    ClassificationEditor,
+    ClassificationDialog,
+    ClassificationModel,
+)
 
 from .samples_editor import (
     SamplesEditor,
@@ -38,3 +42,4 @@ from .filters_widget import (
 )
 
 from .groupby_widget import GroupbyTable, GroupbyDialog
+from .multi_combobox import MultiComboBox
