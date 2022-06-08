@@ -20,6 +20,8 @@ from .sample_variant_widget import SampleVariantWidget, SampleVariantDialog
 
 from .variant_widget import VariantWidget, VariantDialog
 
+from .fields_widget import FieldsModel, FieldsWidget
+
 from .preset_action import PresetAction
 
 from .classification_editor import (

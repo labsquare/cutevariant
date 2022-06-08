@@ -114,29 +114,21 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
             # Get variant_name_pattern
             config = Config("variables") or {}
-            variant_name_pattern = (
-                config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-            )
+            variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
 
             # Get fields
             variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
             if len(variant["annotations"]):
                 for ann in variant["annotations"][0]:
-                    variant["annotations___" + str(ann)] = variant["annotations"][0][
-                        ann
-                    ]
-            variant_name_pattern = variant_name_pattern.replace(
-                "ann.", "annotations___"
-            )
+                    variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
             variant_text = variant_name_pattern.format(**variant)
             self.variant_label.setText(variant_text)
 
         # Load favorite
         if "favorite" in variant:
             # Bug with pyside.. need to cast int
-            self.favorite.setCheckState(
-                Qt.Checked if variant["favorite"] == 1 else Qt.Unchecked
-            )
+            self.favorite.setCheckState(Qt.Checked if variant["favorite"] == 1 else Qt.Unchecked)
 
         # Load tags
         if "tags" in variant:
@@ -184,9 +176,7 @@ class VariantSectionWidget(AbstractSectionWidget):
         )
 
         # self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.view.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
 
     def get_variant(self):
@@ -309,18 +299,14 @@ class OccurenceModel(QAbstractTableModel):
         self.beginResetModel()
         if self._validated:
             self._items = []
-            for item in sql.get_sample_variant_classification(
-                conn, variant_id=variant_id
-            ):
+            for item in sql.get_sample_variant_classification(conn, variant_id=variant_id):
                 if "classification" in item:
                     if item["classification"] > 0:
                         self._items.append(item)
         else:
             self._items = list(sql.get_variant_occurences(conn, variant_id))
         # sort (revert) by classification number
-        self._items = sorted(
-            self._items, key=lambda c: c["classification"], reverse=True
-        )
+        self._items = sorted(self._items, key=lambda c: c["classification"], reverse=True)
 
         self.endResetModel()
 
@@ -387,13 +373,9 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
         super().__init__(parent)
 
         if validated:
-            self.windowTitlePrefix = (
-                OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_VALIDATED
-            )
+            self.windowTitlePrefix = OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_VALIDATED
         else:
-            self.windowTitlePrefix = (
-                OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_OCCURENCE
-            )
+            self.windowTitlePrefix = OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_OCCURENCE
 
         # self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX)
         self.setWindowTitle(self.windowTitlePrefix)
@@ -541,9 +523,7 @@ class VariantWidget(QWidget):
             variant_id (int): variant sql id
         """
 
-        variant = sql.get_variant(
-            self.conn, variant_id, with_annotations=True, with_samples=True
-        )
+        variant = sql.get_variant(self.conn, variant_id, with_annotations=True, with_samples=True)
         current_variant_hash = self.get_variant_hash(variant)
 
         if self.last_variant_hash != current_variant_hash:
@@ -570,9 +550,7 @@ class VariantWidget(QWidget):
         Args:
             variant_id (int): variant sql id
         """
-        variant = sql.get_variant(
-            self._conn, variant_id, with_annotations=True, with_samples=True
-        )
+        variant = sql.get_variant(self._conn, variant_id, with_annotations=True, with_samples=True)
         self.last_variant_hash = self.get_variant_hash(variant)
 
         # # Set name
@@ -627,9 +605,7 @@ class VariantDialog(QDialog):
 
         self.variant_id = variant_id
         self.w = VariantWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)
