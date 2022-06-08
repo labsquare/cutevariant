@@ -111,6 +111,7 @@ class SourceModel(QAbstractTableModel):
             font = QFont()
             if table_name == self.current_source:
                 font.setBold(True)
+                font.setUnderline(True)
             return font
 
         if role == Qt.UserRole:
