@@ -46,7 +46,6 @@ class MultiComboBox(QComboBox):
         return self.lineEdit().text()
 
     def set_text(self, text: str):
-
         # Add items
         texts = list(set(text.split(",")))
         for text in texts:
@@ -55,8 +54,8 @@ class MultiComboBox(QComboBox):
             item = self.find_words(text)
             if item is None:
                 item = self.addItem(text)
-
-            item.setData(Qt.Checked, Qt.CheckStateRole)
+                
+            item.setCheckState(Qt.Checked)
 
         self.updateText()
 

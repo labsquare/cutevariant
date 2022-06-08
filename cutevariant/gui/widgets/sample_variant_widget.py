@@ -130,7 +130,16 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.variant_label.setText(variant_text)
 
         # Load tags
+        # if "tags" in genotype:
+        #     self.tag_edit.setText(",".join(genotype["tags"].split(self.TAG_SEPARATOR)))
         if "tags" in genotype:
+            config = Config("tags")
+            if "genotypes" in config:
+                tags = {}
+                for tag in config["genotypes"]:
+                    tags[tag["name"]]=tag["description"]
+                self.tag_edit.addItems(tags)
+
             self.tag_edit.setText(",".join(genotype["tags"].split(self.TAG_SEPARATOR)))
 
         # Load comment

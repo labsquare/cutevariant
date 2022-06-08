@@ -28,6 +28,12 @@ from .classification_editor import (
     ClassificationModel,
 )
 
+from .tag_editor import (
+    TagEditor,
+    TagDialog,
+    TagModel,
+)
+
 from .samples_editor import (
     SamplesEditor,
     SamplesEditorModel,
