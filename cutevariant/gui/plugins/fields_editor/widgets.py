@@ -18,7 +18,7 @@ from cutevariant.gui.mainwindow import MainWindow
 from cutevariant.core import sql
 
 
-from cutevariant.gui.widgets import PresetAction
+from cutevariant.gui.widgets import PresetAction, FieldsWidget
 
 from cutevariant import LOGGER
 from cutevariant.gui.widgets.filters_widget import FilterDialog
@@ -150,582 +150,6 @@ def prepare_fields_for_editor(conn):
     return results
 
 
-class FieldsModel(QStandardItemModel):
-    """
-    Standard key,value model (2 columns)
-    with field name and its respective description
-    """
-
-    fields_loaded = Signal()
-    field_checked = Signal(str, bool)
-
-    def __init__(self, conn: sqlite3.Connection = None, category="variants", parent=None):
-        super().__init__(0, 2, parent)
-        self.conn = conn
-        self._checkable_items = []
-        self.category = category
-        self.all_fields = set()
-        self._is_loading = False  # don't send signal if loading
-        self.setColumnCount(2)
-
-        self.itemChanged.connect(self.on_item_changed)
-
-    @property
-    def conn(self):
-        return self._conn
-
-    @conn.setter
-    def conn(self, conn):
-        self._conn = conn
-        if self._conn:
-            self.load()
-        else:
-            self.clear()
-
-    def checked_fields(self) -> List[str]:
-        """Return checked fields
-
-        Returns:
-            List[str]: the user selected fields
-        """
-        return [item.text() for item in self.checked_items()]
-
-    def set_checked_fields(self, fields: List[str], checked=Qt.Checked):
-        """Check fields according name
-
-        Arguments:
-            columns (List[str]):
-        """
-        self._is_loading = True
-        for item in self._checkable_items:
-
-            item.setCheckState(Qt.Unchecked)
-            if item.data()["name"] in fields:
-                item.setCheckState(checked)
-            index = self.indexFromItem(item)
-
-        self._is_loading = False
-
-    def checked_items(self) -> List[QStandardItem]:
-        """Return checked fields
-
-
-        Returns:
-            List[QStandardItem] : list of checked fields
-        """
-
-        selected_fields = []
-        for item in self._checkable_items:
-            if item.checkState() == Qt.Checked:
-                selected_fields.append(item)
-        return selected_fields
-
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
-        """Override flags
-
-        Make item dragable
-
-        Args:
-            index (QModelIndex):
-        """
-        return super().flags(index) | Qt.ItemIsDragEnabled
-
-    def on_item_changed(self, item: QStandardItem):
-        """triggered when item changed
-
-        Update fields when user change the checkstate of an item
-
-        """
-
-        if self._is_loading:
-            # do not emit signal if model is updating
-            return
-
-        checked = item.checkState() == Qt.Checked
-        self.field_checked.emit(item.text(), checked)
-
-        # If checked, add item
-
-        # changed = False
-
-        # if item.checkState() == Qt.Checked:
-        #     if item.text() not in self._checked_fields:
-        #         self._checked_fields.append(item.text())
-        #         changed = True
-
-        # # If unchecked, remove item
-        # if item.checkState() == Qt.Unchecked:
-        #     if item.text() in self._checked_fields:
-        #         changed = True
-        #         self._checked_fields.remove(item.text())
-
-        # if changed:
-        #     self.fields_changed.emit()
-
-    def load(self):
-        """Load all fields into the model"""
-
-        # Don't forget to reset the model
-        self.blockSignals(True)
-        self.clear()
-
-        # Clear checkable items as well, the list may contain selected items from another project...
-        self._checkable_items.clear()
-        self.all_fields.clear()
-        self.setColumnCount(2)
-        self.setHorizontalHeaderLabels(["name", "description"])
-
-        if self.conn:
-            fields = prepare_fields_for_editor(self.conn).get(self.category, None)
-            if not fields:
-                LOGGER.warning("Cannot load field category %s", self.category)
-            else:
-                # This piece of code uses the get_indexed_fields function to retrieve the list of indexed fields in this category
-                indexed_fields = sql.get_indexed_fields(self.conn)
-
-                for field in fields:
-                    field_name = field
-                    field_desc = fields[field]["description"]
-                    field_type = fields[field]["type"]
-                    field_type_style = style.FIELD_TYPE.get(field_type)
-
-                    field_name_item = QStandardItem(field_name)
-
-                    field_name_item.setCheckable(True)
-                    font = QFont()
-
-                    field_name_item.setData(False, Qt.UserRole)
-                    self.all_fields.add(field_name)
-
-                    font.setBold(True)
-                    field_name_item.setFont(font)
-                    field_name_item.setIcon(
-                        FIcon(field_type_style["icon"], field_type_style["color"])
-                    )
-                    field_name_item.setToolTip(
-                        self.tr(f"Check to add field '{field}'<hr>{field_desc}")
-                    )
-
-                    self._checkable_items.append(field_name_item)
-                    field_name_item.setData(
-                        {
-                            "name": field,
-                            "type": field_type,
-                            "description": field_desc,
-                        }
-                    )
-
-                    descr_item = QStandardItem(field_desc)
-                    descr_item.setToolTip(field_desc)
-
-                    self.appendRow([field_name_item, descr_item])
-                    self.fields_loaded.emit()
-
-        self.blockSignals(False)
-
-        self.beginResetModel()
-        self.endResetModel()
-
-    # def remove_field_from_index(self, index: QModelIndex):
-    #     """Delete SQL index
-
-    #     Args:
-    #         index (QModelIndex)
-
-    #     """
-    #     items_to_update = [self.itemFromIndex(index.siblingAtColumn(0))]
-
-    #     field_name = index.siblingAtColumn(0).data()
-    #     # To have sample field only, without the sample name
-    #     if self.category == "samples":
-    #         field_name = field_name.split(".")[-1]
-
-    #         # We want to schedule them all for update, because in the field editor, sample field appears once per sample...
-    #         items_to_update.clear()
-    #         for i in range(self.rowCount()):
-    #             if self.item(i, 0).data(Qt.DisplayRole).split(".")[-1] == field_name:
-    #                 items_to_update.append(self.item(i, 0))
-
-    #     sql.remove_indexed_field(self.conn, self.category, field_name)
-
-    #     # Return True on success (i.e. the field is not in the indexed fields anymore)
-    #     success = (self.category, field_name) not in sql.get_indexed_fields(self.conn)
-
-    #     for item in items_to_update:
-    #         # Weird, but positive success means UserRole should be False (i.e. the field is not indexed anymore)
-    #         item.setData(not success, Qt.UserRole)
-    #         if success:
-    #             font = item.font()
-    #             font.setUnderline(False)
-    #             item.setFont(font)
-
-    #     return success
-
-    # def add_field_to_index(self, index: QModelIndex):
-    #     """Create a SQL index
-
-    #     Args:
-    #         index (QModelIndex)
-
-    #     """
-    #     items_to_update = [self.itemFromIndex(index.siblingAtColumn(0))]
-
-    #     field_name = index.siblingAtColumn(0).data()
-    #     # To have sample field only, without the sample name
-    #     if self.category == "samples":
-    #         field_name = field_name.split(".")[-1]
-
-    #         # We want to schedule them all for update, because in the field editor, sample field appears once per sample...
-    #         items_to_update.clear()
-    #         for i in range(self.rowCount()):
-    #             if self.item(i, 0).data(Qt.DisplayRole).split(".")[-1] == field_name:
-    #                 items_to_update.append(self.item(i, 0))
-
-    #     if self.category == "variants":
-    #         sql.create_variants_indexes(self.conn, {field_name})
-    #     if self.category == "annotations":
-    #         # replace shortcut
-    #         if field_name.startswith("ann."):
-    #             field_name = field_name.replace("ann.", "")
-    #         sql.create_annotations_indexes(self.conn, {field_name})
-    #     if self.category == "samples":
-    #         # replace shortcut
-    #         if field_name.startswith("samples."):
-    #             field_name = field_name.replace("samples.", "")
-    #         sql.create_samples_indexes(self.conn, {field_name})
-
-    #     # Return True on success (i.e. the field is now in the index field)
-    #     success = (self.category, field_name) in sql.get_indexed_fields(self.conn)
-
-    #     for item in items_to_update:
-
-    #         item.setData(success, Qt.UserRole)
-    #         if success:
-    #             font = item.font()
-    #             font.setUnderline(True)
-    #             item.setFont(font)
-
-    #     return success
-
-    def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
-        """Override
-
-        Add mimedata to item . used for drag / drop features
-
-        Args:
-            indexes (typing.List[QModelIndex])
-
-        Returns:
-            QMimeData
-        """
-        res = super().mimeData(indexes)
-
-        fields = [idx.data(Qt.UserRole + 1) for idx in indexes if idx.column() == 0]
-        fields = [(f["name"], f["type"]) for f in fields]
-        res.setData(
-            "cutevariant/typed-json",
-            bytes(json.dumps({"type": "fields", "fields": fields}), "utf-8"),
-        )
-        return res
-
-    def mimeTypes(self) -> typing.List[str]:
-        """Override
-
-        Return mimetype. Used for drag / drop features
-
-        Returns:
-            typing.List[str]
-        """
-
-        return ["cutevariant/typed-json"]
-
-    def to_file(self, filename: str):
-        """Serialize fields to a json file
-
-        Args:
-            filename (str): a json filename
-
-        TODO: Rename to 'to_json'
-        """
-        with open(filename, "w") as outfile:
-            obj = {"fields": self.fields}
-            json.dump(obj, outfile)
-
-    def from_file(self, filename: str):
-        """Unserialize checked fields from a json file
-
-        Args:
-            filename (str): a json filename
-        """
-        with open(filename, "r") as infile:
-            obj = json.load(infile)
-            self.fields = obj.get("fields", [])
-
-
-FIELDS_CATEGORY_DESCRIPTION = {
-    "variants": "Fields associated to variants\nTheses fields are provided by the INFO column of VCF",
-    "annotations": "Fields associated to variants\nTheses fields are provided by the INFO column of VCF related to the specific annotation tool (e.g. snpEff, VEP)",
-    "samples": "Fields associated to sample genotype\nTheses fields are provided by the FORMAT column of VCF, for each samples (e.g. GT, DP, AD)",
-}
-
-
-class FieldsWidget(QWidget):
-
-    """A fields widget with 3 tabwidget show all 3 models"""
-
-    fields_changed = Signal()
-
-    def __init__(self, conn: sqlite3.Connection = None, parent=None):
-        super().__init__(parent)
-
-        self.tab_widget = QTabWidget(self)
-        self.tab_widget.setTabPosition(QTabWidget.South)
-        self.tab_widget.tabBar().setDocumentMode(True)
-        self.tab_widget.tabBar().setExpanding(True)
-        self.tab_widget.setToolTip(self.tr("Fields categories"))
-
-        self.search_edit = QLineEdit()
-        self.search_edit.textChanged.connect(self.update_filter)
-        self.search_edit.setPlaceholderText(self.tr("Search fields by keywords... "))
-        self.search_edit.addAction(FIcon(0xF015A), QLineEdit.TrailingPosition).triggered.connect(
-            self.search_edit.clear
-        )
-        self.search_edit.setToolTip(
-            self.tr(
-                "Search fields by keywords<hr>Use keywords to show only fields that contain the keyword on its name or description"
-            )
-        )
-
-        self.views = []
-
-        # Create the variants widget (the view and its associated filter model)
-        self.add_view(conn, "variants")
-
-        # Create the annotations widget (the view and its associated filter model)
-        self.add_view(conn, "annotations")
-
-        # Create the samples widget (the view and its associated filter model)
-        # self.add_view(conn, "samples")
-
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.search_edit)
-        layout.addWidget(self.tab_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        self.conn = conn
-        self._fields = []
-
-    @property
-    def fields(self) -> List[str]:
-        """Return checked fields
-
-        Returns:
-            List[str] : list of checked fields
-        """
-
-        # We should keep same order ...
-        return self._fields
-
-    @fields.setter
-    def fields(self, fields: List[str]):
-        """Check fields according name
-
-        Arguments:
-            columns (List[str]):
-        """
-        self._fields = fields.copy()
-        for view in self.views:
-            view["model"].set_checked_fields(fields)
-
-        self.fields_changed.emit()
-
-    @property
-    def conn(self):
-        return self._conn
-
-    @conn.setter
-    def conn(self, conn):
-        self._conn = conn
-
-        # Load all models
-        for index, view in enumerate(self.views):
-            model = view["model"]
-            name = view["name"]
-            model.conn = conn
-            self.tab_widget.setTabText(index, f"{name} ({model.rowCount()})")
-            fields_category_description = FIELDS_CATEGORY_DESCRIPTION.get(name, "")
-            self.tab_widget.setTabToolTip(
-                index,
-                f"{model.rowCount()} fields in category '{name}'<hr>{fields_category_description}",
-            )
-            if conn:
-                view["view"].horizontalHeader().setSectionResizeMode(
-                    0, QHeaderView.ResizeToContents
-                )
-
-    def clear(self):
-        for view in self.views:
-            view["model"].clear()
-
-    def add_view(self, conn: sqlite3.Connection, category: str):
-        """Create a view with fields model
-
-        For each view, we create a FieldsModel, a view, and a proxyModel
-
-        Args:
-            conn (sqlite3.Connection): SQL connection
-            category (str): category name. [variants, annotations, samples]
-        """
-        model = FieldsModel(conn, category)
-        view = QTableView()
-        view.setItemDelegate(QItemDelegate())
-        view.setContextMenuPolicy(Qt.ActionsContextMenu)
-
-        proxy = QSortFilterProxyModel()
-        proxy.setSourceModel(model)
-
-        view.setModel(proxy)
-        view.setShowGrid(False)
-        view.setIconSize(QSize(24, 24))
-
-        view.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        view.setAlternatingRowColors(False)
-        view.setWordWrap(True)
-        view.verticalHeader().hide()
-
-        view.setSortingEnabled(True)
-        view.setDragEnabled(True)
-        view.horizontalHeader().setStretchLastSection(True)
-
-        proxy.setRecursiveFilteringEnabled(True)
-        proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
-        proxy.setFilterKeyColumn(-1)
-
-        # broadcast the model signal
-        model.field_checked.connect(self.on_field_changed)
-        model.field_checked.connect(lambda x: print(f"yofff {x}"))
-        # model.fields_changed.connect(lambda: self.fields_changed.emit())
-
-        # Setup actions
-
-        # Setup the filter field action that will apply custom filter
-        custom_filter_field_action = QAction(self.tr("Create filter ..."), view)
-        custom_filter_field_action.triggered.connect(
-            functools.partial(self._on_filter_field_clicked, view)
-        )
-        custom_filter_field_action.setIcon(FIcon(0xF0232))
-
-        # index_field_action = QAction(self.tr("Create index..."), view)
-        # index_field_action.triggered.connect(
-        #     functools.partial(self._on_index_field_clicked, view, proxy, category)
-        # )
-        # index_field_action.setIcon(FIcon(0xF05DB))
-
-        # remove_index_action = QAction(self.tr("Remove index..."), view)
-        # remove_index_action.triggered.connect(
-        #     functools.partial(self._on_remove_index_clicked, view, proxy, category)
-        # )
-        # remove_index_action.setIcon(FIcon(0xF0A97))
-
-        view.addAction(custom_filter_field_action)
-
-        # Update even if the index didn't change
-        # view.pressed.connect(self._update_actions)
-
-        self.views.append(
-            {
-                "view": view,
-                "proxy": proxy,
-                "model": model,
-                "name": category,
-            }
-        )
-        self.tab_widget.addTab(
-            view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
-        )
-
-    def _on_filter_field_clicked(self, view: QTableView):
-        """When the user triggers the "filter not null" field action.
-        Applies immediately a filter on this field, with a not-null condition
-
-        Args:
-            view (QTableView): The view showing a selected field
-            category (str): (not used) The category the selected field belongs to
-            model (FieldsModel): The actual model containing the data
-            proxy (QSortFilterProxyModel): The proxymodel used by the view
-        """
-        parent: FieldsEditorWidget = self.parent()
-        mainwindow: MainWindow = parent.mainwindow
-        filters = copy.deepcopy(mainwindow.get_state_data("filters"))
-        field_name = view.currentIndex().siblingAtColumn(0).data()
-
-        if not filters:
-            filters = {"$and": []}
-
-        if "$and" in filters:
-            # Quickly filter using a dialog
-            dialog = FilterDialog(self.conn)
-            dialog.set_field(field_name)
-
-            if dialog.exec() == QDialog.Accepted:
-                one_filter = dialog.get_filter()
-                filters["$and"].append(one_filter)
-                # Defaults to filtering on non-null values
-                mainwindow.set_state_data("filters", filters)
-                mainwindow.refresh_plugins(sender=self)
-
-    def on_field_changed(self, field: str, checked: bool):
-
-        changed = False
-        if checked and field not in self._fields:
-            self._fields.append(field)
-            changed = True
-
-        if not checked and field in self._fields:
-            self._fields.remove(field)
-            changed = True
-
-        if changed:
-            self.fields_changed.emit()
-
-    def update_filter(self, text: str):
-        """
-        Callback for when the search bar is updated (filter the three models)
-        """
-
-        for index, view in enumerate(self.views):
-            view["proxy"].setFilterRole(Qt.DisplayRole)
-            view["proxy"].setFilterRegularExpression(text)
-            count = view["proxy"].rowCount()
-            name = view["name"]
-            self.tab_widget.setTabText(index, f"{name} ({count})")
-            # self.tab_widget.setTabToolTip(index, f"{name} ({count})")
-            fields_category_description = FIELDS_CATEGORY_DESCRIPTION.get(name, name)
-            self.tab_widget.setTabToolTip(
-                index, f"{count} fields in category '{name}'<hr>{fields_category_description}"
-            )
-
-    def show_checked_only(self, active=False):
-
-        for index, view in enumerate(self.views):
-            view["proxy"].setFilterRole(Qt.CheckStateRole)
-            view["proxy"].setFilterKeyColumn(0)
-            # Checked = "2" / Unchecked = "0" / All : ""
-            is_checked_str = "2" if active else ""
-            view["proxy"].setFilterFixedString(is_checked_str)
-            count = view["proxy"].rowCount()
-            name = view["name"]
-            self.tab_widget.setTabText(index, f"{name} ({count})")
-            # self.tab_widget.setTabToolTip(index, f"{name} ({count})")
-            fields_category_description = FIELDS_CATEGORY_DESCRIPTION.get(name, name)
-            self.tab_widget.setTabToolTip(
-                index, f"{count} fields in category '{name}'<hr>{fields_category_description}"
-            )
-
-
 class FieldsEditorWidget(plugin.PluginWidget):
     """Display all fields according categories
 
@@ -807,7 +231,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.toolbar.addWidget(spacer)
 
         ## sort button
-        self.sort_action = self.toolbar.addAction(FIcon(0xF04BA), "54 fields")
+        self.sort_action = self.toolbar.addAction(FIcon(0xF04BA), "NA fields")
         self.sort_action.triggered.connect(self.show_fields_dialog)
         self.sort_action.setToolTip(
             self.tr(
@@ -838,11 +262,11 @@ class FieldsEditorWidget(plugin.PluginWidget):
 
     @property
     def fields(self):
-        return self.widget_fields.fields
+        return self.widget_fields.get_fields()
 
     @fields.setter
     def fields(self, fields):
-        self.widget_fields.fields = fields
+        self.widget_fields.set_fields(fields)
         # self.update_fields_button()
 
     def update_fields_button(self):
@@ -934,9 +358,10 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def show_fields_dialog(self):
 
         w = SortFieldDialog()
-        w.fields = self.widget_fields.fields
+        w.fields = self.widget_fields.get_fields()
         if w.exec_():
             self.fields = w.fields
+            print(w.fields, self.fields)
             self.on_apply()
 
     # def toggle_search_bar(self, show=True):
@@ -979,6 +404,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def on_open_project(self, conn):
         """Overrided from PluginWidget"""
         self.widget_fields.conn = conn
+        self.widget_fields.load()
         self.on_refresh()
 
     def on_close_project(self):
@@ -991,6 +417,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
             self.fields = self.mainwindow.get_state_data("fields")
             self._is_refreshing = False
             self.load_presets()
+            self.update_fields_button()
 
     def on_apply(self):
         if self.mainwindow is None or self._is_refreshing:
@@ -1006,13 +433,13 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def to_json(self):
         """override from plugins: Serialize plugin state"""
 
-        return {"fields": self.widget_fields.fields}
+        return {"fields": self.widget_fields.get_fields()}
 
     def from_json(self, data):
         """override from plugins: Unzerialize plugin state"""
 
         if "checked_fields" in data:
-            self.widget_fields.fields = data["fields"]
+            self.widget_fields.set_fields(data["fields"])
 
 
 if __name__ == "__main__":
