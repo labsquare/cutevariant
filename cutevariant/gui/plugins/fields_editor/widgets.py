@@ -96,60 +96,6 @@ class SortFieldDialog(QDialog):
         self.view.insertItem(row, item)
 
 
-def prepare_fields_for_editor(conn):
-    """
-    Returns a dict with field info for each category.
-    Example result:
-    {
-        "variants":
-        {
-            "chr":{"type":"str","description":{"The chromosome the variant was found on"}},
-            "pos":{...}
-        },
-        "annotations":
-        {
-            "ann.gene":{"type":"str","description":"Name of the gene where the variant is"}},
-            "ann.impact":{...}
-        },
-        "samples":
-        {
-            "samples.boby.gt":{"type":"int","description":{"Genotype for this sample (0:hom. for ref, 1: het for alt, 2:hom for alt)}}
-            "samples.boby.dp":{...}
-        }
-    }
-    """
-
-    results = {"variants": {}, "annotations": {}, "samples": {}}
-
-    samples = [sample["name"] for sample in sql.get_samples(conn)]
-
-    for field in sql.get_fields(conn):
-
-        if field["category"] == "variants":
-            name = field["name"]
-            results["variants"][name] = {
-                "type": field["type"],
-                "description": field["description"],
-            }
-
-        if field["category"] == "annotations":
-            name = field["name"]
-            results["annotations"][f"ann.{name}"] = {
-                "type": field["type"],
-                "description": field["description"],
-            }
-
-        if field["category"] == "samples":
-            name = field["name"]
-            for sample in samples:
-                results["samples"][f"samples.{sample}.{name}"] = {
-                    "type": field["type"],
-                    "description": field["description"],
-                }
-
-    return results
-
-
 class FieldsEditorWidget(plugin.PluginWidget):
     """Display all fields according categories
 
@@ -272,6 +218,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def update_fields_button(self):
         """Update fields button with the count selected fields"""
         field_count = len(self.fields)
+
         self.sort_action.setText(f"{field_count} fields")
 
         if self.auto_action.isChecked():

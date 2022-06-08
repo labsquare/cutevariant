@@ -20,6 +20,11 @@ def test_model(qtmodeltester):
     model.set_fields(expected_fields)
     assert model.get_fields() == expected_fields
 
+    # test order
+    expected_fields = ["pos", "chr"]
+    model.set_fields(expected_fields)
+    assert model.get_fields() == expected_fields
+
     qtmodeltester.check(model)
 
 
