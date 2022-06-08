@@ -8,7 +8,7 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 
-from cutevariant.gui.widgets import FieldsEditorWidget
+from cutevariant.gui.widgets import FieldsWidget
 from cutevariant.core.writer import (
     AbstractWriter,
     VcfWriter,
