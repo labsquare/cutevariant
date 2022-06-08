@@ -64,6 +64,11 @@ classifications:
     name: "Pathogenic"
     color: '#ed6d79'
 
+tags:
+  genotypes: ["geno1","geno2"]
+  samples: ["sample1","sample2"]
+  variants: ["variant1","variant2"]
+
 variant_view:
   memory_cache: 32
   rows_per_page: 50

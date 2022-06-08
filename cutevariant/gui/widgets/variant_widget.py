@@ -47,7 +47,7 @@ class AbstractSectionWidget(QWidget):
 class EvaluationSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        if hasattr(cst, 'HAS_OPERATOR'):
+        if hasattr(cst, "HAS_OPERATOR"):
             self.TAG_SEPARATOR = cst.HAS_OPERATOR
         else:
             self.TAG_SEPARATOR = ","
@@ -93,10 +93,12 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
     def get_variant(self) -> dict:
         variant = {
-            #"id": self.variant_label.text(),
+            # "id": self.variant_label.text(),
             "favorite": self.favorite.isChecked(),
             "classification": self.class_combo.currentData(),
-            "tags": self.TAG_SEPARATOR.join([tag for tag in self.tag_edit.text().split(",") if tag]),
+            "tags": self.TAG_SEPARATOR.join(
+                [tag for tag in self.tag_edit.text().split(",") if tag]
+            ),
             "comment": self.comment.toPlainText(),
         }
 
@@ -112,14 +114,20 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
             # Get variant_name_pattern
             config = Config("variables") or {}
-            variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+            variant_name_pattern = (
+                config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+            )
 
             # Get fields
             variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
             if len(variant["annotations"]):
                 for ann in variant["annotations"][0]:
-                    variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+                    variant["annotations___" + str(ann)] = variant["annotations"][0][
+                        ann
+                    ]
+            variant_name_pattern = variant_name_pattern.replace(
+                "ann.", "annotations___"
+            )
             variant_text = variant_name_pattern.format(**variant)
             self.variant_label.setText(variant_text)
 
@@ -132,6 +140,11 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load tags
         if "tags" in variant:
+            # antony todo :
+            config = Config("tags")
+            if "variants" in config:
+                self.tag_edit.addItems(config["variants"])
+
             self.tag_edit.setText(",".join(variant["tags"].split(self.TAG_SEPARATOR)))
 
         # Load comment
@@ -296,15 +309,19 @@ class OccurenceModel(QAbstractTableModel):
         self.beginResetModel()
         if self._validated:
             self._items = []
-            for item in sql.get_sample_variant_classification(conn, variant_id = variant_id):
+            for item in sql.get_sample_variant_classification(
+                conn, variant_id=variant_id
+            ):
                 if "classification" in item:
                     if item["classification"] > 0:
                         self._items.append(item)
         else:
             self._items = list(sql.get_variant_occurences(conn, variant_id))
         # sort (revert) by classification number
-        self._items = sorted(self._items, key= lambda c: c["classification"], reverse=True)
-        
+        self._items = sorted(
+            self._items, key=lambda c: c["classification"], reverse=True
+        )
+
         self.endResetModel()
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
@@ -357,7 +374,7 @@ class OccurenceModel(QAbstractTableModel):
             TYPE: Description
         """
 
-        tooltip = toolTip.genotype_tooltip(data = self.item(row), conn = self._parent.conn)
+        tooltip = toolTip.genotype_tooltip(data=self.item(row), conn=self._parent.conn)
         return tooltip
 
 
@@ -370,15 +387,19 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
         super().__init__(parent)
 
         if validated:
-            self.windowTitlePrefix = OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_VALIDATED
+            self.windowTitlePrefix = (
+                OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_VALIDATED
+            )
         else:
-            self.windowTitlePrefix = OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_OCCURENCE
+            self.windowTitlePrefix = (
+                OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_OCCURENCE
+            )
 
-        #self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX)
+        # self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX)
         self.setWindowTitle(self.windowTitlePrefix)
         self.setToolTip("List of all samples where the current variant belong to")
         main_layout = QVBoxLayout(self)
-        self.model = OccurenceModel(self, validated = validated)
+        self.model = OccurenceModel(self, validated=validated)
         self.delegate = gui.FormatterDelegate()
         self.delegate.set_formatter(CutestyleFormatter())
         self.view = QTableView()
@@ -406,8 +427,9 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
         total = len(list(sql.get_samples(self.conn)))
 
         self.setWindowTitle(
-            #OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})"
-            self.windowTitlePrefix + f" ({count}/{total})"
+            # OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})"
+            self.windowTitlePrefix
+            + f" ({count}/{total})"
         )
 
         ## Get samples count
@@ -470,7 +492,7 @@ class VariantWidget(QWidget):
         self.add_section(VariantSectionWidget())
         self.add_section(AnnotationsSectionWidget())
         self.add_section(OccurrenceSectionWidget())
-        #self.add_section(OccurrenceSectionWidget(validated=True)) # depreciated
+        # self.add_section(OccurrenceSectionWidget(validated=True)) # depreciated
         self.add_section(HistorySectionWidget())
 
     def add_section(self, widget: AbstractSectionWidget):
@@ -554,7 +576,7 @@ class VariantWidget(QWidget):
         self.last_variant_hash = self.get_variant_hash(variant)
 
         # # Set name
-        #name = "{chr}-{pos}-{ref}-{alt}".format(**variant)
+        # name = "{chr}-{pos}-{ref}-{alt}".format(**variant)
         self.setWindowTitle("Variant edition")
 
         for widget in self._section_widgets:
