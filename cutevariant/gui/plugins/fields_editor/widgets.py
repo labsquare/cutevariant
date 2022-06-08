@@ -505,7 +505,7 @@ class FieldsWidget(QWidget):
         self.add_view(conn, "annotations")
 
         # Create the samples widget (the view and its associated filter model)
-        self.add_view(conn, "samples")
+        # self.add_view(conn, "samples")
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.search_edit)
@@ -646,95 +646,6 @@ class FieldsWidget(QWidget):
         self.tab_widget.addTab(
             view, FIcon(style.FIELD_CATEGORY.get(category, None)["icon"]), category
         )
-
-    # def _update_actions(self, current: QModelIndex):
-    #     is_indexed = current.siblingAtColumn(0).data(Qt.UserRole)
-    #     for view in self.views:
-    #         view: dict
-    #         tableview: QTableView = view["view"]
-    #         act_index: QAction = view["actions"].get("index", None)
-    #         act_drop_index: QAction = view["actions"].get("drop_index", None)
-    #         if act_index:
-    #             if is_indexed:
-    #                 tableview.removeAction(act_index)
-    #             else:
-    #                 tableview.addAction(act_index)
-    #         if act_drop_index:
-    #             if is_indexed:
-    #                 tableview.addAction(act_drop_index)
-    #             else:
-    #                 tableview.removeAction(act_drop_index)
-
-    # def _on_index_field_clicked(
-    #     self,
-    #     view: QTableView,
-    #     proxy: QSortFilterProxyModel,
-    #     category: str,
-    # ):
-    #     field_index = view.currentIndex().siblingAtColumn(0)
-    #     field_name = field_index.data()
-    #     if (
-    #         QMessageBox.question(
-    #             self,
-    #             self.tr("Please confirm"),
-    #             self.tr(
-    #                 f"Removing index will make queries on this field slower.\nAre you sure you want to remove {field_name} from indexed fields?"
-    #             ),
-    #         )
-    #         != QMessageBox.Yes
-    #     ):
-    #         return
-
-    #     model: FieldsModel = proxy.sourceModel()
-
-    #     if not model.add_field_to_index(proxy.mapToSource(field_index)):
-    #         QMessageBox.warning(
-    #             self,
-    #             self.tr("Indexing failed!"),
-    #             self.tr(f"Could not index column {field_name}!"),
-    #         )
-    #     else:
-    #         QMessageBox.information(
-    #             self,
-    #             self.tr("Done indexing!"),
-    #             self.tr(f"Successfully indexed column {field_name}!"),
-    #         )
-
-    # def _on_remove_index_clicked(
-    #     self, view: QTableView, proxy: QSortFilterProxyModel, category: str
-    # ):
-    #     field_index = view.currentIndex().siblingAtColumn(0)
-    #     field_name = field_index.data()
-    #     if (
-    #         QMessageBox.question(
-    #             self,
-    #             self.tr("Please confirm"),
-    #             self.tr(
-    #                 f"Removing index will make queries on this field slower.\nAre you sure you want to remove {field_name} from indexed fields?"
-    #             ),
-    #         )
-    #         != QMessageBox.Yes
-    #     ):
-    #         return
-    #     if category == "samples":
-    #         field_name = field_name.split(".")[-1]
-
-    #     model: FieldsModel = proxy.sourceModel()
-
-    #     if not model.remove_field_from_index(proxy.mapToSource(field_index)):
-    #         QMessageBox.warning(
-    #             self,
-    #             self.tr("Removing index failed!"),
-    #             self.tr(f"Could not remove column {field_name} from indexed fields!"),
-    #         )
-    #     else:
-    #         QMessageBox.information(
-    #             self,
-    #             self.tr("Success!"),
-    #             self.tr(
-    #                 f"Successfully removed column {field_name} from indexed fields!"
-    #             ),
-    #         )
 
     def _on_filter_field_clicked(self, view: QTableView):
         """When the user triggers the "filter not null" field action.

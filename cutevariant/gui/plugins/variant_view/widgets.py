@@ -32,6 +32,7 @@ from cutevariant.core import sql
 from cutevariant.core import command as cmd
 
 from cutevariant.gui import mainwindow, plugin, FIcon, formatter, style
+from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 from cutevariant.gui.widgets import GroupbyDialog
 from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui.widgets import (
@@ -48,6 +49,7 @@ import cutevariant.commons as cm
 from cutevariant.core.querybuilder import filters_to_flat
 
 from cutevariant.gui import tooltip as toolTip
+
 
 class VariantVerticalHeader(QHeaderView):
     def __init__(self, parent=None):
@@ -385,10 +387,19 @@ class VariantModel(QAbstractTableModel):
                 return font
 
         # vertical header
-        if role == Qt.ToolTipRole  and orientation == Qt.Vertical:
+        if role == Qt.ToolTipRole and orientation == Qt.Vertical:
             variant = self.variant(section)
-            variant = variant | dict(sql.get_variant(conn=self.conn, variant_id=variant["id"], with_annotations=True, with_samples=True))
-            variant_tooltip = toolTip.variant_tooltip(data=variant, conn=self.conn, fields=self.fields)
+            variant = variant | dict(
+                sql.get_variant(
+                    conn=self.conn,
+                    variant_id=variant["id"],
+                    with_annotations=True,
+                    with_samples=True,
+                )
+            )
+            variant_tooltip = toolTip.variant_tooltip(
+                data=variant, conn=self.conn, fields=self.fields
+            )
             return variant_tooltip
 
     def update_variant(self, row: int, variant: dict):
@@ -774,6 +785,8 @@ class VariantView(QWidget):
     filter_remove = Signal(str)
     field_remove = Signal(str)
 
+    source_changed = Signal(str)
+
     def __init__(self, parent=None):
         """
         Args:
@@ -786,9 +799,6 @@ class VariantView(QWidget):
 
         self.bottom_bar = QToolBar()
         self.top_bar = QToolBar()
-
-        self.formatter_combo = QComboBox()
-        self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
 
         # Log edit
         self.log_edit = QLabel()
@@ -804,6 +814,7 @@ class VariantView(QWidget):
         # Setup model
         self.model = VariantModel()
         self.delegate = formatter.FormatterDelegate()
+        self.delegate.set_formatter(CutestyleFormatter())
 
         # Setup view
         self.view.setAlternatingRowColors(True)
@@ -874,7 +885,6 @@ class VariantView(QWidget):
         self.view.selectionModel().currentChanged.connect(self.on_variant_clicked)
 
         self._setup_actions()
-        self.add_available_formatters()
 
     def _setup_actions(self):
         # ## SETUP TOP BAR
@@ -923,8 +933,13 @@ class VariantView(QWidget):
         )
         self.interrupt_action.setToolTip(self.tr("Stop current query"))
 
-        # Formatter
-        self.top_bar.addWidget(self.formatter_combo)
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.top_bar.addWidget(spacer)
+        self.source_combo = QComboBox()
+        self.source_combo.setToolTip(self.tr("Data source to use"))
+        self.top_bar.addWidget(QLabel("Source:"))
+        self.top_bar.addWidget(self.source_combo)
 
         ## SETUP BOTTOM BAR
         # group action to make it easier disabled
@@ -990,20 +1005,6 @@ class VariantView(QWidget):
             )
         )
 
-    def on_formatter_changed(self):
-        """Activate the selected formatter and save it in settings
-
-        Called when the current formatter is modified
-        """
-
-        settings = QSettings()
-        settings.beginGroup("variant_view")
-
-        formatter_class = self.formatter_combo.currentData()
-        self.set_formatter(formatter_class())
-        # Save formatter setting
-        settings.setValue("formatter", formatter_class.__name__)
-
     def load(self, reset_page: bool = False):
         """Load the view
 
@@ -1012,6 +1013,9 @@ class VariantView(QWidget):
         Args:
             reset_page (bool, optional):
         """
+        if not self.conn:
+            return
+
         if reset_page:
             self.model.page = 1
             # self.model.order_by = None
@@ -1019,6 +1023,11 @@ class VariantView(QWidget):
         self.log_edit.hide()
         self.model.interrupt()
         self.model.load()
+
+        # Load source
+        self.source_combo.clear()
+        for source in sql.get_selections(self.model.conn):
+            self.source_combo.addItem(source["name"])
 
         # display sort indicator
         order_by = self.model.order_by
@@ -1240,25 +1249,23 @@ class VariantView(QWidget):
         index = self.view.currentIndex()
 
         # find variant_id
-        variant_id=None
+        variant_id = None
         current_variant = self.model.variant(index.row())
-        variant_id=current_variant["id"]
+        variant_id = current_variant["id"]
 
         # find sample_id
-        sample_id=None
-        _header_name=self.model.headers[index.column()]
+        sample_id = None
+        _header_name = self.model.headers[index.column()]
         match = re.findall(r"^samples.(\w+)\.(.*)$", _header_name)
         if match:
             sample_name = match[0][0]
-            sample_infos=sql.search_samples(self.conn, name=sample_name)
+            sample_infos = sql.search_samples(self.conn, name=sample_name)
             for sample_info in sample_infos:
-                sample_id=sample_info["id"]
+                sample_id = sample_info["id"]
 
         # validation dialog
         if variant_id and sample_id:
-            dialog = SampleVariantDialog(
-                self.conn, sample_id, variant_id
-            )
+            dialog = SampleVariantDialog(self.conn, sample_id, variant_id)
             if dialog.exec_() == QDialog.Accepted:
                 self.on_refresh()
 
@@ -1306,9 +1313,7 @@ class VariantView(QWidget):
         # Copy action: Copy the variant reference ID in to the clipboard
         # Get variant_name_pattern
         config = Config("variables") or {}
-        formatted_variant = (
-            config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-        )
+        formatted_variant = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
         if len(full_variant["annotations"]):
             for ann in full_variant["annotations"][0]:
                 full_variant["annotations___" + str(ann)] = full_variant["annotations"][0][ann]
@@ -1334,7 +1339,7 @@ class VariantView(QWidget):
         # Validation menu
 
         # Find variant id
-        variant_id=current_variant["id"]
+        variant_id = current_variant["id"]
 
         # Find sample id
         sample_name=None
@@ -1347,8 +1352,8 @@ class VariantView(QWidget):
             sample_name = header_name_match_sample[0]
             sample_infos=sql.search_samples(self.conn, name=sample_name)
             for sample_info in sample_infos:
-                sample_id=sample_info["id"]
-                sample_valid=sample_info["classification"]
+                sample_id = sample_info["id"]
+                sample_valid = sample_info["classification"]
 
         # current cell value
         index = self.view.currentIndex()
@@ -1358,7 +1363,7 @@ class VariantView(QWidget):
         if sample_id and sample_name and variant_id and cell_value:
 
             # find genotype
-            genotype=sql.get_sample_annotations(self.conn, variant_id, sample_id)
+            genotype = sql.get_sample_annotations(self.conn, variant_id, sample_id)
 
             # find sample lock/unlock
             validation_menu_lock = False
@@ -1370,7 +1375,7 @@ class VariantView(QWidget):
             menu.addSeparator()
 
             sample_validation_menu = QMenu(self.tr(f"{validation_menu_text}"))
-            
+
             menu.addMenu(sample_validation_menu)
             sample_validation_menu.setIcon(FIcon(0xF0009))
             sample_validation_menu.addAction(
@@ -1560,14 +1565,14 @@ class VariantView(QWidget):
         index = self.view.currentIndex()
 
         # find sample_id
-        sample_id=None
-        _header_name=self.model.headers[index.column()]
+        sample_id = None
+        _header_name = self.model.headers[index.column()]
         match = re.findall(r"^samples.(\w+)\.(.*)$", _header_name)
         if match:
             sample_name = match[0][0]
-            sample_infos=sql.search_samples(self.conn, name=sample_name)
+            sample_infos = sql.search_samples(self.conn, name=sample_name)
             for sample_info in sample_infos:
-                sample_id=sample_info["id"]
+                sample_id = sample_info["id"]
 
         # Do not update the same variant multiple times
         unique_ids = set()
@@ -1581,9 +1586,9 @@ class VariantView(QWidget):
 
             if variant_id in unique_ids:
                 continue
-            unique_ids.add(variant_id)            
+            unique_ids.add(variant_id)
 
-            data={}
+            data = {}
             data["variant_id"] = variant_id
             data["sample_id"] = sample_id
             data["classification"] = value
@@ -1591,7 +1596,6 @@ class VariantView(QWidget):
             sql.update_genotypes(self.conn, data)
 
             self.parent.mainwindow.refresh_plugin("genotypes")
-
 
     def update_tags(self, tags: list = []):
         """Update tags of the variant
@@ -1735,10 +1739,10 @@ class VariantView(QWidget):
             sample_name = header_name_match_sample[0]
             sample_infos=sql.search_samples(self.conn, name=sample_name)
             for sample_info in sample_infos:
-                sample_classification=sample_info["classification"]
+                sample_classification = sample_info["classification"]
             if style.SAMPLE_CLASSIFICATION[sample_classification].get("lock"):
                 validation_menu_lock = True
-        
+
         # Menu Validation for sample
         if header_name_match_sample and cell_value:
             self._show_sample_variant_dialog()
@@ -1755,7 +1759,7 @@ class VariantView(QWidget):
 
             if variant["classification"] == item["number"]:
                 icon = 0xF0133
-                #class_menu.setIcon(FIcon(icon, item["color"]))
+                # class_menu.setIcon(FIcon(icon, item["color"]))
             else:
                 icon = 0xF012F
 
@@ -1776,15 +1780,15 @@ class VariantView(QWidget):
         for item in genotypes_classifications:
 
             if genotype["classification"] == item["number"]:
-                icon=0xF0133
-                #validation_menu.setIcon(FIcon(icon, item["color"]))
+                icon = 0xF0133
+                # validation_menu.setIcon(FIcon(icon, item["color"]))
             else:
-                icon=0xF012F
+                icon = 0xF012F
 
             action = validation_menu.addAction(FIcon(icon, item["color"]), item["name"])
             action.setData(item["number"])
             on_click = functools.partial(self.update_validation, value=item["number"])
-            action.triggered.connect(on_click)                
+            action.triggered.connect(on_click)
 
         return validation_menu
 
@@ -1795,31 +1799,6 @@ class VariantView(QWidget):
             action = menu.addAction(link["name"], func_slot)
             action.setIcon(FIcon(0xF0866))
         return menu
-
-    def add_available_formatters(self):
-        """Populate the formatters
-
-        Also recall previously selected formatters via config file.
-        Default formatter is "SeqoneFormatter".
-        """
-        # Get previously selected formatter
-
-        settings = QSettings()
-        settings.beginGroup("variant_view")
-        formatter_name = settings.value("formatter", "CutestyleFormatter")
-
-        # Add formatters to combobox, a click on it will instantiate the class
-        selected_formatter_index = 0
-        for index, obj in enumerate(formatter.find_formatters()):
-            self.formatter_combo.addItem(FIcon(0xF03D8), obj.DISPLAY_NAME, obj)
-            if obj.__name__ == formatter_name:
-                selected_formatter_index = index
-
-        self.formatter_combo.currentTextChanged.connect(self.on_formatter_changed)
-        self.formatter_combo.setToolTip(self.tr("Change current style"))
-
-        # Set the previously used/default formatter
-        self.formatter_combo.setCurrentIndex(selected_formatter_index)
 
     def show_unique_values(self, field: str):
         groupby_dialog = GroupbyDialog(self.conn, self)
