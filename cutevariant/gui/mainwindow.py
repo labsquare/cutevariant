@@ -438,10 +438,10 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
-        sample_action = self.toolbar.addAction(
-            FIcon(0xF0010), self.tr("Add Sample(s)"), self.on_select_samples
-        )
-        sample_action.setToolTip(self.tr("Add samples to the current selection"))
+        # sample_action = self.toolbar.addAction(
+        #     FIcon(0xF0010), self.tr("Add Sample(s)"), self.on_select_samples
+        # )
+        # sample_action.setToolTip(self.tr("Add samples to the current selection"))
 
         # self.toolbar.addAction(self.open_config_action)
         # self.toolbar.addAction(FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode)
