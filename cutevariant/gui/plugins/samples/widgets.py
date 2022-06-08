@@ -90,37 +90,27 @@ class SampleModel(QAbstractTableModel):
                 sex = sample.get("sex", None)
                 if sex == 1:
                     return QIcon(FIcon(0xF029D))
-                if sex == 2:
+                elif sex == 2:
                     return QIcon(FIcon(0xF029C))
-                if sex == 0:
+                elif sex == 0:
                     return QIcon(FIcon(0xF029E, color_alpha))
 
-            if col == SampleModel.PHENOTYPE_COLUMN:
+            elif col == SampleModel.PHENOTYPE_COLUMN:
                 phenotype = sample.get("phenotype")
                 if phenotype == 2:
                     return QIcon(FIcon(0xF08C9, color))
-                if phenotype == 1:
+                elif phenotype == 1:
                     return QIcon(FIcon(0xF05DD, color))
                 else:
                     return QIcon(FIcon(0xF001A, color_alpha))
 
-            if col == SampleModel.COMMENT_COLUMN:
+            elif col == SampleModel.COMMENT_COLUMN:
                 sample = self._samples[index.row()]
-                nb_validated_genotype = 0
-                # code remove because of lag
-                # sample_id = sample["id"]
-                # sample_nb_genotype_by_classification = (
-                #     sql.get_sample_nb_genotype_by_classification(self.conn, sample_id)
-                # )
-                # for classification in sample_nb_genotype_by_classification:
-                #     nb_genotype_by_classification = (
-                #         sample_nb_genotype_by_classification[classification]
-                #     )
-                #     if classification > 0:
-                #         nb_validated_genotype += nb_genotype_by_classification
-                if nb_validated_genotype > 0:
+                if sql.get_if_sample_has_classified_genotypes(
+                    self.conn, sample["id"]
+                    ):
                     return QIcon(FIcon(0xF017F, color))
-                if sample["comment"]:
+                elif sample["comment"]:
                     return QIcon(FIcon(0xF017A, color))
                 else:
                     return QIcon(FIcon(0xF017A, color_alpha))
@@ -133,13 +123,13 @@ class SampleModel(QAbstractTableModel):
                 sample_comment = toolTip.sample_tooltip(data=sample, conn=self.conn)
                 return sample_comment
 
-            if col == SampleModel.NAME_COLUMN:
+            elif col == SampleModel.NAME_COLUMN:
                 return self.get_tooltip(index.row())
 
-            if col == SampleModel.PHENOTYPE_COLUMN:
+            elif col == SampleModel.PHENOTYPE_COLUMN:
                 return cst.PHENOTYPE_DESC.get(int(sample["phenotype"]), "Unknown")
 
-            if col == SampleModel.SEX_COLUMN:
+            elif col == SampleModel.SEX_COLUMN:
                 return cst.SEX_DESC.get(int(sample["sex"]), "Unknown")
 
     def get_tooltip(self, row: int) -> str:

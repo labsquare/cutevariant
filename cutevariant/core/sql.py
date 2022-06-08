@@ -2940,6 +2940,16 @@ def get_sample_nb_genotype_by_classification(conn, sample_id: int):
         )
     )
 
+def get_if_sample_has_classified_genotypes(conn, sample_id: int):
+    """Get if sample id has classificed genotype (>0)"""
+    conn.row_factory = sqlite3.Row
+    res = conn.execute(
+            f"SELECT 1 as variant FROM genotypes WHERE genotypes.sample_id = '{sample_id}' AND classification > 0 LIMIT 1"
+        ).fetchone()
+    if res:
+        return True
+    else:
+        return False
 
 def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List[str] = None):
     """Get samples annotation for a specific variant using different filters
