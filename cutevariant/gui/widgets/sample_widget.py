@@ -129,10 +129,19 @@ class EvaluationSectionWidget(AbstractSectionWidget):
             self.name_label.setText(str(sample["name"]))
 
         # Load tags
+        # if "tags" in sample:
+        #     config = Config("tags")
+        #     if "samples" in config:
+        #         self.tag_edit.addItems(config["samples"])
+
+        #     self.tag_edit.setText(",".join(sample["tags"].split(self.TAG_SEPARATOR)))
         if "tags" in sample:
             config = Config("tags")
             if "samples" in config:
-                self.tag_edit.addItems(config["samples"])
+                tags = {}
+                for tag in config["samples"]:
+                    tags[tag["name"]]=tag["description"]
+                self.tag_edit.addItems(tags)
 
             self.tag_edit.setText(",".join(sample["tags"].split(self.TAG_SEPARATOR)))
 

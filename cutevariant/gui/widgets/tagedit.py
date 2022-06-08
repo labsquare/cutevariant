@@ -24,19 +24,24 @@ from PySide6.QtGui import (
 import sys
 import re
 
+from cutevariant.gui.ficon import FIcon
 
 class TagEdit(QWidget):
     def __init__(self, parent=None):
         super().__init__()
 
         self.w = gui.widgets.MultiComboBox()
+        self.w.setContentsMargins(0, 0, 0, 0)
         self.add_btn = QToolButton()
         self.add_btn.setText("+")
+        self.add_btn.setIcon(FIcon(0xF0722))
         self.add_btn.clicked.connect(self.on_add)
 
         hlayout = QHBoxLayout(self)
         hlayout.addWidget(self.w)
         hlayout.addWidget(self.add_btn)
+        hlayout.setContentsMargins(0, 0, 0, 0)
+        hlayout.setSpacing(0)
 
     def setPlaceholderText(self, text: str):
         self.w.lineEdit().setPlaceholderText(text)
@@ -57,7 +62,8 @@ class TagEdit(QWidget):
         text, _ = QInputDialog.getText(self, "Create a new tag", "Tags:")
         if text and text not in self.w.words():
             item = self.w.addItem(text)
-            item.setData(Qt.Checked, Qt.CheckStateRole)
+            # item.setForeground(QColor("red"))
+            item.setCheckState(Qt.Checked)
 
 
 if __name__ == "__main__":
