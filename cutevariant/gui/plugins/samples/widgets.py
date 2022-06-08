@@ -390,10 +390,6 @@ class SamplesWidget(plugin.PluginWidget):
             FIcon(0xF120A), "Clear sample(s)", self.on_clear_samples
         )
 
-        self.edit_action = self.tool_bar.addAction(
-            FIcon(0xF0FFB), "Edit Sample", self.on_edit
-        )
-
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.tool_bar.addWidget(spacer)
@@ -420,20 +416,20 @@ class SamplesWidget(plugin.PluginWidget):
 
         genotype_action.setToolTip(self.tr("Add genotypes as fields from all samples"))
 
-        self.select_action = QAction(FIcon(0xF0349), "Select variants for the sample")
+        self.select_action = QAction(FIcon(0xF0349), "Select variants")
         self.select_action.triggered.connect(self.on_show_variant)
 
         self.create_filter_action = QAction(
-            FIcon(0xF0EF1), "Create filters for the sample"
+            FIcon(0xF0EF1), "Create filters"
         )
         self.create_filter_action.triggered.connect(self.on_create_filter)
 
         self.clear_filter_action = QAction(
-            FIcon(0xF0234), "Clear all filters for the sample"
+            FIcon(0xF0234), "Clear all filters"
         )
         self.clear_filter_action.triggered.connect(self.on_clear_filters)
 
-        self.source_action = QAction(FIcon(0xF0A75), "Create a source for the sample")
+        self.source_action = QAction(FIcon(0xF0A75), "Create a source")
         self.source_action.triggered.connect(self.on_create_samples_source)
         self.genotype_action = QAction(FIcon(0xF0B38), "Add genotypes from all samples")
         self.genotype_action.triggered.connect(self.on_add_genotypes)
@@ -448,14 +444,11 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu = QMenu(self)
 
-        menu.addAction(
-            FIcon(0xF0013), # 0xF0013
-            sample_name,
-            functools.partial(QApplication.instance().clipboard().setText, sample_name),
+        self.edit_action = self.tool_bar.addAction(
+            FIcon(0xF064F),
+            f"Edit Sample '{sample_name}'",
+            self.on_edit
         )
-
-        menu.addSeparator()
-
         menu.addAction(self.edit_action)
 
         menu.addMenu(self._create_classification_menu(sample))

@@ -635,21 +635,9 @@ class GenotypesWidget(plugin.PluginWidget):
 
         # Add section Sample
         sample_name = genotype.get("name", "unknown")
-        menu.addAction(
-            FIcon(0xF0013),
-            sample_name,
-            functools.partial(QApplication.instance().clipboard().setText, sample_name),
-        )
 
         # Add section Variant
         variant_name = self.find_variant_name(troncate=True)
-        menu.addAction(
-            FIcon(0xF014C),
-            variant_name,
-            functools.partial(QApplication.instance().clipboard().setText, variant_name),
-        )
-
-        menu.addSeparator()
 
         # Validation
         if genotype["gt"]:
@@ -666,7 +654,9 @@ class GenotypesWidget(plugin.PluginWidget):
                 validation_menu_title = "Classification"
 
             menu.addAction(
-                "Edit Genotype", self._show_sample_variant_dialog
+                FIcon(0xF064F),
+                f"Edit Genotype '{sample_name}' - '{variant_name}'",
+                self._show_sample_variant_dialog
             )
 
             cat_menu = menu.addMenu(validation_menu_title)

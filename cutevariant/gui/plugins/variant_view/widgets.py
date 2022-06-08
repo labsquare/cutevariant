@@ -1316,16 +1316,8 @@ class VariantView(QWidget):
         variant_name = formatted_variant.format(**full_variant)
 
         menu.addAction(
-            FIcon(0xF014C),
-            variant_name,
-            functools.partial(QApplication.instance().clipboard().setText, variant_name),
-        )
-
-        menu.addSeparator()
-
-        menu.addAction(
-            FIcon(0xF14E6),
-            "Edit Variant",
+            FIcon(0xF064F),
+            f"Edit Variant '{variant_name}'",
             self._show_variant_dialog,
         )
 
