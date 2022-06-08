@@ -1321,16 +1321,8 @@ class VariantView(QWidget):
         variant_name = formatted_variant.format(**full_variant)
 
         menu.addAction(
-            FIcon(0xF014C),
-            variant_name,
-            functools.partial(QApplication.instance().clipboard().setText, variant_name),
-        )
-
-        menu.addSeparator()
-
-        menu.addAction(
-            FIcon(0xF14E6),
-            "Edit Variant",
+            FIcon(0xF064F),
+            f"Edit Variant '{variant_name}'",
             self._show_variant_dialog,
         )
 
@@ -1350,20 +1342,25 @@ class VariantView(QWidget):
         variant_id = current_variant["id"]
 
         # Find sample id
-        sample_name = None
-        sample_id = None
-        sample_valid = None
-        header_name = self.model.headers[index.column()]
-        header_name_match_sample = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
+        sample_name=None
+        sample_id=None
+        sample_valid=None
+        header_name=self.model.headers[index.column()]
+        #header_name_match_sample = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
+        header_name_match_sample = re.findall(r"^samples.(\w+)\.gt$", header_name)
         if header_name_match_sample:
-            sample_name = header_name_match_sample[0][0]
-            sample_infos = sql.search_samples(self.conn, name=sample_name)
+            sample_name = header_name_match_sample[0]
+            sample_infos=sql.search_samples(self.conn, name=sample_name)
             for sample_info in sample_infos:
                 sample_id = sample_info["id"]
                 sample_valid = sample_info["classification"]
 
+        # current cell value
+        index = self.view.currentIndex()
+        cell_value = current_variant[self.model.headers[index.column()]]
+
         # Menu Validation for sample
-        if sample_id and sample_name and variant_id:
+        if sample_id and sample_name and variant_id and cell_value:
 
             # find genotype
             genotype = sql.get_sample_annotations(self.conn, variant_id, sample_id)
@@ -1380,22 +1377,18 @@ class VariantView(QWidget):
             sample_validation_menu = QMenu(self.tr(f"{validation_menu_text}"))
 
             menu.addMenu(sample_validation_menu)
-
-            if validation_menu_lock:
-
-                # Validation for sample locked
-                sample_validation_menu.setIcon(FIcon(0xF0009))
-                sample_validation_menu.setEnabled(False)
-
-            else:
-
-                # Validation for sample Unlocked
-                sample_validation_menu.setIcon(FIcon(0xF0009))
-                sample_validation_menu.addMenu(self.create_validation_menu(genotype))
-                sample_validation_menu.addAction(
-                    f"Edit Genotype...", self._show_sample_variant_dialog
+            sample_validation_menu.setIcon(FIcon(0xF0009))
+            sample_validation_menu.addAction(
+                    FIcon(0xF064F),
+                    f"Edit Genotype",
+                    self._show_sample_variant_dialog
                 )
-                menu.addMenu(sample_validation_menu)
+        
+            # Validation for sample Unlocked
+            if not validation_menu_lock:
+                sample_validation_menu.addMenu(self.create_validation_menu(genotype))
+            
+            menu.addMenu(sample_validation_menu)
 
         # Edit menu
         menu.addSeparator()
@@ -1731,27 +1724,28 @@ class VariantView(QWidget):
         TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
         """
 
+        # current variant
+        current_variant = self.model.variant(index.row())
+
+        # current cell value
+        cell_value = current_variant[self.model.headers[index.column()]]
+
         # Check if Edit Genotype
-        header_name = self.model.headers[index.column()]
-        header_name_match_sample = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
+        header_name=self.model.headers[index.column()]
+        header_name_match_sample = re.findall(r"^samples.(\w+)\.gt$", header_name)
         validation_menu_lock = False
         sample_name = "unknown"
         if header_name_match_sample:
-            sample_name = header_name_match_sample[0][0]
-            sample_infos = sql.search_samples(self.conn, name=sample_name)
+            sample_name = header_name_match_sample[0]
+            sample_infos=sql.search_samples(self.conn, name=sample_name)
             for sample_info in sample_infos:
                 sample_classification = sample_info["classification"]
             if style.SAMPLE_CLASSIFICATION[sample_classification].get("lock"):
                 validation_menu_lock = True
 
         # Menu Validation for sample
-        if header_name_match_sample:
-            if validation_menu_lock:
-                QMessageBox.information(
-                    self, "sample locked", self.tr(f"Sample '{sample_name}' is locked")
-                )
-            else:
-                self._show_sample_variant_dialog()
+        if header_name_match_sample and cell_value:
+            self._show_sample_variant_dialog()
         else:
             self._show_variant_dialog()
 

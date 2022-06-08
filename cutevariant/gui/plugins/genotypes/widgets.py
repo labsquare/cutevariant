@@ -3,6 +3,7 @@
 from dataclasses import replace
 import typing
 from functools import cmp_to_key, partial
+import functools
 import time
 import copy
 import re
@@ -626,24 +627,40 @@ class GenotypesWidget(plugin.PluginWidget):
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
+        row = self.view.selectionModel().currentIndex().row()
+        
+        genotype = self.model.get_genotype(row)
+
         menu = QMenu(self)
 
-        # variant name
+        # Add section Sample
+        sample_name = genotype.get("name", "unknown")
+
+        # Add section Variant
         variant_name = self.find_variant_name(troncate=True)
 
-        # Add section
-        menu.addSection("Variant " + variant_name)
-
         # Validation
-        row = self.view.selectionModel().currentIndex().row()
-        sample = self.model.get_genotype(row)
+        if genotype["gt"]:
 
-        if sample["gt"]:
+            # find sample lock/unlock
+            sample = sql.get_sample(self.conn, genotype["sample_id"])
+            sample_classification = sample.get("classification", 0)
+
+            if style.SAMPLE_CLASSIFICATION[sample_classification].get("lock"):
+                validation_menu_enable = False
+                validation_menu_title = "Classification (locked)"
+            else:
+                validation_menu_enable = True
+                validation_menu_title = "Classification"
+
             menu.addAction(
-                "Edit Genotype classification...", self._show_sample_variant_dialog
+                FIcon(0xF064F),
+                f"Edit Genotype '{sample_name}' - '{variant_name}'",
+                self._show_sample_variant_dialog
             )
 
-            cat_menu = menu.addMenu("Classifications")
+            cat_menu = menu.addMenu(validation_menu_title)
+            cat_menu.setEnabled(validation_menu_enable)
 
             for item in self.model.classifications:
 
