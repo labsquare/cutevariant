@@ -577,10 +577,10 @@ class SamplesWidget(plugin.PluginWidget):
 
             self.mainwindow.set_state_data("filters", filters)
             
-            if "source_editor" in self.mainwindow.plugins:
-                self.mainwindow.refresh_plugin("source_editor")
+            # if "source_editor" in self.mainwindow.plugins:
+            #     self.mainwindow.refresh_plugin("source_editor")
 
-            self.mainwindow.refresh_plugins(sender=self)
+            # self.mainwindow.refresh_plugins(sender=self)
 
     def on_clear_filters(self):
 
@@ -596,10 +596,10 @@ class SamplesWidget(plugin.PluginWidget):
 
             self.mainwindow.set_state_data("filters", filters)
 
-            if "source_editor" in self.mainwindow.plugins:
-                self.mainwindow.refresh_plugin("source_editor")
+            # if "source_editor" in self.mainwindow.plugins:
+            #     self.mainwindow.refresh_plugin("source_editor")
 
-            self.mainwindow.refresh_plugins(sender=self)
+            # self.mainwindow.refresh_plugins(sender=self)
 
     # def on_create_all_source(self):
 
@@ -630,7 +630,7 @@ class SamplesWidget(plugin.PluginWidget):
             if "source_editor" in self.mainwindow.plugins:
                     self.mainwindow.refresh_plugin("source_editor")
 
-            self.mainwindow.refresh_plugins(sender=self)
+            # self.mainwindow.refresh_plugins(sender=self)
 
     # def on_create_source(self):
     #     name, success = QInputDialog.getText(
@@ -666,7 +666,7 @@ class SamplesWidget(plugin.PluginWidget):
                 fields += [f"samples.{sample_name}.gt"]
 
             self.mainwindow.set_state_data("fields", fields)
-            self.mainwindow.refresh_plugins(sender=self)
+            # self.mainwindow.refresh_plugins(sender=self)
 
     def on_register(self, mainwindow: MainWindow):
         """This method is called when the plugin is registered from the mainwindow.
