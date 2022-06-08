@@ -785,6 +785,8 @@ class VariantView(QWidget):
     filter_remove = Signal(str)
     field_remove = Signal(str)
 
+    source_changed = Signal(str)
+
     def __init__(self, parent=None):
         """
         Args:
@@ -931,7 +933,13 @@ class VariantView(QWidget):
         )
         self.interrupt_action.setToolTip(self.tr("Stop current query"))
 
-        # Formatter
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.top_bar.addWidget(spacer)
+        self.source_combo = QComboBox()
+        self.source_combo.setToolTip(self.tr("Data source to use"))
+        self.top_bar.addWidget(QLabel("Source:"))
+        self.top_bar.addWidget(self.source_combo)
 
         ## SETUP BOTTOM BAR
         # group action to make it easier disabled
@@ -1005,6 +1013,9 @@ class VariantView(QWidget):
         Args:
             reset_page (bool, optional):
         """
+        if not self.conn:
+            return
+
         if reset_page:
             self.model.page = 1
             # self.model.order_by = None
@@ -1012,6 +1023,11 @@ class VariantView(QWidget):
         self.log_edit.hide()
         self.model.interrupt()
         self.model.load()
+
+        # Load source
+        self.source_combo.clear()
+        for source in sql.get_selections(self.model.conn):
+            self.source_combo.addItem(source["name"])
 
         # display sort indicator
         order_by = self.model.order_by

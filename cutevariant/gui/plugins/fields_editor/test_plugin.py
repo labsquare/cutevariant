@@ -30,9 +30,9 @@ def test_plugin(conn, qtbot):
     assert plugin.widget_fields.views[1]["model"].rowCount() == len(
         sql.get_field_by_category(conn, "annotations")
     )
-    assert plugin.widget_fields.views[2]["model"].rowCount() == len(
-        sql.get_field_by_category(conn, "samples")
-    ) * len(list(sql.get_samples(conn)))
+    # assert plugin.widget_fields.views[2]["model"].rowCount() == len(
+    #     sql.get_field_by_category(conn, "samples")
+    # ) * len(list(sql.get_samples(conn)))
 
     fields = [
         "chr",
@@ -45,7 +45,7 @@ def test_plugin(conn, qtbot):
     plugin.widget_fields.fields = fields
     assert len(plugin.widget_fields.views[0]["model"].checked_fields()) == 2
     assert len(plugin.widget_fields.views[1]["model"].checked_fields()) == 2
-    assert len(plugin.widget_fields.views[2]["model"].checked_fields()) == 2
+    # assert len(plugin.widget_fields.views[2]["model"].checked_fields()) == 2
 
     # def test_presets_model(qtmodeltester):
     #     filename = tempfile.mktemp()
@@ -113,12 +113,12 @@ def test_fields_model(qtmodeltester, conn, qtbot):
     model.load()
     assert model.rowCount() == len(sql.get_field_by_category(conn, model.category))
 
-    # Load samples categories ! Not ( you must repeat fields per samples)
-    model.category = "samples"
-    model.load()
-    sample_count = len(list(sql.get_samples(conn)))
-    fields_count = len(sql.get_field_by_category(conn, model.category))
-    assert model.rowCount() == sample_count * fields_count
+    # # Load samples categories ! Not ( you must repeat fields per samples)
+    # model.category = "samples"
+    # model.load()
+    # sample_count = len(list(sql.get_samples(conn)))
+    # fields_count = len(sql.get_field_by_category(conn, model.category))
+    # assert model.rowCount() == sample_count * fields_count
 
     # check fields
     model.category = "variants"
