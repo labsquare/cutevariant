@@ -1061,7 +1061,7 @@ def insert_selection_from_source(
 
 
 def insert_selection_from_samples(
-    conn: sqlite3.Connection, samples: list, name="samples", gt_min=0
+    conn: sqlite3.Connection, samples: list, name="samples", gt_min=0, force=True
 ):
     samples_clause = "(" + ",".join([f"'{i}'" for i in samples]) + ")"
     ids = ",".join(
@@ -1071,15 +1071,27 @@ def insert_selection_from_samples(
         ]
     )
 
-    query = f"""
-    SELECT distinct(id) FROM variants INNER JOIN genotypes ON genotypes.variant_id = variants.id 
+    query = f"""SELECT distinct(id) FROM variants INNER JOIN genotypes ON genotypes.variant_id = variants.id 
     WHERE genotypes.sample_id IN ({ids}) AND genotypes.gt > {gt_min}"""
 
-    insert_selection_from_sql(
-        conn,
-        query,
-        name,
-    )
+    # check if same query
+    selections = get_selections(conn)
+    query_in_db = None
+    for s in selections:
+        if s["name"] == name:
+            query_in_db = s["query"]
+
+    # Create/modify selection
+    if query_in_db != query or force:
+        LOGGER.debug(f"""Source '{name}' created/updated""")
+        insert_selection_from_sql(
+            conn,
+            query,
+            name,
+        )
+    else:
+        LOGGER.debug(f"""Source '{name}' already in DB""")
+
 
 
 def insert_selection_from_sql(
@@ -1929,9 +1941,24 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
         "CREATE INDEX IF NOT EXISTS `idx_genotypes` ON genotypes (`variant_id`, `sample_id`)"
     )
 
-    # Complementary index of the primary key (sample_id, variant_id)
+    # Complementary index on sample_id
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS `idx_genotypes_sample_id` ON genotypes (`sample_id`)"
+    )
+
+    # Complementary index on variant_id
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS `idx_genotypes_variant_id` ON genotypes (`variant_id`)"
+    )
+
+    # Complementary index on gt
     conn.execute(
         "CREATE INDEX IF NOT EXISTS `idx_genotypes_gt` ON genotypes (`gt`)"
+    )
+
+    # Complementary index oon classification
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS `idx_genotypes_classification` ON genotypes (`classification`)"
     )
 
     for field in indexed_fields:
@@ -2750,6 +2777,8 @@ def create_table_samples(conn, fields=[]):
         classification INTEGER DEFAULT 0,
         tags TEXT DEFAULT '',
         comment TEXT DEFAULT '',
+        count_validation_positive_variant INTEGER DEFAULT 0,
+        count_validation_negative_variant INTEGER DEFAULT 0,
         UNIQUE (name, family_id)
         )"""
     )
@@ -3132,13 +3161,26 @@ def create_triggers(conn):
         """
     )
 
+    # variants count validations on samples update
+    conn.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_variant_after_update_on_genotypes AFTER UPDATE ON genotypes
+        WHEN new.classification <> old.classification
+        BEGIN
+            UPDATE samples
+            SET count_validation_positive_variant = (SELECT count(shv.variant_id) FROM genotypes as shv WHERE shv.sample_id=new.sample_id AND shv.classification>0), 
+                count_validation_negative_variant = (SELECT count(shv.variant_id) FROM genotypes as shv WHERE shv.sample_id=new.sample_id AND shv.classification<0)
+            WHERE id = new.sample_id;
+        END;
+        """
+    )
 
     ###### trigers for history
 
     tables_fields_triggered={
         "variants": ["favorite", "classification", "tags", "comment"],
         "samples": ["classification", "tags", "comment", "family_id", "father_id", "mother_id", "sex", "phenotype"],
-        "genotypes": ["classification", "tags", "comment"],
+        "genotypes": ["tags", "comment"],
     }
 
     for table in tables_fields_triggered:

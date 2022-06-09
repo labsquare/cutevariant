@@ -1383,24 +1383,17 @@ class VariantView(QWidget):
             menu.addSeparator()
 
             sample_validation_menu = QMenu(self.tr(f"{validation_menu_text}"))
-
             menu.addMenu(sample_validation_menu)
 
-            if validation_menu_lock:
-
-                # Validation for sample locked
-                sample_validation_menu.setIcon(FIcon(0xF0009))
-                sample_validation_menu.setEnabled(False)
-
-            else:
-
-                # Validation for sample Unlocked
-                sample_validation_menu.setIcon(FIcon(0xF0009))
-                sample_validation_menu.addMenu(self.create_validation_menu(genotype))
-                sample_validation_menu.addAction(
-                    f"Edit Genotype...", self._show_sample_variant_dialog
+            sample_validation_menu.setIcon(FIcon(0xF0009))
+            sample_validation_menu.addAction(
+                    f"Edit Genotype", self._show_sample_variant_dialog
                 )
-                menu.addMenu(sample_validation_menu)
+
+            if not validation_menu_lock:
+                sample_validation_menu.addMenu(self.create_validation_menu(genotype))
+                
+            #menu.addMenu(sample_validation_menu)
 
         # Edit menu
         menu.addSeparator()
@@ -1607,7 +1600,11 @@ class VariantView(QWidget):
 
             sql.update_genotypes(self.conn, data)
 
-            self.parent.mainwindow.refresh_plugin("genotypes")
+            if "genotypes" in self.parent.mainwindow.plugins:
+                self.parent.mainwindow.refresh_plugin("genotypes")
+
+            if "samples" in self.parent.mainwindow.plugins:
+                self.parent.mainwindow.refresh_plugin("samples")
 
     def update_tags(self, tags: list = []):
         """Update tags of the variant
