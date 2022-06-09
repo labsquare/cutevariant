@@ -621,10 +621,7 @@ class GenotypesWidget(plugin.PluginWidget):
         if genotype["sample_id"] and genotype["variant_id"]:
 
             # find sample lock/unlock
-            sample = sql.get_sample(self.conn, genotype["sample_id"])
-            sample_classification = sample.get("classification", 0)
-
-            if style.SAMPLE_CLASSIFICATION[sample_classification].get("lock"):
+            if self.is_locked(genotype.get("sample_id", 0)):
                 validation_menu_enable = False
                 validation_menu_title = "Classification (locked)"
             else:
@@ -653,6 +650,30 @@ class GenotypesWidget(plugin.PluginWidget):
                 action.triggered.connect(self._on_classification_changed)
 
             menu.exec_(event.globalPos())
+
+    def is_locked(self, sample_id: int):
+        """Prevents editing genotype if sample is classified as locked
+        A sample is considered locked if its classification has the boolean "lock: true" set in the Config (yml) file.
+
+        Args:
+            sample_id (int): sql sample id
+
+        Returns:
+            locked (bool) : lock status of sample attached to current genotype
+        """
+        config_classif = Config("classifications").get("samples", None)
+        sample = sql.get_sample(self.conn, sample_id)
+        sample_classif = sample.get("classification", None)
+
+        if config_classif == None or sample_classif == None:
+            return False
+        
+        locked = False
+        for config in config_classif:
+            if config["number"] == sample_classif and "lock" in config:
+                if config["lock"] == True:
+                    locked = True
+        return locked
 
     def _show_sample_dialog(self):
 
