@@ -379,7 +379,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         # All samples button, create sources "samples"
         source_action = self.tool_bar.addAction(
-            FIcon(0xF0A75), "Select all samples", self.on_create_samples_source
+            FIcon(0xF0A75), "Create source", self.on_create_samples_source
         )
 
         self.tool_bar.widgetForAction(source_action).setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
@@ -388,7 +388,8 @@ class SamplesWidget(plugin.PluginWidget):
 
         # Add genotypes for all samples
         genotype_action = self.tool_bar.addAction(
-            FIcon(0xF0B38), "Show genotypes", self.on_add_genotypes
+            # FIcon(0xF0B38), "Show genotypes", self.on_add_genotypes
+            FIcon(0xF0AA1), "Show genotypes", self.on_add_genotypes
         )
 
         self.tool_bar.widgetForAction(genotype_action).setToolButtonStyle(
