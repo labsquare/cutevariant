@@ -76,7 +76,7 @@ def main():
 
     # Load app styles
     LOGGER.info("Load style")
-    mystyle = style.DarkStyle()
+    mystyle = style.AppStyle()
     app.setStyle(mystyle)
 
     # app.setPalette(mystyle.standardPalette())
