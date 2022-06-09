@@ -50,13 +50,22 @@ class SampleReport(AbstractReport):
         self._report_data["sample"] = sample
 
     def get_stats(self):
+
+        ##total variants per genotype
         var_per_gt = {
             "title" : "Total variants per genotype",
-            "header": ["GT", "Total"],
-            "data" : [[1,1], [2,2]]
+            "header": ["Genotype", "Total"],
+            "data" : []
         }
+        number_to_gt = {0: "0/0", 1: "0/1", 2: "1/1"}
+        for row in sql.get_variant_groupby_for_samples(self._conn, "gt", [self._sample_id]):
+            row = [number_to_gt[row["gt"]], row["count"]]
+            var_per_gt["data"].append(row)
+
         self._report_data["var_per_gt"] = var_per_gt
 
+
+        ## total variants per variant classification
         var_per_var_classif = {
             "title" : "Total variants per variant classification",
             "header": ["Classification", "Total"],
@@ -66,16 +75,22 @@ class SampleReport(AbstractReport):
         for row in sql.get_variant_as_group(self._conn, "classification", sql.get_table_columns(self._conn, "variants"), "variants", {}):
             row = [row["classification"], row["count"]]
             var_per_var_classif["data"].append(row)
-            
+
         var_per_var_classif["data"] = sorted(var_per_var_classif["data"], key=lambda x: x[0])
 
         self._report_data["var_per_var_classif"] = var_per_var_classif
 
+
+        ## total variants per genotype classification
         var_per_gt_classif = {
             "title" : "Total variants per genotype classification",
             "header": ["Classification", "Total"],
-            "data" : [[1,1], [2,2]]
+            "data" : []
         }
+        for row in sql.get_variant_groupby_for_samples(self._conn, "genotypes.classification", [self._sample_id]):
+            row = [row["classification"], row["count"]]
+            var_per_gt_classif["data"].append(row)
+        
         self._report_data["var_per_gt_classif"] = var_per_gt_classif
 
     def get_variants(self):

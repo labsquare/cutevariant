@@ -2603,6 +2603,34 @@ def get_variant_as_group(
         yield res
 
 
+def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samples: List[int], order_by=True):
+    """Get count of variants for any field in "variants" or "genotype", 
+    limited to samples in list
+
+    Args:
+        conn (sqlite3.Connection): db conn
+        groupby (str): Field defining the GROUP BY
+        samples (List[int]): list of sample ids on which the search is applied
+        order_by (bool, optional): If True, results are ordered by the groupby field. Defaults to True.
+    """
+
+    samples = ",".join([str(s) for s in samples])
+
+    query = f"""SELECT {groupby}, COUNT(variants.id) as count 
+    FROM variants
+    INNER JOIN genotypes ON variants.id = genotypes.variant_id
+    WHERE genotypes.sample_id IN ({samples})
+    GROUP BY {groupby}
+    """
+
+    if order_by:
+        query += f"ORDER BY {groupby}"
+
+    conn.row_factory = sqlite3.Row
+    return (dict(data) for data in conn.execute(query))
+
+
+
 ## History table ==================================================================
 def create_table_history(conn):
     # TODO : rename to table_id
