@@ -73,9 +73,15 @@ class SampleModel(QAbstractTableModel):
 
         col = index.column()
 
-        if role == Qt.DisplayRole and col == SampleModel.NAME_COLUMN:
+        if role == Qt.DisplayRole:
             sample = self._samples[index.row()]
-            return sample.get("name")
+            if col == SampleModel.NAME_COLUMN:
+                return sample.get("name", "unknown")
+            elif col == SampleModel.COMMENT_COLUMN:
+                count_validation_positive_variant = sample.get("count_validation_positive_variant", 0)
+                if count_validation_positive_variant == 0:
+                    count_validation_positive_variant = ""
+                return count_validation_positive_variant
 
         if role == Qt.DecorationRole:
 
@@ -106,7 +112,8 @@ class SampleModel(QAbstractTableModel):
                 comment = sample.get("comment", None)
                 count_validation_positive_variant = sample.get("count_validation_positive_variant", 0)
                 if count_validation_positive_variant:
-                    return QIcon(FIcon(0xF017F, color))
+                    # return QIcon(FIcon(0xF017F, color))
+                    return QIcon(FIcon(0xF017A, color))
                 elif comment:
                     return QIcon(FIcon(0xF017A, color))
                 else:
@@ -628,7 +635,7 @@ class SamplesWidget(plugin.PluginWidget):
                 fields += [f"samples.{sample_name}.gt"]
 
             self.mainwindow.set_state_data("fields", fields)
-            # self.mainwindow.refresh_plugins(sender=self)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_register(self, mainwindow: MainWindow):
         """This method is called when the plugin is registered from the mainwindow.
