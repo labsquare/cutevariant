@@ -137,7 +137,7 @@ class SamplesEditor(QWidget):
 
         self._setup_actions()
 
-        self.view.doubleClicked.connect(self._on_accept)
+        # self.view.doubleClicked.connect(self._on_accept)
         self.view.selectionModel().selectionChanged.connect(self.on_selectionChanged)
 
         # TODO : CHARGER QD ON OUVRE LE WIDGET
