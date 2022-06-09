@@ -135,9 +135,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         if "tags" in genotype:
             config = Config("tags")
             if "genotypes" in config:
-                tags = {}
+                tags = []
                 for tag in config["genotypes"]:
-                    tags[tag["name"]]=tag["description"]
+                    tags.append(tag)
                 self.tag_edit.addItems(tags)
 
             self.tag_edit.setText(",".join(genotype["tags"].split(self.TAG_SEPARATOR)))

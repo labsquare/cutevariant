@@ -134,9 +134,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         if "tags" in variant:
             config = Config("tags")
             if "variants" in config:
-                tags = {}
+                tags = []
                 for tag in config["variants"]:
-                    tags[tag["name"]]=tag["description"]
+                    tags.append(tag)
                 self.tag_edit.addItems(tags)
 
             self.tag_edit.setText(",".join(variant["tags"].split(self.TAG_SEPARATOR)))
