@@ -1600,7 +1600,11 @@ class VariantView(QWidget):
 
             sql.update_genotypes(self.conn, data)
 
-            self.parent.mainwindow.refresh_plugin("genotypes")
+            if "genotypes" in self.parent.mainwindow.plugins:
+                self.parent.mainwindow.refresh_plugin("genotypes")
+
+            if "samples" in self.parent.mainwindow.plugins:
+                self.parent.mainwindow.refresh_plugin("samples")
 
     def update_tags(self, tags: list = []):
         """Update tags of the variant

@@ -66,7 +66,7 @@ class SampleModel(QAbstractTableModel):
         # vertical header
         if role == Qt.ToolTipRole and orientation == Qt.Vertical:
             sample = self._samples[section]
-            sample_tooltip = toolTip.sample_tooltip(data=sample, conn=self.conn)
+            sample_tooltip = self.get_tooltip(section)
             return sample_tooltip
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
@@ -103,18 +103,26 @@ class SampleModel(QAbstractTableModel):
                     return QIcon(FIcon(0xF001A, color_alpha))
 
             elif col == SampleModel.COMMENT_COLUMN:
-                return QIcon(FIcon(0xF017F, color))
+                comment = sample.get("comment", None)
+                count_validation_positive_variant = sample.get("count_validation_positive_variant", 0)
+                if count_validation_positive_variant:
+                    return QIcon(FIcon(0xF017F, color))
+                elif comment:
+                    return QIcon(FIcon(0xF017A, color))
+                else:
+                    return QIcon(FIcon(0xF017A, color_alpha))
 
         if role == Qt.ToolTipRole:
 
             sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
-                sample_comment = toolTip.sample_tooltip(data=sample, conn=self.conn)
-                return sample_comment
+                sample_comment_tooltip = sample.get("comment","").replace("\n","<br>")
+                return sample_comment_tooltip
 
             elif col == SampleModel.NAME_COLUMN:
-                return self.get_tooltip(index.row())
+                sample_name_tooltip = self.get_tooltip(index.row())
+                return sample_name_tooltip
 
             elif col == SampleModel.PHENOTYPE_COLUMN:
                 return cst.PHENOTYPE_DESC.get(int(sample["phenotype"]), "Unknown")
@@ -577,7 +585,7 @@ class SamplesWidget(plugin.PluginWidget):
             samples = self.model.get_samples()
 
         if len(samples):
-            sql.insert_selection_from_samples(self.model.conn, samples, name=source_name)
+            sql.insert_selection_from_samples(self.model.conn, samples, name=source_name, force=False)
 
             self.mainwindow.set_state_data("source", source_name)
 
