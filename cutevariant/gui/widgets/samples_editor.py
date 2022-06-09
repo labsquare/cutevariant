@@ -100,7 +100,9 @@ class SamplesEditor(QWidget):
         super().__init__()
 
         self.btn_box = QDialogButtonBox()
-        self.btn_box.addButton("Add selection", QDialogButtonBox.AcceptRole)
+        self.add_btn = self.btn_box.addButton(
+            "Add selection", QDialogButtonBox.AcceptRole
+        )
         self.btn_box.addButton("Close", QDialogButtonBox.RejectRole)
         self.btn_box.accepted.connect(self._on_accept)
         self.btn_box.rejected.connect(self.close)
@@ -130,6 +132,7 @@ class SamplesEditor(QWidget):
         self._setup_actions()
 
         self.view.doubleClicked.connect(self._on_accept)
+        self.view.selectionModel().selectionChanged.connect(self.on_selectionChanged)
 
         # TODO : CHARGER QD ON OUVRE LE WIDGET
         config = Config("classifications")
@@ -137,8 +140,20 @@ class SamplesEditor(QWidget):
 
         self.conn = conn
 
+        self.on_selectionChanged()
+
     def load(self):
         self.model.load()
+
+    def on_selectionChanged(self):
+
+        count = len(self.view.selectionModel().selectedRows())
+        self.add_btn.setEnabled(count > 0)
+        if count > 0:
+            self.add_btn.setText(f"Add {count} samples(s) ")
+
+        else:
+            self.add_btn.setText(f"Add samples(s) ")
 
     def _setup_actions(self):
 
@@ -177,9 +192,9 @@ class SamplesEditor(QWidget):
             # Load Tags
             self.tag_choice.clear()
             tags = sql.get_tags_from_samples(self.conn)
-            tags_list=[]
+            tags_list = []
             for tag in tags:
-                tag_list=tag.split(",")
+                tag_list = tag.split(",")
                 for t in tag_list:
                     if t not in tags_list:
                         tags_list.append(t)
@@ -207,7 +222,12 @@ class SamplesEditor(QWidget):
         if previous_query_line_text:
             previous_query_line_list = previous_query_line_text.split(" ")
             for q in previous_query_line_list:
-                if not q.startswith('tags:') and not q.startswith('classification:') and not q.startswith('family_id:') and not q == "":
+                if (
+                    not q.startswith("tags:")
+                    and not q.startswith("classification:")
+                    and not q.startswith("family_id:")
+                    and not q == ""
+                ):
                     before_query_line_list.append(q)
 
         if before_query_line_list:
@@ -236,10 +256,10 @@ class SamplesEditor(QWidget):
 
         # change query
         if not self.line.text():
-        #if not previous_query_line_text_clean:
+            # if not previous_query_line_text_clean:
             self.line.setText(query)
         else:
-            #self.line.setText(self.line.text() + " " + query)
+            # self.line.setText(self.line.text() + " " + query)
             self.line.setText(previous_query_line_text_clean + " " + query)
 
     def _on_search(self):
