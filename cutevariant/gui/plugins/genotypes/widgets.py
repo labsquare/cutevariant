@@ -640,7 +640,7 @@ class GenotypesWidget(plugin.PluginWidget):
         variant_name = self.find_variant_name(troncate=True)
 
         # Validation
-        if genotype["gt"]:
+        if genotype["sample_id"] and genotype["variant_id"]:
 
             # find sample lock/unlock
             sample = sql.get_sample(self.conn, genotype["sample_id"])
@@ -664,7 +664,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
             for item in self.model.classifications:
 
-                if sample["classification"] == item["number"]:
+                if genotype["classification"] == item["number"]:
                     icon = 0xF0133
                     # cat_menu.setIcon(FIcon(icon, item["color"]))
                 else:
