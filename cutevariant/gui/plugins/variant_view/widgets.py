@@ -930,6 +930,13 @@ class VariantView(QWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.top_bar.addWidget(spacer)
+
+        self.source_label = QLabel("source")
+        self.top_bar.addWidget(self.source_label)
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.top_bar.addWidget(spacer)
         # -----------Resize action ----------
 
         self.resize_action = self.top_bar.addAction(FIcon(0xF142A), self.tr("Auto resize"))
@@ -1028,6 +1035,8 @@ class VariantView(QWidget):
         self.log_edit.hide()
         self.model.interrupt()
         self.model.load()
+
+        self.source_label.setText(self.model.source)
 
         # display sort indicator
         order_by = self.model.order_by
