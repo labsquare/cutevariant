@@ -103,6 +103,10 @@ class SamplesEditor(QWidget):
         self.add_btn = self.btn_box.addButton(
             "Add selection", QDialogButtonBox.AcceptRole
         )
+
+        self.clear_btn = self.btn_box.addButton(
+            "Clear selection", QDialogButtonBox.ResetRole
+        )
         self.btn_box.addButton("Close", QDialogButtonBox.RejectRole)
         self.btn_box.accepted.connect(self._on_accept)
         self.btn_box.rejected.connect(self.close)
@@ -120,8 +124,10 @@ class SamplesEditor(QWidget):
         self.view.verticalHeader().hide()
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.view.setSelectionMode(QAbstractItemView.MultiSelection)
         self.view.setModel(self.model)
+
+        self.clear_btn.clicked.connect(self.view.selectionModel().clear)
 
         v_layout = QVBoxLayout(self)
         v_layout.addWidget(self.toolbar)
