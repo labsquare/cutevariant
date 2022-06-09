@@ -11,7 +11,17 @@ from functools import partial
 from logging import DEBUG
 
 # Qt imports
-from PySide6.QtCore import QEventLoop, Qt, QSettings, QByteArray, QDir, QUrl, Signal, QSize
+from PySide6.QtCore import (
+    QEventLoop,
+    Qt,
+    QSettings,
+    QByteArray,
+    QDir,
+    QUrl,
+    Signal,
+    QSize,
+    QPoint,
+)
 from PySide6.QtWidgets import *
 from PySide6.QtGui import QIcon, QKeySequence, QDesktopServices
 
@@ -81,7 +91,7 @@ class StateData:
 
     def reset(self):
         self._data = {
-            "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
+            "fields": ["chr", "pos", "ref", "alt"],
             "source": "variants",
             "filters": {},
             "order_by": [],
@@ -159,7 +169,12 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
 
         self.samples_info_label = QLabel()
+        self.filter_info_label = QLabel()
+        self.source_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.filter_info_label)
+
         self.status_bar.addPermanentWidget(self.samples_info_label)
+        self.status_bar.addPermanentWidget(self.source_info_label)
 
         # setup omnibar
         self.quick_search_edit = QLineEdit()
@@ -423,10 +438,10 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
-        sample_action = self.toolbar.addAction(
-            FIcon(0xF0010), self.tr("Add Sample(s)"), self.on_select_samples
-        )
-        sample_action.setToolTip(self.tr("Add samples to the current selection"))
+        # sample_action = self.toolbar.addAction(
+        #     FIcon(0xF0010), self.tr("Add Sample(s)"), self.on_select_samples
+        # )
+        # sample_action.setToolTip(self.tr("Add samples to the current selection"))
 
         # self.toolbar.addAction(self.open_config_action)
         # self.toolbar.addAction(FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode)
@@ -634,6 +649,9 @@ class MainWindow(QMainWindow):
                 plugin_obj.on_close_project()
                 plugin_obj.setEnabled(False)
 
+        self.samples_info_label.clear()
+        self.filter_info_label.clear()
+
     def save_recent_project(self, path):
         """Save current project into QSettings
 
@@ -700,9 +718,13 @@ class MainWindow(QMainWindow):
 
         w = SamplesEditor(self.conn)
         w.setAttribute(Qt.WA_DeleteOnClose)
+        w.setWindowModality(Qt.ApplicationModal)
         loop = QEventLoop()
         w.destroyed.connect(loop.quit)
         w.sample_selected.connect(self.add_samples)
+        w.move(
+            self.geometry().center() - QPoint(w.geometry().width() / 2, w.geometry().height() / 2)
+        )
         w.show()
         loop.exec()
 
@@ -1101,9 +1123,18 @@ class MainWindow(QMainWindow):
         samples = self.get_state_data("samples")
         order_by = self.get_state_data("order_by")
 
-        vql = querybuilder.build_vql_query(fields, source, filters, order_by)
-        self.status_bar.showMessage(vql)
-        self.samples_info_label.setText(",".join(samples))
+        vql = querybuilder.filters_to_vql(filters)
+        if not vql:
+            vql = "None"
+
+        vql = "Filters: " + vql
+
+        self.filter_info_label.setText(vql)
+
+        count = len(samples)
+        self.samples_info_label.setText(f"Samples: {count}")
+        self.samples_info_label.setToolTip("<br/>".join(samples))
+        self.source_info_label.setText(f"Source: {source}")
 
     def quick_search(self, query: str):
 

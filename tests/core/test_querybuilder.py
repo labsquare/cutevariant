@@ -2,6 +2,7 @@ import pytest
 from cutevariant.core import querybuilder, sql
 from tests.utils import create_conn
 
+import cutevariant.constants as cst
 
 def test_order_by():
     conn = create_conn()
@@ -567,7 +568,7 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {"$and": [{"ref": {"$has": "variant"}}]},
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' LIKE '%&variant&%') LIMIT 50 OFFSET 0",
+        f"SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('{cst.HAS_OPERATOR}' || `variants`.`ref` || '{cst.HAS_OPERATOR}' LIKE '%{cst.HAS_OPERATOR}variant{cst.HAS_OPERATOR}%') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref HAS 'variant'",
     ),
     # TEST NOT HAS
@@ -577,7 +578,7 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {"$and": [{"ref": {"$nhas": "variant"}}]},
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' NOT LIKE '%&variant&%') LIMIT 50 OFFSET 0",
+        f"SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('{cst.HAS_OPERATOR}' || `variants`.`ref` || '{cst.HAS_OPERATOR}' NOT LIKE '%{cst.HAS_OPERATOR}variant{cst.HAS_OPERATOR}%') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref !HAS 'variant'",
     ),
     (

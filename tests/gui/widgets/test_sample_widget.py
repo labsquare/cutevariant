@@ -11,6 +11,3 @@ def test_widget(qtbot):
 
     # Test loading
     widget.load(1)
-    assert (
-        widget.name_edit.text() == conn.execute("SELECT name FROM samples WHERE id=1").fetchone()[0]
-    )

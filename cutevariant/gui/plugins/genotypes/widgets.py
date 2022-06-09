@@ -3,6 +3,7 @@
 from dataclasses import replace
 import typing
 from functools import cmp_to_key, partial
+import functools
 import time
 import copy
 import re
@@ -30,13 +31,14 @@ from cutevariant.gui.widgets import (
     PresetAction,
 )
 
-
+from cutevariant.gui import tooltip as toolTip
 from cutevariant import LOGGER
 from cutevariant.gui.sql_thread import SqlThread
 
 from cutevariant.gui import FormatterDelegate
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
+import cutevariant.constants as cst
 
 from PySide6.QtWidgets import *
 import sys
@@ -63,16 +65,40 @@ class GenotypeVerticalHeader(QHeaderView):
         # default color
         default_color = "lightgray"
 
-        # sample
+        # classification color
         number = self.model().get_genotype(section).get("classification")
         if number:
-            classification = next(i for i in self.model().classifications if i["number"] == number)
-            color = classification.get("color", "gray")
-            icon = 0xF012F
+            classification = next(
+                i for i in self.model().classifications if i["number"] == number
+            )
+            color = classification.get("color", default_color)
         else:
-            icon = 0xF012F
-            color = "gray"
+            color = default_color
 
+        # genotype icon
+        GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
+        genotype_sample_name = self.model().get_genotype(section)["name"]
+        genotype_variant_id = self.model().get_genotype(section)["variant_id"]
+
+        genotype = ""
+        if genotype_variant_id and genotype_sample_name:
+            genotype_infos = next(
+                sql.get_genotypes(
+                    self.model().conn,
+                    genotype_variant_id,
+                    ["gt"],
+                    [genotype_sample_name],
+                )
+            )
+            genotype = genotype_infos["gt"]
+        if genotype:
+            genotype_int = int(genotype)
+        else:
+            genotype_int = -1
+        pix_icon = GENOTYPE_ICONS.get(genotype_int)  # , GENOTYPE_ICONS[-1])
+        pix_icon.engine.setColor(color)
+
+        # painter
         pen = QPen(QColor(color))
         pen.setWidth(6)
         painter.setPen(pen)
@@ -80,7 +106,7 @@ class GenotypeVerticalHeader(QHeaderView):
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
         target = QRect(0, 0, 20, 20)
-        pix = FIcon(icon, color).pixmap(target.size())
+        pix = pix_icon.pixmap(target.size())
         target.moveCenter(rect.center() + QPoint(1, 1))
 
         painter.drawPixmap(target, pix)
@@ -133,8 +159,12 @@ class GenotypeModel(QAbstractTableModel):
         self._load_samples_thread = SqlThread(self.conn)
 
         # Connect samples loading thread's signals (started, finished, error, result ready)
-        self._load_samples_thread.started.connect(lambda: self.samples_are_loading.emit(True))
-        self._load_samples_thread.finished.connect(lambda: self.samples_are_loading.emit(False))
+        self._load_samples_thread.started.connect(
+            lambda: self.samples_are_loading.emit(True)
+        )
+        self._load_samples_thread.finished.connect(
+            lambda: self.samples_are_loading.emit(False)
+        )
         self._load_samples_thread.result_ready.connect(self.on_samples_loaded)
         self._load_samples_thread.error.connect(self.error_raised)
 
@@ -190,26 +220,10 @@ class GenotypeModel(QAbstractTableModel):
             return self.get_tooltip(index.row())
 
     def get_tooltip(self, row: int):
+        """Return all samples info as a formatted text"""
 
-        fields = [f["name"] for f in sql.get_field_by_category(self.conn, "samples")]
-        sample = self.get_genotype(row)["name"]
-        variant_id = self.get_variant_id()
+        return toolTip.genotype_tooltip(data=self.get_genotype(row), conn=self.conn)
 
-        # extract all info for one sample
-        genotype = next(sql.get_genotypes(self.conn, variant_id, fields, [sample]))
-
-        message = """
-        {name} <br>
-
-        gt: {gt} 
-        classification: {classification} <br> <br>
-        A completer par anthony
-
-        """.format(
-            **genotype
-        )
-
-        return message
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
 
@@ -217,10 +231,11 @@ class GenotypeModel(QAbstractTableModel):
             if section < len(self._headers):
                 return self._headers[section]
 
-        # if orientation == Qt.Vertical and role == Qt.DisplayRole:
-        #     item = self.get_genotype(section)
-        #     if "classification" in item:
-        #         return item["classification"]
+        # vertical header
+        if role == Qt.ToolTipRole  and orientation == Qt.Vertical:
+            genotype = self.get_genotype(section)
+            genotype_tooltip = toolTip.genotype_tooltip(data=genotype, conn=self.conn)
+            return genotype_tooltip
 
         return None
 
@@ -232,7 +247,9 @@ class GenotypeModel(QAbstractTableModel):
 
         if len(self._genotypes) > 0:
             self._headers = [
-                i for i in self._genotypes[0].keys() if i not in ("sample_id", "variant_id")
+                i
+                for i in self._genotypes[0].keys()
+                if i not in ("sample_id", "variant_id")
             ]
 
         if "classification" not in self._fields:
@@ -262,7 +279,9 @@ class GenotypeModel(QAbstractTableModel):
             return
 
         if self.is_running():
-            LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
+            LOGGER.debug(
+                "Cannot load data. Thread is not finished. You can call interrupt() "
+            )
             self.interrupt()
 
         # mandatory field
@@ -294,7 +313,9 @@ class GenotypeModel(QAbstractTableModel):
         #     self.on_samples_loaded()
         # else:
         self._load_samples_thread.conn = self.conn
-        self._load_samples_thread.start_function(lambda conn: list(load_samples_func(conn)))
+        self._load_samples_thread.start_function(
+            lambda conn: list(load_samples_func(conn))
+        )
 
     def sort(self, column: int, order: Qt.SortOrder) -> None:
         self.beginResetModel()
@@ -352,7 +373,7 @@ class GenotypeModel(QAbstractTableModel):
             return self._load_samples_thread.isRunning()
         return False
 
-    def edit(self, row: int, data: dict):
+    def edit(self, rows: list, data: dict):
         """Edit current item
         Args:
             row (int): Description
@@ -360,16 +381,19 @@ class GenotypeModel(QAbstractTableModel):
         """
 
         # change from memory
-        self._genotypes[row].update(data)
+        rows = sorted(rows, reverse=True)
+        for row in rows:
 
-        # print("EDIT", self.items[row])
+            self._genotypes[row].update(data)
 
-        # Persist in SQL
-        data["variant_id"] = self._genotypes[row]["variant_id"]
-        data["sample_id"] = self._genotypes[row]["sample_id"]
-        sql.update_genotypes(self.conn, data)
-        self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount()))
-        self.headerDataChanged.emit(Qt.Vertical, row, row)
+            new_data = copy.deepcopy(self._genotypes[row])
+            del new_data["name"]
+
+            sql.update_genotypes(self.conn, new_data)
+            self.dataChanged.emit(
+                self.index(row, 0), self.index(row, self.columnCount())
+            )
+            self.headerDataChanged.emit(Qt.Vertical, row, row)
 
     def clear(self):
 
@@ -458,9 +482,9 @@ class GenotypesWidget(plugin.PluginWidget):
         vlayout = QVBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.addWidget(self.toolbar)
-        vlayout.addWidget(self.label)
         vlayout.addLayout(self.stack_layout)
         vlayout.addWidget(self.error_label)
+        vlayout.addWidget(self.label)
         vlayout.setSpacing(0)
         self.setLayout(vlayout)
 
@@ -473,7 +497,9 @@ class GenotypesWidget(plugin.PluginWidget):
     def on_model_reset(self):
         if self.model.rowCount() > 0:
             self.stack_layout.setCurrentIndex(1)
-            self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+            self.view.horizontalHeader().setSectionResizeMode(
+                QHeaderView.ResizeToContents
+            )
             self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         else:
             self.stack_layout.setCurrentIndex(0)
@@ -571,7 +597,9 @@ class GenotypesWidget(plugin.PluginWidget):
                 ret = QMessageBox.warning(
                     self,
                     self.tr("Overwrite preset"),
-                    self.tr(f"Preset {name} already exists. Do you want to overwrite it ?"),
+                    self.tr(
+                        f"Preset {name} already exists. Do you want to overwrite it ?"
+                    ),
                     QMessageBox.Yes | QMessageBox.No,
                 )
 
@@ -599,26 +627,50 @@ class GenotypesWidget(plugin.PluginWidget):
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
+        row = self.view.selectionModel().currentIndex().row()
+        
+        genotype = self.model.get_genotype(row)
+
         menu = QMenu(self)
 
-        # variant name
+        # Add section Sample
+        sample_name = genotype.get("name", "unknown")
+
+        # Add section Variant
         variant_name = self.find_variant_name(troncate=True)
 
-        # Add section
-        menu.addSection("Variant " + variant_name)
-
         # Validation
-        row = self.view.selectionModel().currentIndex().row()
-        sample = self.model.get_genotype(row)
+        if genotype["sample_id"] and genotype["variant_id"]:
 
-        if sample["gt"]:
-            menu.addAction("Edit variant validation ...", self._show_sample_variant_dialog)
+            # find sample lock/unlock
+            sample = sql.get_sample(self.conn, genotype["sample_id"])
+            sample_classification = sample.get("classification", 0)
 
-            cat_menu = menu.addMenu("Classifications")
+            if style.SAMPLE_CLASSIFICATION[sample_classification].get("lock"):
+                validation_menu_enable = False
+                validation_menu_title = "Classification (locked)"
+            else:
+                validation_menu_enable = True
+                validation_menu_title = "Classification"
+
+            menu.addAction(
+                FIcon(0xF064F),
+                f"Edit Genotype '{sample_name}' - '{variant_name}'",
+                self._show_sample_variant_dialog
+            )
+
+            cat_menu = menu.addMenu(validation_menu_title)
+            cat_menu.setEnabled(validation_menu_enable)
 
             for item in self.model.classifications:
-                # action = cat_menu.addAction(value["name"])
-                action = cat_menu.addAction(FIcon(0xF012F, item["color"]), item["name"])
+
+                if genotype["classification"] == item["number"]:
+                    icon = 0xF0133
+                    # cat_menu.setIcon(FIcon(icon, item["color"]))
+                else:
+                    icon = 0xF012F
+
+                action = cat_menu.addAction(FIcon(icon, item["color"]), item["name"])
                 action.setData(item["number"])
                 action.triggered.connect(self._on_classification_changed)
 
@@ -642,7 +694,9 @@ class GenotypesWidget(plugin.PluginWidget):
         sample = self.model.get_genotype(row)
         if sample:
 
-            dialog = SampleVariantDialog(self.conn, sample["sample_id"], self.current_variant["id"])
+            dialog = SampleVariantDialog(
+                self.conn, sample["sample_id"], self.current_variant["id"]
+            )
 
             if dialog.exec_() == QDialog.Accepted:
                 # self.load_all_filters()
@@ -663,8 +717,8 @@ class GenotypesWidget(plugin.PluginWidget):
         value = self.sender().data()
         text = self.sender().text()
 
-        row = self.view.selectionModel().currentIndex().row()
-        self.model.edit(row, {"classification": value})
+        rows = [i.row() for i in self.view.selectionModel().selectedRows()]
+        self.model.edit(rows, {"classification": value})
 
     def _on_clear_filters(self):
 
@@ -765,7 +819,9 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.sample_selector.clear()
         for sample in sql.get_samples(self.conn):
-            self.sample_selector.add_item(FIcon(0xF0B55), sample["name"], data=sample["name"])
+            self.sample_selector.add_item(
+                FIcon(0xF0B55), sample["name"], data=sample["name"]
+            )
 
     def load_fields(self):
         self.fields_button.clear()
@@ -798,8 +854,12 @@ class GenotypesWidget(plugin.PluginWidget):
             variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
             if len(variant["annotations"]):
                 for ann in variant["annotations"][0]:
-                    variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+                    variant["annotations___" + str(ann)] = variant["annotations"][0][
+                        ann
+                    ]
+            variant_name_pattern = variant_name_pattern.replace(
+                "ann.", "annotations___"
+            )
             variant_name = variant_name_pattern.format(**variant)
 
             # Troncate variant name
@@ -839,6 +899,9 @@ class GenotypesWidget(plugin.PluginWidget):
         # self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         # self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Minimum)
         # self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+
+    def on_close_project(self):
+        self.model.clear()
 
     def show_error(self, message):
         self.error_label.setText(message)

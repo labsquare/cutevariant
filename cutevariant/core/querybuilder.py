@@ -30,6 +30,8 @@ from ast import literal_eval
 # Custom imports
 from cutevariant.core import sql
 
+import cutevariant.constants as cst
+
 
 from cutevariant import LOGGER
 
@@ -350,11 +352,9 @@ def condition_to_sql(item: dict, samples=None) -> str:
             value = f"%{value}%"
 
     if "HAS" in sql_operator:
-        field = f"'&' || {field} || '&'"
+        field = f"'{cst.HAS_OPERATOR}' || {field} || '{cst.HAS_OPERATOR}'"
         sql_operator = "LIKE" if sql_operator == "HAS" else "NOT LIKE"
-        value = f"%&{value}&%"
-
-        # WHERE '&' || consequence || '&' LIKE "%&missense_variant&%"
+        value = f"%{cst.HAS_OPERATOR}{value}{cst.HAS_OPERATOR}%"
 
     # Cast value
     if isinstance(value, str):

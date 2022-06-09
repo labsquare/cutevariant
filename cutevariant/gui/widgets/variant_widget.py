@@ -23,6 +23,8 @@ from cutevariant import gui  # FormatterDelegate / cycle loop
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 from cutevariant import constants as cst
+from cutevariant import commons as cm
+from cutevariant.gui import tooltip as toolTip
 
 # from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
@@ -45,10 +47,15 @@ class AbstractSectionWidget(QWidget):
 class EvaluationSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.TAG_SEPARATOR = "&"
+        if hasattr(cst, "HAS_OPERATOR"):
+            self.TAG_SEPARATOR = cst.HAS_OPERATOR
+        else:
+            self.TAG_SEPARATOR = ","
         self.setWindowTitle("Evaluation")
         self.setToolTip("You can edit variant information")
         main_layout = QFormLayout()
+
+        self.variant_label = QLabel()
 
         self.favorite = QCheckBox()
         self.favorite.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
@@ -61,14 +68,13 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.tag_layout.setContentsMargins(0, 0, 0, 0)
         self.tag_layout.addWidget(self.tag_edit)
 
-        self.tag_choice = TagEdit()
-
         self.edit_comment_btn = QPushButton("Edit comment")
         self.edit_comment_btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
 
         self.comment = MarkdownEditor()
         self.comment.preview_btn.setText("Preview/Edit comment")
 
+        main_layout.addRow("Variant", self.variant_label)
         main_layout.addRow("Favorite", self.favorite)
         main_layout.addRow("Classification", self.class_combo)
         main_layout.addRow("Tags", self.tag_layout)
@@ -80,20 +86,44 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.variant_classification = config.get("variants")
         for item in self.variant_classification:
             self.class_combo.addItem(
-                FIcon(0xF012F, item.get("color", "gray")), item["name"], userData=item["number"]
+                FIcon(0xF012F, item.get("color", "gray")),
+                item["name"],
+                userData=item["number"],
             )
 
     def get_variant(self) -> dict:
         variant = {
+            # "id": self.variant_label.text(),
             "favorite": self.favorite.isChecked(),
             "classification": self.class_combo.currentData(),
-            "tags": self.tag_edit.text(),
+            "tags": self.TAG_SEPARATOR.join(
+                [tag for tag in self.tag_edit.text().split(",") if tag]
+            ),
             "comment": self.comment.toPlainText(),
         }
 
         return variant
 
     def set_variant(self, variant: dict):
+
+        # Load variant
+        if "id" in variant:
+
+            # variant_id
+            variant_id = variant["id"]
+
+            # Get variant_name_pattern
+            config = Config("variables") or {}
+            variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+
+            # Get fields
+            variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
+            if len(variant["annotations"]):
+                for ann in variant["annotations"][0]:
+                    variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+            variant_text = variant_name_pattern.format(**variant)
+            self.variant_label.setText(variant_text)
 
         # Load favorite
         if "favorite" in variant:
@@ -102,12 +132,32 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load tags
         if "tags" in variant:
+            config = Config("tags")
+            if "variants" in config:
+                tags = {}
+                for tag in config["variants"]:
+                    tags[tag["name"]]=tag["description"]
+                self.tag_edit.addItems(tags)
+
             self.tag_edit.setText(",".join(variant["tags"].split(self.TAG_SEPARATOR)))
 
         # Load comment
         if "comment" in variant:
             self.comment.setPlainText(variant["comment"])
             self.comment.preview_btn.setChecked(True)
+
+        # Load classification
+        if "classification" in variant:
+            self.class_combo.setCurrentText(
+                next(
+                    (
+                        item["name"]
+                        for item in self.variant_classification
+                        if item["number"] == variant["classification"]
+                    ),
+                    "Unknown",
+                )
+            )
 
 
 class VariantSectionWidget(AbstractSectionWidget):
@@ -221,12 +271,15 @@ class OccurenceVerticalHeader(QHeaderView):
 class OccurenceModel(QAbstractTableModel):
 
     NAME_COLUMN = 0
+    CLASSIFICATION_COLUMN = 2
     GENOTYPE_COLUMN = 1
 
-    def __init__(self, parent=None):
-        super().__init__()
+    def __init__(self, parent=None, validated: bool = False):
+        super().__init__(parent)
+        self._parent = parent
         self._items = []
-        self._headers = ["sample", "gt"]
+        self._validated = validated
+        self._headers = ["sample", "gt", "classification"]
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent == QModelIndex():
@@ -236,7 +289,7 @@ class OccurenceModel(QAbstractTableModel):
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent == QModelIndex():
-            return 2
+            return 3
 
         return 0
 
@@ -246,7 +299,17 @@ class OccurenceModel(QAbstractTableModel):
     def load(self, conn: sqlite3.Connection, variant_id: int):
 
         self.beginResetModel()
-        self._items = list(sql.get_variant_occurences(conn, variant_id))
+        if self._validated:
+            self._items = []
+            for item in sql.get_sample_variant_classification(conn, variant_id=variant_id):
+                if "classification" in item:
+                    if item["classification"] > 0:
+                        self._items.append(item)
+        else:
+            self._items = list(sql.get_variant_occurences(conn, variant_id))
+        # sort (revert) by classification number
+        self._items = sorted(self._items, key=lambda c: c["classification"], reverse=True)
+
         self.endResetModel()
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
@@ -257,8 +320,20 @@ class OccurenceModel(QAbstractTableModel):
         item = self.item(index.row())
 
         if role == Qt.DisplayRole:
+
             if index.column() == OccurenceModel.NAME_COLUMN:
-                return item.get("name", "error")
+                sample_name = item.get("name", "error")
+                return sample_name
+
+            if index.column() == OccurenceModel.CLASSIFICATION_COLUMN:
+                classification = item.get("classification", 0)
+                classification_text = str(classification)
+                config = Config("classifications")
+                self.genotype_classification = config.get("genotypes")
+                for item in self.genotype_classification:
+                    if item["number"] == classification:
+                        classification_text = item["name"]
+                return classification_text
 
             if index.column() == OccurenceModel.GENOTYPE_COLUMN:
                 return item.get("gt", -1)
@@ -286,31 +361,33 @@ class OccurenceModel(QAbstractTableModel):
         Returns:
             TYPE: Description
         """
-        tooltip = ""
-        for key in self.item(row):
-            if key not in ["variant_id", "sample_id", "name", "gt"]:
-                value = self.item(row)[key]
-                if value is not None:
-                    tooltip += f"<b>{key}</b>\t{value}<br/>"
 
+        tooltip = toolTip.genotype_tooltip(data=self.item(row), conn=self._parent.conn)
         return tooltip
 
 
 class OccurrenceSectionWidget(AbstractSectionWidget):
 
-    WINDOW_TITLE_PREFIX = "Occurence"
+    WINDOW_TITLE_PREFIX_OCCURENCE = "Occurence"
+    WINDOW_TITLE_PREFIX_VALIDATED = "Variant Validation"
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget = None, validated: bool = False):
         super().__init__(parent)
 
-        self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX)
+        if validated:
+            self.windowTitlePrefix = OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_VALIDATED
+        else:
+            self.windowTitlePrefix = OccurrenceSectionWidget.WINDOW_TITLE_PREFIX_OCCURENCE
+
+        # self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX)
+        self.setWindowTitle(self.windowTitlePrefix)
         self.setToolTip("List of all samples where the current variant belong to")
         main_layout = QVBoxLayout(self)
-        self.model = OccurenceModel()
-        # self.delegate = gui.FormatterDelegate()
-        # self.delegate.set_formatter(CutestyleFormatter())
+        self.model = OccurenceModel(self, validated=validated)
+        self.delegate = gui.FormatterDelegate()
+        self.delegate.set_formatter(CutestyleFormatter())
         self.view = QTableView()
-        # self.view.setItemDelegate(self.delegate)
+        self.view.setItemDelegate(self.delegate)
         self.view.setModel(self.model)
         self.view.horizontalHeader().hide()
         self.view.setAlternatingRowColors(True)
@@ -333,7 +410,11 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
         count = self.model.rowCount()
         total = len(list(sql.get_samples(self.conn)))
 
-        self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})")
+        self.setWindowTitle(
+            # OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})"
+            self.windowTitlePrefix
+            + f" ({count}/{total})"
+        )
 
         ## Get samples count
 
@@ -360,7 +441,7 @@ class HistorySectionWidget(AbstractSectionWidget):
 
         for rec in sql.get_histories(self.conn, "variants", variant["id"]):
 
-            key = rec["timestamp"]
+            key = rec["timestamp"] + " [" + str(rec["id"]) + "]"
             value = "{user} change {field} from {before} to {after}".format(**rec)
             results[key] = value
 
@@ -395,6 +476,7 @@ class VariantWidget(QWidget):
         self.add_section(VariantSectionWidget())
         self.add_section(AnnotationsSectionWidget())
         self.add_section(OccurrenceSectionWidget())
+        # self.add_section(OccurrenceSectionWidget(validated=True)) # depreciated
         self.add_section(HistorySectionWidget())
 
     def add_section(self, widget: AbstractSectionWidget):
@@ -474,8 +556,8 @@ class VariantWidget(QWidget):
         self.last_variant_hash = self.get_variant_hash(variant)
 
         # # Set name
-        name = "{chr}-{pos}-{ref}-{alt}".format(**variant)
-        self.setWindowTitle("Variant edition: " + name)
+        # name = "{chr}-{pos}-{ref}-{alt}".format(**variant)
+        self.setWindowTitle("Variant edition")
 
         for widget in self._section_widgets:
             widget.set_variant(variant)

@@ -53,7 +53,9 @@ COLUMN_REMOVE = 4
 
 
 @lru_cache()
-def get_field_unique_values_cached(conn: sqlite3.Connection, field_name: str, like: str, limit: int) -> list:
+def get_field_unique_values_cached(
+    conn: sqlite3.Connection, field_name: str, like: str, limit: int
+) -> list:
     """Used for autocompletion of the value field
     Return cached values of a specific field
 
@@ -117,7 +119,9 @@ class FieldsCompleter(QCompleter):
         local_completion_prefix = self.local_completion_prefix
 
         like = f"{local_completion_prefix}%"
-        values = get_field_unique_values_cached(self.conn, self.field_name, like, self.limit)
+        values = get_field_unique_values_cached(
+            self.conn, self.field_name, like, self.limit
+        )
         self.source_model.setStringList(values)
 
     def splitPath(self, path: str):
@@ -192,7 +196,9 @@ class IntFieldEditor(BaseFieldEditor):
         self.line_edit.setValidator(self.validator)
         self.set_widget(self.line_edit)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        null_action = self.line_edit.addAction(FIcon(0xF07E2), QLineEdit.TrailingPosition)
+        null_action = self.line_edit.addAction(
+            FIcon(0xF07E2), QLineEdit.TrailingPosition
+        )
         null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
         null_action.setToolTip(self.tr("Set value as NULL"))
 
@@ -228,7 +234,9 @@ class DoubleFieldEditor(BaseFieldEditor):
         self.validator = QDoubleValidator()
         self.line_edit.setValidator(self.validator)
         self.line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        null_action = self.line_edit.addAction(FIcon(0xF07E2), QLineEdit.TrailingPosition)
+        null_action = self.line_edit.addAction(
+            FIcon(0xF07E2), QLineEdit.TrailingPosition
+        )
         null_action.triggered.connect(lambda: self.line_edit.setText(NULL_REPR))
 
         self.set_widget(self.line_edit)
@@ -755,9 +763,13 @@ class FilterWidget(QWidget):
         self.operator_box = OperatorFieldEditor()
         self.operator_box.fill()
 
-        self.field_edit.combo_box.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        self.field_edit.combo_box.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Preferred
+        )
 
-        self.operator_box.combo_box.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        self.operator_box.combo_box.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Preferred
+        )
 
         self.form_layout = QFormLayout()
         self.form_layout.addRow("Field", self.field_edit)
@@ -967,7 +979,10 @@ class FiltersModel(QAbstractItemModel):
 
                 if item.type == FilterItem.LOGIC_TYPE:
                     val = item.get_value()
-                    return PY_TO_VQL_OPERATORS.get(val, "$and") + f"  ({len(item.children)})"
+                    return (
+                        PY_TO_VQL_OPERATORS.get(val, "$and")
+                        + f"  ({len(item.children)})"
+                    )
 
             if item.type != FilterItem.CONDITION_TYPE:
                 return
@@ -1216,7 +1231,11 @@ class FiltersModel(QAbstractItemModel):
         if checked_only:
             if item.type == FilterItem.LOGIC_TYPE and item.checked is True:
                 # Return dict with operator as key and item as value
-                operator_data = [self._to_dict(child) for child in item.children if child.checked is True]
+                operator_data = [
+                    self._to_dict(child)
+                    for child in item.children
+                    if child.checked is True
+                ]
                 return {item.get_value(): operator_data}
         else:
             if item.type == FilterItem.LOGIC_TYPE:
@@ -1312,10 +1331,21 @@ class FiltersModel(QAbstractItemModel):
             return Qt.ItemIsSelectable | Qt.ItemIsEnabled
 
         if item.type == FilterItem.LOGIC_TYPE and index.column() == COLUMN_FIELD:
-            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+            return (
+                Qt.ItemIsSelectable
+                | Qt.ItemIsEditable
+                | Qt.ItemIsEnabled
+                | Qt.ItemIsDragEnabled
+                | Qt.ItemIsDropEnabled
+            )
 
         if item.type == FilterItem.CONDITION_TYPE:
-            return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsDragEnabled
+            return (
+                Qt.ItemIsSelectable
+                | Qt.ItemIsEditable
+                | Qt.ItemIsEnabled
+                | Qt.ItemIsDragEnabled
+            )
 
         return Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled
 
@@ -1364,7 +1394,9 @@ class FiltersModel(QAbstractItemModel):
         if sourceParent == destinationParent and sourceRow == destinationChild:
             return False
 
-        self.beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild)
+        self.beginMoveRows(
+            sourceParent, sourceRow, sourceRow, destinationParent, destinationChild
+        )
         item = parent_source_item.children.pop(sourceRow)
         parent_destination_item.insert(destinationChild, item)
         self.endMoveRows()
@@ -1397,7 +1429,9 @@ class FiltersModel(QAbstractItemModel):
             # Invalid item
             return False
         if self.item(parent).type == FilterItem.LOGIC_TYPE:
-            self.beginInsertRows(parent, self.rowCount(parent) - 1, self.rowCount(parent) - 1)
+            self.beginInsertRows(
+                parent, self.rowCount(parent) - 1, self.rowCount(parent) - 1
+            )
             self.item(parent).append(item_)
             self.endInsertRows()
             self.filtersChanged.emit()
@@ -1465,10 +1499,14 @@ class FiltersModel(QAbstractItemModel):
         for row in source_coords:
             index = self.index(row, 0, index)
         if index.isValid():
-            return self.moveRow(index.parent(), index.row(), destintation_parent, destination_row)
+            return self.moveRow(
+                index.parent(), index.row(), destintation_parent, destination_row
+            )
         return False
 
-    def dropMimeData(self, data: QMimeData, action, row, column, parent: QModelIndex) -> bool:
+    def dropMimeData(
+        self, data: QMimeData, action, row, column, parent: QModelIndex
+    ) -> bool:
         """Overrided Qt methods: This method is called when item is dropped by drag/drop.
         data is QMimeData and it contains a pickle serialization of current dragging item.
         Get back item by unserialize data.data().
@@ -1504,7 +1542,10 @@ class FiltersModel(QAbstractItemModel):
                         if isinstance(fields, list):
                             if row < 0 or row > self.rowCount(parent):
                                 return self._drop_filter(
-                                    {field_name: DEFAULT_VALUES.get(field_type, "") for field_name, field_type in fields},
+                                    {
+                                        field_name: DEFAULT_VALUES.get(field_type, "")
+                                        for field_name, field_type in fields
+                                    },
                                     parent,
                                 )
                 if obj["type"] == "condition":
@@ -1597,7 +1638,9 @@ class FiltersModel(QAbstractItemModel):
         if not basic_answer:
             return False
 
-        dest_data = self.mimeData([self.index(row, column, parent)]).data("cutevariant/typed-json")
+        dest_data = self.mimeData([self.index(row, column, parent)]).data(
+            "cutevariant/typed-json"
+        )
         source_data = data.data("cutevariant/typed-json")
 
         if dest_data == source_data:
@@ -1654,9 +1697,11 @@ class FiltersDelegate(QStyledItemDelegate):
         self.eye_on = FIcon(0xF0208)
         self.eye_off = FIcon(0xF0209)
 
-        s = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize)
+        s = QApplication.style().pixelMetric(QStyle.PM_ListViewIconSize)
         self.icon_size = QSize(s, s)
-        self.row_height = qApp.style().pixelMetric(QStyle.PM_ListViewIconSize) * 1.2
+        self.row_height = (
+            QApplication.style().pixelMetric(QStyle.PM_ListViewIconSize) * 1.2
+        )
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
         """Overrided from Qt. Create an editor for the selected column.
@@ -1864,7 +1909,12 @@ class FiltersDelegate(QStyledItemDelegate):
         is_selected = False
 
         if option.state & QStyle.State_Enabled:
-            bg = QPalette.Normal if option.state & QStyle.State_Active or option.state & QStyle.State_Selected else QPalette.Inactive
+            bg = (
+                QPalette.Normal
+                if option.state & QStyle.State_Active
+                or option.state & QStyle.State_Selected
+                else QPalette.Inactive
+            )
         else:
             bg = QPalette.Disabled
 
@@ -1880,10 +1930,14 @@ class FiltersDelegate(QStyledItemDelegate):
             decoration_icon = index.data(Qt.DecorationRole)
 
             if decoration_icon:
-                rect = QRect(0, 0, option.decorationSize.width(), option.decorationSize.height())
+                rect = QRect(
+                    0, 0, option.decorationSize.width(), option.decorationSize.height()
+                )
                 rect.moveCenter(option.rect.center())
                 # rect.setX(4)
-                painter.drawPixmap(rect.x(), rect.y(), decoration_icon.pixmap(option.decorationSize))
+                painter.drawPixmap(
+                    rect.x(), rect.y(), decoration_icon.pixmap(option.decorationSize)
+                )
 
         else:
             super().paint(painter, option, index)
@@ -1891,7 +1945,11 @@ class FiltersDelegate(QStyledItemDelegate):
         # Draw lines
 
         painter.setPen(Qt.NoPen)
-        if item.type == FilterItem.CONDITION_TYPE or index.column() == COLUMN_VALUE or index.column() == COLUMN_CHECKBOX:
+        if (
+            item.type == FilterItem.CONDITION_TYPE
+            or index.column() == COLUMN_VALUE
+            or index.column() == COLUMN_CHECKBOX
+        ):
             painter.drawLine(option.rect.topRight(), option.rect.bottomRight())
 
         if index.column() == 0:
@@ -2033,7 +2091,9 @@ class FiltersWidget(QTreeView):
         self.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
         self.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
         self.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
-        self.header().setSectionResizeMode(COLUMN_CHECKBOX, QHeaderView.ResizeToContents)
+        self.header().setSectionResizeMode(
+            COLUMN_CHECKBOX, QHeaderView.ResizeToContents
+        )
         self.header().setSectionResizeMode(COLUMN_REMOVE, QHeaderView.ResizeToContents)
         self.setEditTriggers(QAbstractItemView.DoubleClicked)
 

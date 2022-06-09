@@ -75,7 +75,9 @@ class SamplesEditorModel(QAbstractTableModel):
 
         return None
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
+    ):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
 
@@ -98,7 +100,13 @@ class SamplesEditor(QWidget):
         super().__init__()
 
         self.btn_box = QDialogButtonBox()
-        self.btn_box.addButton("Add selection", QDialogButtonBox.AcceptRole)
+        self.add_btn = self.btn_box.addButton(
+            "Add selection", QDialogButtonBox.AcceptRole
+        )
+
+        self.clear_btn = self.btn_box.addButton(
+            "Clear selection", QDialogButtonBox.ResetRole
+        )
         self.btn_box.addButton("Close", QDialogButtonBox.RejectRole)
         self.btn_box.accepted.connect(self._on_accept)
         self.btn_box.rejected.connect(self.close)
@@ -116,19 +124,21 @@ class SamplesEditor(QWidget):
         self.view.verticalHeader().hide()
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.view.setSelectionMode(QAbstractItemView.MultiSelection)
         self.view.setModel(self.model)
+
+        self.clear_btn.clicked.connect(self.view.selectionModel().clear)
 
         v_layout = QVBoxLayout(self)
         v_layout.addWidget(self.toolbar)
         v_layout.addWidget(self.line)
         v_layout.addWidget(self.view)
-        v_layout.addStretch()
         v_layout.addWidget(self.btn_box)
 
         self._setup_actions()
 
-        self.view.doubleClicked.connect(self._on_accept)
+        # self.view.doubleClicked.connect(self._on_accept)
+        self.view.selectionModel().selectionChanged.connect(self.on_selectionChanged)
 
         # TODO : CHARGER QD ON OUVRE LE WIDGET
         config = Config("classifications")
@@ -136,8 +146,20 @@ class SamplesEditor(QWidget):
 
         self.conn = conn
 
+        self.on_selectionChanged()
+
     def load(self):
         self.model.load()
+
+    def on_selectionChanged(self):
+
+        count = len(self.view.selectionModel().selectedRows())
+        self.add_btn.setEnabled(count > 0)
+        if count > 0:
+            self.add_btn.setText(f"Add {count} samples(s) ")
+
+        else:
+            self.add_btn.setText(f"Add samples(s) ")
 
     def _setup_actions(self):
 
@@ -157,7 +179,9 @@ class SamplesEditor(QWidget):
         self.toolbar.addWidget(self.tag_choice)
 
         self.toolbar.addSeparator()
-        clear_action = self.toolbar.addAction(QIcon(), "Clear filters", self.clear_filters)
+        clear_action = self.toolbar.addAction(
+            QIcon(), "Clear filters", self.clear_filters
+        )
 
     def _load_filters(self):
         if self.conn:
@@ -174,7 +198,13 @@ class SamplesEditor(QWidget):
             # Load Tags
             self.tag_choice.clear()
             tags = sql.get_tags_from_samples(self.conn)
+            tags_list = []
             for tag in tags:
+                tag_list = tag.split(",")
+                for t in tag_list:
+                    if t not in tags_list:
+                        tags_list.append(t)
+            for tag in tags_list:
                 self.tag_choice.add_item(QIcon(), tag, data=tag)
 
     def clear_filters(self):
@@ -187,28 +217,60 @@ class SamplesEditor(QWidget):
     def _on_filter_changed(self):
         tag_list = self.tag_choice._model.get_checked()
         fam_list = self.family_choice._model.get_checked()
-        class_list = [str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]]
+        class_list = [
+            str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]
+        ]
 
+        # clean previous query line
+        previous_query_line_list = []
+        previous_query_line_text = self.line.text()
+        before_query_line_list = []
+        if previous_query_line_text:
+            previous_query_line_list = previous_query_line_text.split(" ")
+            for q in previous_query_line_list:
+                if (
+                    not q.startswith("tags:")
+                    and not q.startswith("classification:")
+                    and not q.startswith("family_id:")
+                    and not q == ""
+                ):
+                    before_query_line_list.append(q)
+
+        if before_query_line_list:
+            previous_query_line_text_clean = " ".join(before_query_line_list)
+        else:
+            previous_query_line_text_clean = ""
+
+        # start query
         query = []
+
+        # tag
         if tag_list:
-            query += ["tags:" + ",".join(tag_list)]
+            for tag in tag_list:
+                query += ["tags:" + tag]
 
+        # family
         if fam_list:
-            query += ["family:" + ",".join(fam_list)]
+            query += ["family_id:" + ",".join(fam_list)]
 
+        # classification
         if class_list:
             query += ["classification:" + ",".join(class_list)]
 
+        # construct query
         query = " ".join(query)
 
+        # change query
         if not self.line.text():
+            # if not previous_query_line_text_clean:
             self.line.setText(query)
         else:
-            self.line.setText(self.line.text() + " " + query)
+            # self.line.setText(self.line.text() + " " + query)
+            self.line.setText(previous_query_line_text_clean + " " + query)
 
     def _on_search(self):
         """Start a search query"""
-        self.model.query = self.line.text()
+        self.model.query = self.line.text().strip()
         self.model.load()
 
     def get_selected_samples(self) -> typing.List[str]:

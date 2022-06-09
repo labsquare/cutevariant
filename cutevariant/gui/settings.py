@@ -74,6 +74,7 @@ from cutevariant.config import Config
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui import network, style, widgets
 from cutevariant.gui.widgets import ClassificationEditor
+from cutevariant.gui.widgets import TagEditor
 import cutevariant.gui.mainwindow as mw
 
 
@@ -187,7 +188,7 @@ class ClassificationSettingsWidget(AbstractSettingsWidget):
         super().__init__()
         self.setWindowIcon(FIcon(0xF0133))
 
-        self.widget = ClassificationEditor()
+        self.widget = ClassificationEditor(section=section)
         self.v_layout = QVBoxLayout(self)
         self.v_layout.addWidget(self.widget)
         self.section = section
@@ -204,6 +205,33 @@ class ClassificationSettingsWidget(AbstractSettingsWidget):
         config = Config("classifications")
         classifications = config.get(self.section, [])
         self.widget.set_classifications(classifications)
+
+class TagSettingsWidget(AbstractSettingsWidget):
+    """Allow to configure proxy settings for widgets that require internet connection
+    These settings will apply application-wide (i.e. every QNetworkAccessManager will have these as defaults)
+    """
+
+    def __init__(self, section: str):
+        super().__init__()
+        self.setWindowIcon(FIcon(0xF04F9))
+
+        self.widget = TagEditor(section=section)
+        self.v_layout = QVBoxLayout(self)
+        self.v_layout.addWidget(self.widget)
+        self.section = section
+        self.setWindowTitle(self.section)
+
+    def save(self):
+        """Save settings under "proxy" group"""
+        config = Config("tags")
+        config[self.section] = self.widget.get_tags()
+        config.save()
+
+    def load(self):
+        """Load "proxy" group settings"""
+        config = Config("tags")
+        tags = config.get(self.section, [])
+        self.widget.set_tags(tags)
 
 
 class ProxySettingsWidget(AbstractSettingsWidget):
@@ -550,6 +578,7 @@ class SettingsDialog(QDialog):
         general_settings.add_page(StyleSettingsWidget())
         general_settings.add_page(VariablesSettingsWidget())
 
+        # Classification
         classification_settings = SectionWidget()
         classification_settings.setWindowTitle(self.tr("Classification"))
         classification_settings.setWindowIcon(FIcon(0xF063D))
@@ -558,9 +587,19 @@ class SettingsDialog(QDialog):
         classification_settings.add_page(ClassificationSettingsWidget("samples"))
         classification_settings.add_page(ClassificationSettingsWidget("genotypes"))
 
+        # Tags
+        tags_settings = SectionWidget()
+        tags_settings.setWindowTitle(self.tr("Tags"))
+        tags_settings.setWindowIcon(FIcon(0xF04FB))
+
+        tags_settings.add_page(TagSettingsWidget("variants"))
+        tags_settings.add_page(TagSettingsWidget("samples"))
+        tags_settings.add_page(TagSettingsWidget("genotypes"))
+
         # Specialized widgets on panels
         self.add_section(general_settings)
         self.add_section(classification_settings)
+        self.add_section(tags_settings)
         self.load_plugins()
 
         self.resize(800, 400)
