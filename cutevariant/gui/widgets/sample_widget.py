@@ -164,7 +164,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
             )
 
 
-class PhenotypeSectionWidget(AbstractSectionWidget):
+class PedigreeSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
@@ -178,6 +178,49 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
         self.family_edit = QLineEdit()
         self.father_edit = QLineEdit()
         self.mother_edit = QLineEdit()
+
+        # Add rows
+        self.view.addRow("Family", self.family_edit)
+        self.view.addRow("Father", self.father_edit)
+        self.view.addRow("Mother", self.mother_edit)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.addLayout(self.view)
+        main_layout.addStretch()
+
+    def get_sample(self):
+
+        sample = {
+            "family_id": self.family_edit.text(),
+            "father_id": self.father_edit.text(),
+            "mother_id": self.mother_edit.text(),
+        }
+
+        return sample
+
+    def set_sample(self, sample: dict):
+
+        # Load family
+        if "family_id" in sample:
+            self.family_edit.setText(str(sample["family_id"]))
+
+        # Load father
+        if "father_id" in sample:
+            self.father_edit.setText(str(sample["father_id"]))
+
+        # Load mother
+        if "mother_id" in sample:
+            self.mother_edit.setText(str(sample["mother_id"]))
+
+class PhenotypeSectionWidget(AbstractSectionWidget):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Phenotype")
+        self.setToolTip("You can edit phenotype information")
+        self.view = QFormLayout()
+
+        # values based on https://gatk.broadinstitute.org/hc/en-us/articles/360035531972-PED-Pedigree-format
 
         # Sex
         self.sex_combo = QComboBox()
@@ -200,9 +243,6 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
             self.phenotype_combo.addItem(item["name"], userData=item["number"])
 
         # Add rows
-        self.view.addRow("Family", self.family_edit)
-        self.view.addRow("Father", self.father_edit)
-        self.view.addRow("Mother", self.mother_edit)
         self.view.addRow("Sex", self.sex_combo)
         self.view.addRow("Affected", self.phenotype_combo)
 
@@ -213,9 +253,6 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
     def get_sample(self):
 
         sample = {
-            "family_id": self.family_edit.text(),
-            "father_id": self.father_edit.text(),
-            "mother_id": self.mother_edit.text(),
             "sex": self.sex_combo.currentData(),
             "phenotype": self.phenotype_combo.currentData(),
         }
@@ -223,18 +260,6 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
         return sample
 
     def set_sample(self, sample: dict):
-
-        # Load family
-        if "family_id" in sample:
-            self.family_edit.setText(str(sample["family_id"]))
-
-        # Load father
-        if "father_id" in sample:
-            self.father_edit.setText(str(sample["father_id"]))
-
-        # Load mother
-        if "mother_id" in sample:
-            self.mother_edit.setText(str(sample["mother_id"]))
 
         # Load sex
         if "sex" in sample:
@@ -251,12 +276,12 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
 
         # Load phenotype
         if "phenotype" in sample:
-            self.sex_combo.setCurrentText(
+            self.phenotype_combo.setCurrentText(
                 next(
                     (
                         item["name"]
                         for item in self.phenotype_list
-                        if item["number"] == sample["sex"]
+                        if item["number"] == sample["phenotype"]
                     ),
                     "No",
                 )
@@ -394,7 +419,7 @@ class OccurenceModel(QAbstractTableModel):
 
 class OccurrenceSectionWidget(AbstractSectionWidget):
 
-    WINDOW_TITLE_PREFIX = "Validated Variants"
+    WINDOW_TITLE_PREFIX = "Variants"
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -493,6 +518,7 @@ class SampleWidget(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.add_section(EvaluationSectionWidget())
+        self.add_section(PedigreeSectionWidget())
         self.add_section(PhenotypeSectionWidget())
         self.add_section(OccurrenceSectionWidget())
         self.add_section(HistorySectionWidget())
