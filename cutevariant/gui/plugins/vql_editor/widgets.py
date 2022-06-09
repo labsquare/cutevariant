@@ -50,9 +50,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         # Top toolbar
         self.top_bar = QToolBar()
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.run_action = self.top_bar.addAction(
-            FIcon(0xF040A), self.tr("Run"), self.run_vql
-        )
+        self.run_action = self.top_bar.addAction(FIcon(0xF040A), self.tr("Run"), self.run_vql)
         self.top_bar.setIconSize(QSize(16, 16))
         self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.run_action.setToolTip(
@@ -65,9 +63,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.log_edit = QLabel()
         self.log_edit.setMinimumHeight(40)
         self.log_edit.setStyleSheet(
-            "QWidget{{background-color:'{}'; color:'{}'}}".format(
-                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
-            )
+            "QWidget{{background-color:'{}'; color:'{}'}}".format("orange", "black")
         )
         self.log_edit.hide()
         self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
@@ -151,16 +147,19 @@ class VqlEditorWidget(plugin.PluginWidget):
             description = "<b>{}</b> ({}) from {} <br/><br/> {}".format(
                 field["name"], field["type"], field["category"], field["description"]
             )
-            color = style.FIELD_TYPE.get(field["type"], "str")["color"]
-            icon = FIcon(style.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
+
+            # ===> TODO
+            # color = style.FIELD_TYPE.get(field["type"], "str")["color"]
+            # icon = FIcon(style.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
+
+            color = "red"
+            icon = FIcon(0xF04EB)
 
             if field["category"] == "variants":
                 self.text_edit.completer.model.add_item(name, description, icon, color)
 
             if field["category"] == "annotations":
-                self.text_edit.completer.model.add_item(
-                    f"ann.{name}", description, icon, color
-                )
+                self.text_edit.completer.model.add_item(f"ann.{name}", description, icon, color)
 
             if field["category"] == "samples":
 
@@ -182,9 +181,7 @@ class VqlEditorWidget(plugin.PluginWidget):
                         sample,
                         field["description"],
                     )
-                    self.text_edit.completer.model.add_item(
-                        name, description, icon, color
-                    )
+                    self.text_edit.completer.model.add_item(name, description, icon, color)
 
         self.text_edit.completer.model.endResetModel()
 
@@ -209,9 +206,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         except (TextXSyntaxError, VQLSyntaxError) as e:
             # Show the error message on the ui
             # Available attributes: e.message, e.line, e.col
-            self.set_message(
-                "%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col)
-            )
+            self.set_message("%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col))
             return False
         return True
 

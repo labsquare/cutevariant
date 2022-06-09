@@ -811,9 +811,7 @@ class VariantView(QWidget):
         self.log_edit.hide()
         self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
         self.log_edit.setStyleSheet(
-            "QWidget{{background-color:'{}'; color:'{}'}}".format(
-                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
-            )
+            "QWidget{{background-color:'{}'; color:'{}'}}".format("orange", "black")
         )
 
         # Setup model
@@ -1004,7 +1002,7 @@ class VariantView(QWidget):
         if self.log_edit.isHidden():
             self.log_edit.show()
 
-        icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
+        icon_64 = FIcon(0xF0027, "black").to_base64(18, 18)
 
         self.log_edit.setText(
             """<div height=100%>

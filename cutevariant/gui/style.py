@@ -1,6 +1,6 @@
 """A place to store style rules for the GUI"""
 from logging import Logger
-from PySide6.QtWidgets import QProxyStyle
+from PySide6.QtWidgets import QProxyStyle, QPushButton, QToolBar, QToolButton
 from cutevariant import LOGGER
 from cutevariant.constants import DIR_STYLES
 from PySide6.QtGui import QPalette, QColor
@@ -30,26 +30,27 @@ class AppStyle(QProxyStyle):
         with open(DIR_STYLES + filename, "r") as file:
             self.theme = yaml.safe_load(file)
 
-    def polish(self, palette: QPalette):
+    def polish(self, value):
         """override"""
-        if type(palette) != QPalette:
-            return super().polish(palette)
 
-        cols = self.theme["palette"]["normal"]
-
-        for key, col in cols.items():
-            if key in AppStyle.PALETTE_KEYS:
-                role = AppStyle.PALETTE_KEYS[key]
-                palette.setColor(role, QColor(col))
+        if isinstance(value, QPalette):
+            cols = self.theme["palette"]["normal"]
+            for key, col in cols.items():
+                if key in AppStyle.PALETTE_KEYS:
+                    role = AppStyle.PALETTE_KEYS[key]
+                    value.setColor(role, QColor(col))
 
     def drawPrimitive(self, element, option, painter, widget) -> None:
+
+        if element == QStyle.PE_PanelToolBar:
+            return
 
         if element == QStyle.PE_IndicatorCheckBox:
             op = option
 
             #            op.icon = FIcon(0xF0143)
             # op.iconSize = QSize(50, 50)
-            color = op.palette.color(QPalette.Light)
+            color = op.palette.color(QPalette.Text)
             painter.setPen(QPen(color))
             painter.drawRect(option.rect)
 
@@ -61,5 +62,8 @@ class AppStyle(QProxyStyle):
                 # painter.setPen(Qt.NoPen)
                 painter.drawRect(check)
 
-        else:
-            return super().drawPrimitive(element, option, painter, widget)
+            return
+
+        # painter.setBrush(QBrush(QColor("red")))
+
+        return super().drawPrimitive(element, option, painter, widget)
