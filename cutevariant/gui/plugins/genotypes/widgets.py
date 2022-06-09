@@ -664,7 +664,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
             for item in self.model.classifications:
 
-                if sample["classification"] == item["number"]:
+                if genotype["classification"] == item["number"]:
                     icon = 0xF0133
                     # cat_menu.setIcon(FIcon(icon, item["color"]))
                 else:
