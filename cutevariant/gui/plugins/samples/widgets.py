@@ -23,6 +23,8 @@ from cutevariant.gui.widgets import (
 
 from cutevariant.gui import tooltip as toolTip
 
+import time
+
 # from gui.style import SAMPLE_CLASSIFICATION
 
 
@@ -324,13 +326,18 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("samples", copy.deepcopy(self.model.get_samples()))
 
         # Automatically create source on all samples
-        self.on_create_samples_source(source_name="samples")
-        self.mainwindow.set_state_data("source", "samples")
-        self.mainwindow.refresh_plugins(sender=self)
+        #self.on_create_samples_source(source_name="samples")
+
+
+
+        # self.mainwindow.set_state_data("source", "samples")
+        # self.mainwindow.refresh_plugins(sender=self)
 
     def on_add_samples(self, samples: list):
         self.model.add_samples(samples)
         self.on_model_changed()
+        self.remove_all_sample_fields()
+        self.on_create_samples_source(source_name="samples")
 
     def _create_classification_menu(self, sample: List = None):
 
@@ -422,10 +429,9 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu = QMenu(self)
 
-        self.edit_action = self.tool_bar.addAction(
+        menu.addAction(
             FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit
         )
-        menu.addAction(self.edit_action)
 
         menu.addMenu(self._create_classification_menu(sample))
         menu.addSeparator()
@@ -483,10 +489,14 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.model.remove_samples(rows)
         self.on_model_changed()
+        self.remove_all_sample_fields()
+        self.on_create_samples_source(source_name="samples")
 
     def on_clear_samples(self):
         self.model.clear()
         self.on_model_changed()
+        self.remove_all_sample_fields()
+        self.on_create_samples_source(source_name="samples")
 
     def update_classification(self, value: int = 0):
 
@@ -519,18 +529,20 @@ class SamplesWidget(plugin.PluginWidget):
             # fields = self.mainwindow.get_state_data("fields")
             # fields = [f for f in fields if not f.startswith("samples")]
             # fields += [f"samples.{sample_name}.gt"]
-            self.on_add_genotypes(samples=[sample_name])
+            
+            self.on_add_genotypes(samples=[sample_name], refresh=False)
 
             # Create/Update current_sample source
             self.on_create_samples_source(source_name="current_sample", samples=[sample_name])
 
             # self.mainwindow.set_state_data("fields", fields)
-            self.mainwindow.set_state_data("source", "current_sample")
+            # self.mainwindow.set_state_data("source", "current_sample")
 
-            if "source_editor" in self.mainwindow.plugins:
-                self.mainwindow.refresh_plugin("source_editor")
+            # self.mainwindow.refresh_plugins(sender=self)
 
-            self.mainwindow.refresh_plugins(sender=self)
+            # if "source_editor" in self.mainwindow.plugins:
+            #     self.mainwindow.refresh_plugin("source_editor")
+
 
     def on_create_filter(self):
 
@@ -554,7 +566,7 @@ class SamplesWidget(plugin.PluginWidget):
             # if "source_editor" in self.mainwindow.plugins:
             #     self.mainwindow.refresh_plugin("source_editor")
 
-            # self.mainwindow.refresh_plugins(sender=self)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_clear_filters(self):
 
@@ -568,19 +580,8 @@ class SamplesWidget(plugin.PluginWidget):
 
             self.mainwindow.set_state_data("filters", filters)
 
-            # if "source_editor" in self.mainwindow.plugins:
-            #     self.mainwindow.refresh_plugin("source_editor")
+            self.mainwindow.refresh_plugins(sender=self)
 
-            # self.mainwindow.refresh_plugins(sender=self)
-
-    # def on_create_all_source(self):
-
-    #     sql.insert_selection_from_samples(
-    #         self.model.conn, self.model.get_samples(), name="samples"
-    #     )
-
-    #     self.mainwindow.set_state_data("source", "samples")
-    #     self.mainwindow.refresh_plugins(sender=self)
 
     def on_create_samples_source(self, source_name: str = "samples", samples: list = None):
         """Create source from a list of samples
@@ -594,32 +595,17 @@ class SamplesWidget(plugin.PluginWidget):
 
         if len(samples):
             sql.insert_selection_from_samples(self.model.conn, samples, name=source_name, force=False)
-
             self.mainwindow.set_state_data("source", source_name)
-
+            self.mainwindow.refresh_plugins(sender=self)
+            if "source_editor" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("source_editor")
+        else:
+            self.mainwindow.set_state_data("source", "variants")
+            self.mainwindow.refresh_plugins(sender=self)
             if "source_editor" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("source_editor")
 
-            # self.mainwindow.refresh_plugins(sender=self)
-
-    # def on_create_source(self):
-    #     name, success = QInputDialog.getText(
-    #         self, self.tr("Source Name"), self.tr("Get a source name ")
-    #     )
-
-    #     # if not name:
-    #     #     return
-
-    #     if success and name:
-
-    #         sql.insert_selection_from_source(
-    #             self.model.conn, name, "variants", self._create_filters(False)
-    #         )
-
-    #         if "source_editor" in self.mainwindow.plugins:
-    #             self.mainwindow.refresh_plugin("source_editor")
-
-    def on_add_genotypes(self, samples: list = None):
+    def on_add_genotypes(self, samples: list = None, refresh=True):
         """Add from a list of samples
 
         Args:
@@ -636,7 +622,19 @@ class SamplesWidget(plugin.PluginWidget):
                 fields += [f"samples.{sample_name}.gt"]
 
             self.mainwindow.set_state_data("fields", fields)
-            self.mainwindow.refresh_plugins(sender=self)
+            if refresh:
+                self.mainwindow.refresh_plugins(sender=self)
+
+    def remove_all_sample_fields(self, refresh=False):
+        """remove all fields from samples
+        Args:
+            
+        """
+        fields = self.mainwindow.get_state_data("fields")
+        fields = [f for f in fields if not f.startswith("samples")]
+        self.mainwindow.set_state_data("fields", fields)
+        if refresh:
+                self.mainwindow.refresh_plugins(sender=self)
 
     def on_register(self, mainwindow: MainWindow):
         """This method is called when the plugin is registered from the mainwindow.
