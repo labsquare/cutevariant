@@ -1329,13 +1329,9 @@ class VariantView(QWidget):
         formatted_variant = formatted_variant.replace("ann.", "annotations___")
         variant_name = formatted_variant.format(**full_variant)
 
-        menu.addSection(FIcon(0xF014C), variant_name)
-
-        menu.addSeparator()
-
         menu.addAction(
-            FIcon(0xF14E6),
-            "Edit Variant",
+            FIcon(0xF064F),
+            f"Edit Variant '{variant_name}'",
             self._show_variant_dialog,
         )
 
