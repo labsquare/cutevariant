@@ -524,11 +524,11 @@ class ReportSettingsWidget(AbstractSettingsWidget):
         self.html_template = FileEdit()
         self.docx_template = FileEdit()
 
-        mainLayout = QFormLayout()
-        mainLayout.addRow(self.tr("HTML template:"), self.html_template)
-        mainLayout.addRow(self.tr("Docx template:"), self.docx_template)
+        main_layout = QFormLayout()
+        main_layout.addRow(self.tr("HTML template:"), self.html_template)
+        main_layout.addRow(self.tr("Docx template:"), self.docx_template)
 
-        self.setLayout(mainLayout)
+        self.setLayout(main_layout)
 
     def save(self):
         """Save the selected variables in config"""

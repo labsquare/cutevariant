@@ -12,11 +12,6 @@ from cutevariant.config import Config
 from cutevariant.core import sql
 from cutevariant import constants
 
-# from PySide6.QtCore import QUrl
-# from PySide6.QtGui import QPageSize, QPageLayout
-# from PySide6.QtPrintSupport import QPrinter
-# from PySide6.QtWebEngineCore import QWebEnginePage
-
 class AbstractReport():
     def __init__(self, conn: sqlite3.Connection):
         self._template = None
@@ -124,9 +119,9 @@ class SampleReport(AbstractReport):
                                     {"$and": [{"samples." + self._report_data["sample"]["name"] + ".classification": {"$gte": self._variant_classif_threshold}}]}
                                     )
         variants = []
-        for id in variants_ids:
-            id = id["id"]
-            var = sql.get_variant(self._conn, id, with_samples=True)
+        for var_id in variants_ids:
+            var_id = var_id["id"]
+            var = sql.get_variant(self._conn, var_id, with_samples=True)
             var["samples"] = [s for s in var["samples"] if s["sample_id"] == self._sample_id][0] #keep only current sample
             var["variant_name"] = variant_name_pattern.format(**var)
             variants.append(var)
@@ -172,10 +167,8 @@ class SampleReport(AbstractReport):
         elif self._template.endswith("html"):
             template_dir = os.path.dirname(self._template)
             output_dir = os.path.dirname(output_path)
-            # if not os.path.exists(output_dir):
-            #     os.makedirs(output_dir)
 
-            env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
+            env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir), autoescape=True)
 
             template = env.get_template(os.path.basename(self._template))
             output = template.render(self._get_data())
@@ -184,23 +177,12 @@ class SampleReport(AbstractReport):
             with codecs.open(output_path, "w", "utf-8") as f:
                 f.write(output)
 
-            # page = QWebEnginePage()
-            # def handle_load_finished(status):
-            #     if status:
-            #         print("loading finished")
-            #         page.printToPdf(os.path.join(os.path.basename(output), "fileOK.pdf"))
-            #     else:
-            #         raise ValueError("loading failed")
-            # page.loadFinished.connect(handle_load_finished)
-            # page.load(QUrl.fromLocalFile(output))
-
         else:
             raise NotImplementedError("Unsupported template type ; use html or docx")
 
 if __name__ == "__main__":
     from cutevariant.core import sql
 
-    # conn = sql.get_sql_connection("/home/sacha/exome/exome.db")
     conn = sql.get_sql_connection(
         "L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/devel_june2022.db"
     )
