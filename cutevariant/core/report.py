@@ -1,15 +1,21 @@
 import codecs
 import jinja2
 import os
+import shutil
 import sqlite3
 import typing
 
 from docxtpl import DocxTemplate
 
+from cutevariant.commons import recursive_overwrite
 from cutevariant.config import Config
 from cutevariant.core import sql
 from cutevariant import constants
 
+# from PySide6.QtCore import QUrl
+# from PySide6.QtGui import QPageSize, QPageLayout
+# from PySide6.QtPrintSupport import QPrinter
+# from PySide6.QtWebEngineCore import QWebEnginePage
 
 class AbstractReport():
     def __init__(self, conn: sqlite3.Connection):
@@ -164,14 +170,30 @@ class SampleReport(AbstractReport):
             doc.save(output_path)
 
         elif self._template.endswith("html"):
-            env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(self._template)))
+            template_dir = os.path.dirname(self._template)
+            output_dir = os.path.dirname(output_path)
+            # if not os.path.exists(output_dir):
+            #     os.makedirs(output_dir)
+
+            env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
 
             template = env.get_template(os.path.basename(self._template))
             output = template.render(self._get_data())
 
+            recursive_overwrite(template_dir, output_dir, ignore=shutil.ignore_patterns('*.html'))
             with codecs.open(output_path, "w", "utf-8") as f:
                 f.write(output)
-        
+
+            # page = QWebEnginePage()
+            # def handle_load_finished(status):
+            #     if status:
+            #         print("loading finished")
+            #         page.printToPdf(os.path.join(os.path.basename(output), "fileOK.pdf"))
+            #     else:
+            #         raise ValueError("loading failed")
+            # page.loadFinished.connect(handle_load_finished)
+            # page.load(QUrl.fromLocalFile(output))
+
         else:
             raise NotImplementedError("Unsupported template type ; use html or docx")
 
@@ -182,12 +204,10 @@ if __name__ == "__main__":
     conn = sql.get_sql_connection(
         "L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/devel_june2022.db"
     )
-    # template = "L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/my_word_template.docx"
-    # output = "L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/report.docx"
-    # template = "examples/sample_report_template01.docx"
-    # output = "examples/sample_report01.docx"
-    template = "examples/cute_template/Accueil.html"
-    output = "examples/cute_template/Report.html"
+
+    template = "examples/html_template/Template01.html"
+    output = "examples/Report01.html"
 
     r = SampleReport(conn, 2)
-    r.create(template, output)
+    r.set_template(template)
+    r.create(output)

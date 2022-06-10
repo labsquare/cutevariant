@@ -655,7 +655,7 @@ class SampleDialog(QDialog):
         self.accept()
 
     def export_html_report(self):
-        output = "examples/cute_template/myreport.html"
+        output = self.get_output_path(".html")
         report = SampleReport(self._conn, self._sample_id)
         report.set_template(Config("Report").get("html_template"))
         report.create(output)
@@ -667,7 +667,7 @@ class SampleDialog(QDialog):
         )
 
     def export_docx_report(self):
-        output = "examples/myreport.docx"
+        output = self.get_output_path(".docx")
         report = SampleReport(self._conn, self._sample_id)
         report.set_template(Config("Report").get("docx_template"))
         report.create(output)
@@ -677,6 +677,14 @@ class SampleDialog(QDialog):
             "Report was successfully created",
             QMessageBox.Ok
         )
+
+    def get_output_path(self, file_type):
+        output = QFileDialog.getSaveFileName(self, "File name", QDir.homePath(), file_type, file_type)
+        if output[0].endswith(file_type):
+            output = output[0]
+        else:
+            output = output[0] + output[1]
+        return output
 
 if __name__ == "__main__":
     import sys
