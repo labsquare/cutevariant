@@ -79,6 +79,7 @@ import cutevariant.gui.mainwindow as mw
 
 
 from cutevariant import LOGGER
+from cutevariant.gui.widgets.file_edit import FileEdit
 
 
 class AbstractSettingsWidget(QWidget):
@@ -506,6 +507,58 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         self.transcript_field_edit.setText(transcript_field)
 
 
+class ReportSettingsWidget(AbstractSettingsWidget):
+    """Allow to choose variables for the interface"""
+
+    def __init__(self):
+        """Init VariablesSettingsWidget
+
+        Args:
+            mainwindow (QMainWindow): Current main ui of cutevariant;
+                Used to refresh the plugins
+        """
+        super().__init__()
+        self.setWindowTitle(self.tr("Report"))
+        self.setWindowIcon(FIcon(0xF1518))
+
+        self.html_template = FileEdit()
+        self.docx_template = FileEdit()
+
+        mainLayout = QFormLayout()
+        mainLayout.addRow(self.tr("HTML template:"), self.html_template)
+        mainLayout.addRow(self.tr("Docx template:"), self.docx_template)
+
+        self.setLayout(mainLayout)
+
+    def save(self):
+        """Save the selected variables in config"""
+
+        # Config
+        config = Config("Report") or {}
+
+        # Save variables setting
+        config["html_template"] = self.html_template.text()
+        config["docx_template"] = self.docx_template.text()
+        config.save()
+
+        # Clear pixmap cache
+        QPixmapCache.clear()
+
+    def load(self):
+        """Setup widgets in ReportSettingsWidget"""
+        self.html_template.clear()
+        self.docx_template.clear()
+
+        # Config
+        config = Config("Report") or {}
+
+        # Set variables
+        html = config.get("html_template", "")
+        docx = config.get("docx_template", "")
+        self.html_template.setText(html)
+        self.docx_template.setText(docx)
+
+
 class SettingsDialog(QDialog):
     """Main widget for settings window
 
@@ -577,6 +630,7 @@ class SettingsDialog(QDialog):
         general_settings.add_page(ProxySettingsWidget())
         general_settings.add_page(StyleSettingsWidget())
         general_settings.add_page(VariablesSettingsWidget())
+        general_settings.add_page(ReportSettingsWidget())
 
         # Classification
         classification_settings = SectionWidget()
