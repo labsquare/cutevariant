@@ -656,30 +656,36 @@ class SampleDialog(QDialog):
 
     def export_html_report(self):
         output = self.get_output_path(".html")
-        report = SampleReport(self._conn, self._sample_id)
-        report.set_template(Config("Report").get("html_template"))
-        report.create(output)
-        QMessageBox.information(
-            None,
-            "",
-            "Report was successfully created",
-            QMessageBox.Ok
-        )
+        
+        if output != None:
+            report = SampleReport(self._conn, self._sample_id)
+            report.set_template(Config("Report").get("html_template"))
+            report.create(output)
+            QMessageBox.information(
+                None,
+                "",
+                "Report was successfully created",
+                QMessageBox.Ok
+            )
 
     def export_docx_report(self):
         output = self.get_output_path(".docx")
-        report = SampleReport(self._conn, self._sample_id)
-        report.set_template(Config("Report").get("docx_template"))
-        report.create(output)
-        QMessageBox.information(
-            None,
-            "",
-            "Report was successfully created",
-            QMessageBox.Ok
-        )
+
+        if output != None:
+            report = SampleReport(self._conn, self._sample_id)
+            report.set_template(Config("Report").get("docx_template"))
+            report.create(output)
+            QMessageBox.information(
+                None,
+                "",
+                "Report was successfully created",
+                QMessageBox.Ok
+            )
 
     def get_output_path(self, file_type):
         output = QFileDialog.getSaveFileName(self, "File name", QDir.homePath(), file_type, file_type)
+        if output[0] == "":
+            return None
         if output[0].endswith(file_type):
             output = output[0]
         else:
