@@ -104,20 +104,24 @@ class SampleReport(AbstractReport):
 
     def get_variants(self):
         self._report_data["classification_threshold"] = self._variant_classif_threshold
-        variants = [
-            {
-                "variant_name": "chr1:1000:A>T",
-                "gt": "1/0",
-                "ad": "8,2",
-                "dp": "10"
-            },
-            {
-                "variant_name": "chr2:2000:A>T",
-                "gt": "1/1",
-                "ad": "10,0",
-                "dp": "10"
-            }
-        ]
+
+        config = Config("variables") or {}
+        variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+        variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+        
+        variants_ids = sql.get_variants(self._conn, 
+                                    ["id"],
+                                    "variants",
+                                    {"$and": [{"samples." + self._report_data["sample"]["name"] + ".classification": {"$gte": self._variant_classif_threshold}}]}
+                                    )
+        variants = []
+        for id in variants_ids:
+            id = id["id"]
+            var = sql.get_variant(self._conn, id, with_samples=True)
+            var["samples"] = [s for s in var["samples"] if s["sample_id"] == self._sample_id][0] #keep only current sample
+            var["variant_name"] = variant_name_pattern.format(**var)
+            variants.append(var)
+
         self._report_data["variants"] = variants
 
     def _classif_number_to_label(self, classification_type):
@@ -132,7 +136,7 @@ class SampleReport(AbstractReport):
         {"4": "Likely Pathogenic", "3": "VSI"}
         """
         config = Config("classifications").get(classification_type)
-        
+
         dic = {}
         for c in config:
             dic[c["number"]] = c["name"]
@@ -148,6 +152,8 @@ class SampleReport(AbstractReport):
     def create(self, template_path: str, output_path: str):
         doc = DocxTemplate(template_path)
         self._set_data()
+        for v in r._get_data()["variants"]:
+            print(v)
         doc.render(self._get_data())
         doc.save(output_path)
 
@@ -164,5 +170,5 @@ if __name__ == "__main__":
     template = "examples/sample_report_template01.docx"
     output = "examples/sample_report01.docx"
 
-    r = SampleReport(conn, 1)
+    r = SampleReport(conn, 2)
     r.create(template, output)
