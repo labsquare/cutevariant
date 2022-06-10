@@ -54,6 +54,14 @@ OPERATORS_SQL_2_PY = {
 # OPERATOR HAS
 HAS_OPERATOR=","
 
+# FIELD TYPE
+FIELD_TYPE = {
+    "float": {"name": "floating ", "icon": 0xF0B0D, "color": "#2e9599"},
+    "int": {"name": "integer", "icon": 0xF0B10, "color": "#f7dc68"},
+    "str": {"name": "text", "icon": 0xF0B1A, "color": "#f46c3f"},
+    "bool": {"name": "boolean", "icon": 0xF0B09, "color": "#a7226f"},
+}
+
 # Phenotype
 PHENOTYPE_DESC = {2: "Affected", 1: "Unaffected"}
 

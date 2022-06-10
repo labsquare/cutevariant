@@ -250,14 +250,14 @@ MANDATORY_FIELDS = [
         "type": "int",
         "constraint": "DEFAULT 0",
         "category": "variants",
-        "description": "Number of validated genotypes with samples locked",
+        "description": "Number of validated genotypes within validated samples",
     },
     {
         "name": "count_validation_negative_sample_lock",
         "type": "int",
         "constraint": "DEFAULT 0",
         "category": "variants",
-        "description": "Number of rejected genotypes with samples locked",
+        "description": "Number of rejected genotypes within validated samples",
     },
     {
         "name": "control_count_hom",
