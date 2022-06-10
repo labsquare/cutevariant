@@ -152,8 +152,6 @@ class SampleReport(AbstractReport):
     def create(self, template_path: str, output_path: str):
         doc = DocxTemplate(template_path)
         self._set_data()
-        for v in r._get_data()["variants"]:
-            print(v)
         doc.render(self._get_data())
         doc.save(output_path)
 

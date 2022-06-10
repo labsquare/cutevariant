@@ -7,6 +7,7 @@ from PySide6.QtGui import *
 
 from cutevariant.gui.widgets import MarkdownEditor
 from cutevariant.core import sql
+from cutevariant.core.report import SampleReport
 from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
@@ -618,29 +619,43 @@ class SampleDialog(QDialog):
     def __init__(self, conn, sample_id, parent=None):
         super().__init__()
 
-        self.sample_id = sample_id
+        self._conn = conn
+        self._sample_id = sample_id
         self.w = SampleWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        self.export_button = QPushButton("Export report")
+
+        self.button_layout = QHBoxLayout()
+        self.button_layout.addWidget(self.export_button)
+        self.button_layout.addStretch()
+        self.button_layout.addWidget(self.button_box)
+
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
-        vLayout.addWidget(self.button_box)
+        vLayout.addLayout(self.button_layout)
 
         self.load()
 
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
+        self.export_button.clicked.connect(self.export_report)
 
         # self.resize(800, 600)
 
     def load(self):
-        self.w.load(self.sample_id)
+        self.w.load(self._sample_id)
         self.setWindowTitle(self.w.windowTitle())
 
     def save(self):
-        self.w.save(self.sample_id)
+        self.w.save(self._sample_id)
         self.accept()
+
+    def export_report(self):
+        template = "examples/sample_report_template01.docx"
+        output = "examples/sample_report01.docx"
+        report = SampleReport(self._conn, self._sample_id)
+        report.create(template, output)
 
 
 if __name__ == "__main__":
