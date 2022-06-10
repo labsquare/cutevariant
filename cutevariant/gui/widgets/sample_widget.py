@@ -624,10 +624,12 @@ class SampleDialog(QDialog):
         self.w = SampleWidget(conn)
 
         self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
-        self.export_button = QPushButton("Export report")
+        self.html_button = QPushButton("HTML report")
+        self.docx_button = QPushButton("Docx report")
 
         self.button_layout = QHBoxLayout()
-        self.button_layout.addWidget(self.export_button)
+        self.button_layout.addWidget(self.html_button)
+        self.button_layout.addWidget(self.docx_button)
         self.button_layout.addStretch()
         self.button_layout.addWidget(self.button_box)
 
@@ -639,7 +641,8 @@ class SampleDialog(QDialog):
 
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
-        self.export_button.clicked.connect(self.export_report)
+        self.html_button.clicked.connect(self.export_html_report)
+        self.docx_button.clicked.connect(self.export_docx_report)
 
         # self.resize(800, 600)
 
@@ -651,12 +654,29 @@ class SampleDialog(QDialog):
         self.w.save(self._sample_id)
         self.accept()
 
-    def export_report(self):
-        template = "examples/sample_report_template01.docx"
-        output = "examples/sample_report01.docx"
+    def export_html_report(self):
+        output = "examples/cute_template/myreport.html"
         report = SampleReport(self._conn, self._sample_id)
-        report.create(template, output)
+        report.set_template(Config("Report").get("html_template"))
+        report.create(output)
+        QMessageBox.information(
+            None,
+            "",
+            "Report was successfully created",
+            QMessageBox.Ok
+        )
 
+    def export_docx_report(self):
+        output = "examples/myreport.docx"
+        report = SampleReport(self._conn, self._sample_id)
+        report.set_template(Config("Report").get("docx_template"))
+        report.create(output)
+        QMessageBox.information(
+            None,
+            "",
+            "Report was successfully created",
+            QMessageBox.Ok
+        )
 
 if __name__ == "__main__":
     import sys

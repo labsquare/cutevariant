@@ -4,7 +4,7 @@ import os
 import sqlite3
 import typing
 
-# from docxtpl import DocxTemplate
+from docxtpl import DocxTemplate
 
 from cutevariant.config import Config
 from cutevariant.core import sql
@@ -38,7 +38,7 @@ class SampleReport(AbstractReport):
         self._conn = conn
         self._sample_id = sample_id
         self._variant_classif_threshold = 1
-        self._template = "examples/sample_report_template01.docx" #TODO: add to settings
+        self._template = None
         self._report_data = {}
 
     def set_variant_classif_threshold(self, threshold: int):
@@ -152,20 +152,28 @@ class SampleReport(AbstractReport):
         self.get_stats()
         self.get_variants()
 
-    def create(self, template_path: str, output_path: str, format: str):
+    def create(self, output_path: str):
         self._set_data()
 
-        # doc = DocxTemplate(template_path)
-        # doc.render(self._get_data())
-        # doc.save(output_path)
+        if self._template is None:
+            raise ValueError("No template is set ; use self.set_template(str)")
 
-        env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(template_path)))
+        elif self._template.endswith(".docx"):
+            doc = DocxTemplate(self._template)
+            doc.render(self._get_data())
+            doc.save(output_path)
 
-        template = env.get_template(os.path.basename(template_path))
-        output = template.render(self._get_data())
+        elif self._template.endswith("html"):
+            env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(self._template)))
 
-        with codecs.open(output_path, "w", "utf-8") as f:
-            f.write(output)
+            template = env.get_template(os.path.basename(self._template))
+            output = template.render(self._get_data())
+
+            with codecs.open(output_path, "w", "utf-8") as f:
+                f.write(output)
+        
+        else:
+            raise NotImplementedError("Unsupported template type ; use html or docx")
 
 if __name__ == "__main__":
     from cutevariant.core import sql
