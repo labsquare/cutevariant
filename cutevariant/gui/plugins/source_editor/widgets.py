@@ -25,6 +25,13 @@ from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
 from cutevariant.constants import DEFAULT_SELECTION_NAME
 
+import cutevariant.constants as cst
+
+# TODO: to constants.py
+DEFAULT_SELECTION_NAME = "variants" # cst.getDEFAULT_SELECTION_NAME
+SAMPLES_SELECTION_NAME = "samples" # cst.SAMPLES_SELECTION_NAME
+CURRENT_SAMPLE_SELECTION_NAME = "current_sample" # cst.SAMPLES_SELECTION_NAME
+LOCKED_SELECTIONS = [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]
 
 import re
 from cutevariant import LOGGER
@@ -88,7 +95,12 @@ class SourceModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             if index.column() == 0:
-                return self.records[index.row()]["name"]
+                selection_name = self.records[index.row()].get("name","unknown")
+                selection_description = self.records[index.row()].get("description",None)
+                label = selection_name
+                if selection_description:
+                    label += f" ({selection_description})"
+                return label
 
             if index.column() == 1:
                 return self.records[index.row()]["count"]
@@ -102,7 +114,8 @@ class SourceModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
-                if table_name == DEFAULT_SELECTION_NAME:
+                # if table_name == DEFAULT_SELECTION_NAME:
+                if table_name in LOCKED_SELECTIONS:
                     return QIcon(FIcon(0xF13C6))
                 else:
                     return QIcon(FIcon(0xF04EB))
@@ -353,8 +366,10 @@ class SourceEditorWidget(plugin.PluginWidget):
     def create_selection_from_current(self):
         name = self.ask_and_check_selection_name()
 
-        name = re.sub(r"\s+", "_", name.strip())
         if name:
+
+            if name.strip():
+                name = re.sub(r"\s+", "_", name.strip())
 
             executed_query_data = self.mainwindow.get_state_data("executed_query_data")
 
@@ -454,7 +469,8 @@ class SourceEditorWidget(plugin.PluginWidget):
             current.data(Qt.DisplayRole) == DEFAULT_SELECTION_NAME
         )
 
-        if any(source == DEFAULT_SELECTION_NAME for source in selected_sources):
+        # if any(source == DEFAULT_SELECTION_NAME for source in selected_sources):
+        if any(source in LOCKED_SELECTIONS for source in selected_sources):
             self.edit_action.setEnabled(False)
             self.del_action.setEnabled(False)
         else:
@@ -490,7 +506,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         if not success:
             return
 
-        if name == DEFAULT_SELECTION_NAME:
+        #if name == DEFAULT_SELECTION_NAME:
+        if name in LOCKED_SELECTIONS:
             LOGGER.error(
                 "SourceEditorWidget:save_current_query:: '%s' is a reserved name for a selection.",
                 name,
@@ -525,7 +542,8 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         # This should not even be called, since remove/edit actions are supposed to be disabled by the widget
         if any(
-            self.model.record(self.proxy_model.mapToSource(index)) == DEFAULT_SELECTION_NAME
+            # self.model.record(self.proxy_model.mapToSource(index)) == DEFAULT_SELECTION_NAME
+            self.model.record(self.proxy_model.mapToSource(index)) in LOCKED_SELECTIONS
             for index in self.view.selectionModel().selectedRows(0)
         ):
             QMessageBox.warning(
@@ -545,7 +563,11 @@ class SourceEditorWidget(plugin.PluginWidget):
             ]
             self.model.remove_records(indexes)
 
-            self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
+            current_source = self.mainwindow.get_state_data("source")
+            if current_source in indexes:
+                current_source = DEFAULT_SELECTION_NAME
+
+            self.mainwindow.set_state_data("source", current_source)
             self.mainwindow.refresh_plugins(sender=None)
 
     def edit_selection(self):
