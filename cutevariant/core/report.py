@@ -47,6 +47,10 @@ class SampleReport(AbstractReport):
             sample["tags"] = sample["tags"].split(constants.HAS_OPERATOR)
         else:
             sample["tags"] = [sample["tags"]]
+
+        sample_classifs = self._classif_number_to_label("samples")
+        sample["classification"] = sample_classifs.get(sample["classification"], sample["classification"])
+
         self._report_data["sample"] = sample
 
     def get_stats(self):
@@ -71,13 +75,15 @@ class SampleReport(AbstractReport):
             "header": ["Classification", "Total"],
             "data" : []
         }
-        
+        variant_classifs = self._classif_number_to_label("variants")
         for row in sql.get_variant_as_group(self._conn, "classification", sql.get_table_columns(self._conn, "variants"), "variants", {}):
-            row = [row["classification"], row["count"]]
+            #if classif is not defined in config, keep the number by default
+            row = [ variant_classifs.get(row["classification"], row["classification"]), 
+                    row["count"]
+                ]
             var_per_var_classif["data"].append(row)
 
         var_per_var_classif["data"] = sorted(var_per_var_classif["data"], key=lambda x: x[0])
-
         self._report_data["var_per_var_classif"] = var_per_var_classif
 
 
@@ -87,8 +93,11 @@ class SampleReport(AbstractReport):
             "header": ["Classification", "Total"],
             "data" : []
         }
+        genotypes_classifs = self._classif_number_to_label("genotypes")
         for row in sql.get_variant_groupby_for_samples(self._conn, "genotypes.classification", [self._sample_id]):
-            row = [row["classification"], row["count"]]
+            row = [genotypes_classifs.get(row["classification"], row["classification"]), 
+                    row["count"]
+                ]
             var_per_gt_classif["data"].append(row)
         
         self._report_data["var_per_gt_classif"] = var_per_gt_classif
@@ -110,6 +119,26 @@ class SampleReport(AbstractReport):
             }
         ]
         self._report_data["variants"] = variants
+
+    def _classif_number_to_label(self, classification_type):
+        """Create a dic to convert from classification number to label, based on Config values
+        Args:
+            classif_config (list): classification of interest in config. Ex: Config("classifications")["variants"]
+        Returns:
+            dict: {<classif number1> : <classif label1>, ...}
+        Examples:
+
+        >>> _classif_number_to_label([{'color': '#ff5500', 'description': '', 'name': 'Likely Pathogenic', 'number': 4}, {'color': '#b7b7b8', 'description': '', 'name': 'VSI', 'number': 3}])
+        {"4": "Likely Pathogenic", "3": "VSI"}
+        """
+        config = Config("classifications").get(classification_type)
+        
+        dic = {}
+        for c in config:
+            dic[c["number"]] = c["name"]
+        if 0 not in dic.keys(): #default classif for new variants, has to be defined if not in config
+            dic[0] = "Unassigned (0)"
+        return dic
 
     def _set_data(self):
         self.get_sample()
