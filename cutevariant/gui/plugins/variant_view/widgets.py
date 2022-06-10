@@ -1329,13 +1329,9 @@ class VariantView(QWidget):
         formatted_variant = formatted_variant.replace("ann.", "annotations___")
         variant_name = formatted_variant.format(**full_variant)
 
-        menu.addSection(FIcon(0xF014C), variant_name)
-
-        menu.addSeparator()
-
         menu.addAction(
-            FIcon(0xF14E6),
-            "Edit Variant",
+            FIcon(0xF064F),
+            f"Edit Variant '{variant_name}'",
             self._show_variant_dialog,
         )
 
@@ -1376,9 +1372,10 @@ class VariantView(QWidget):
             # find sample lock/unlock
             validation_menu_lock = False
             validation_menu_text = f"Sample {sample_name} Genotype..."
-            if style.SAMPLE_CLASSIFICATION[sample_valid].get("lock"):
+
+            if self.is_locked(sample_id):
                 validation_menu_lock = True
-                validation_menu_text = "Sample {sample_name} locked"
+                validation_menu_text = f"Sample {sample_name} locked"
 
             menu.addSeparator()
 
@@ -1411,6 +1408,30 @@ class VariantView(QWidget):
         )
 
         return menu
+
+    def is_locked(self, sample_id: int):
+        """Prevents editing genotype if sample is classified as locked
+        A sample is considered locked if its classification has the boolean "lock: true" set in the Config (yml) file.
+
+        Args:
+            sample_id (int): sql sample id
+
+        Returns:
+            locked (bool) : lock status of sample attached to current genotype
+        """
+        config_classif = Config("classifications").get("samples", None)
+        sample = sql.get_sample(self.conn, sample_id)
+        sample_classif = sample.get("classification", None)
+
+        if config_classif == None or sample_classif == None:
+            return False
+        
+        locked = False
+        for config in config_classif:
+            if config["number"] == sample_classif and "lock" in config:
+                if config["lock"] == True:
+                    locked = True
+        return locked
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
@@ -1741,9 +1762,7 @@ class VariantView(QWidget):
         if header_name_match_sample:
             sample_name = header_name_match_sample[0][0]
             sample_infos = sql.search_samples(self.conn, name=sample_name)
-            for sample_info in sample_infos:
-                sample_classification = sample_info["classification"]
-            if style.SAMPLE_CLASSIFICATION[sample_classification].get("lock"):
+            if self.is_locked(sample_infos.get("id", 0)):
                 validation_menu_lock = True
 
         # Menu Validation for sample
