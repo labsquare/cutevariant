@@ -19,6 +19,9 @@ LOG_LEVELS = {
 MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
 DEFAULT_SELECTION_NAME = "variants"
+SAMPLES_SELECTION_NAME = "samples"
+CURRENT_SAMPLE_SELECTION_NAME = "current_sample"
+
 # version from which database files are supported (included)
 MIN_AUTHORIZED_DB_VERSION = "0.2.0"
 

@@ -28,6 +28,11 @@ import time
 # from gui.style import SAMPLE_CLASSIFICATION
 
 
+DEFAULT_SELECTION_NAME = cst.DEFAULT_SELECTION_NAME or "variants"
+SAMPLES_SELECTION_NAME = cst.SAMPLES_SELECTION_NAME or "samples"
+CURRENT_SAMPLE_SELECTION_NAME = cst.CURRENT_SAMPLE_SELECTION_NAME or "current_sample"
+LOCKED_SELECTIONS = [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]
+
 class SampleModel(QAbstractTableModel):
 
     NAME_COLUMN = 0
@@ -337,7 +342,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.model.add_samples(samples)
         self.on_model_changed()
         self.remove_all_sample_fields()
-        self.on_create_samples_source(source_name="samples")
+        self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
     def _create_classification_menu(self, sample: List = None):
 
@@ -490,13 +495,13 @@ class SamplesWidget(plugin.PluginWidget):
         self.model.remove_samples(rows)
         self.on_model_changed()
         self.remove_all_sample_fields()
-        self.on_create_samples_source(source_name="samples")
+        self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
     def on_clear_samples(self):
         self.model.clear()
         self.on_model_changed()
         self.remove_all_sample_fields()
-        self.on_create_samples_source(source_name="samples")
+        self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
     def update_classification(self, value: int = 0):
 
@@ -533,7 +538,7 @@ class SamplesWidget(plugin.PluginWidget):
             self.on_add_genotypes(samples=[sample_name], refresh=False)
 
             # Create/Update current_sample source
-            self.on_create_samples_source(source_name="current_sample", samples=[sample_name])
+            self.on_create_samples_source(source_name=CURRENT_SAMPLE_SELECTION_NAME, samples=[sample_name])
 
             # self.mainwindow.set_state_data("fields", fields)
             # self.mainwindow.set_state_data("source", "current_sample")
@@ -583,7 +588,7 @@ class SamplesWidget(plugin.PluginWidget):
             self.mainwindow.refresh_plugins(sender=self)
 
 
-    def on_create_samples_source(self, source_name: str = "samples", samples: list = None):
+    def on_create_samples_source(self, source_name: str = SAMPLES_SELECTION_NAME, samples: list = None):
         """Create source from a list of samples
 
         Args:
@@ -600,7 +605,7 @@ class SamplesWidget(plugin.PluginWidget):
             if "source_editor" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("source_editor")
         else:
-            self.mainwindow.set_state_data("source", "variants")
+            self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
             self.mainwindow.refresh_plugins(sender=self)
             if "source_editor" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("source_editor")

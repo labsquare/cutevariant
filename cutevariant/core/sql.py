@@ -107,6 +107,12 @@ from cutevariant.core.reader.pedreader import PedReader
 
 from cutevariant import LOGGER
 
+import cutevariant.constants as cst
+
+DEFAULT_SELECTION_NAME = cst.DEFAULT_SELECTION_NAME or "variants"
+SAMPLES_SELECTION_NAME = cst.SAMPLES_SELECTION_NAME or "samples"
+CURRENT_SAMPLE_SELECTION_NAME = cst.CURRENT_SAMPLE_SELECTION_NAME or "current_sample"
+LOCKED_SELECTIONS = [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]
 
 PYTHON_TO_SQLITE = {
     "None": "NULL",
@@ -881,6 +887,7 @@ def create_table_selections(conn: sqlite3.Connection):
         - name: name of the set of variants
         - count: number of variants concerned by this set
         - query: the SQL query which generated the set
+        - description: description of the selection
 
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection
@@ -890,7 +897,7 @@ def create_table_selections(conn: sqlite3.Connection):
     cursor.execute(
         """CREATE TABLE selections (
         id INTEGER PRIMARY KEY ASC,
-        name TEXT UNIQUE, count INTEGER, query TEXT
+        name TEXT UNIQUE, count INTEGER, query TEXT, description TEXT
         )"""
     )
 
@@ -935,7 +942,13 @@ def create_selection_has_variant_indexes(conn: sqlite3.Connection):
     )
 
 
-def insert_selection(conn: sqlite3.Connection, query: str, name="no_name", count=0) -> int:
+def insert_selection(
+    conn: sqlite3.Connection,
+    query: str,
+    name: str = "no_name",
+    count: int = 0,
+    description: str = None
+) -> int:
     """Insert one record in the selection table and return the last insert id.
     This function is used by `insert_selection_from_[source|bed|sql]` functions.
 
@@ -944,8 +957,9 @@ def insert_selection(conn: sqlite3.Connection, query: str, name="no_name", count
     Args:
         conn (sqlite3.Connection): Sqlite3 Connection.
         query (str): a VQL query
-        name (str, optional): Name of the selection
-        count (int, optional): Count of variant in the selection
+        name (str, optional): Name of the selection (default: "no_name")
+        count (int, optional): Count of variant in the selection (default: 0)
+        description (str, optional): Description of the selection (default: None)
 
     Returns:
         int: Return last rowid
@@ -960,11 +974,15 @@ def insert_selection(conn: sqlite3.Connection, query: str, name="no_name", count
 
 
     """
+
+    if name == DEFAULT_SELECTION_NAME and description is None:
+        description = "All variants"
+
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT OR REPLACE INTO selections (name, count, query) VALUES (?,?,?)",
-        (name, count, query),
+        "INSERT OR REPLACE INTO selections (name, count, query, description) VALUES (?,?,?,?)",
+        (name, count, query, description),
     )
 
     conn.commit()
@@ -975,9 +993,10 @@ def insert_selection(conn: sqlite3.Connection, query: str, name="no_name", count
 def insert_selection_from_source(
     conn: sqlite3.Connection,
     name: str,
-    source: str = "variants",
-    filters=None,
-    count=None,
+    source: str = DEFAULT_SELECTION_NAME,
+    filters = None,
+    count: int = None,
+    description: str = None,
 ) -> int:
     """Create a selection from another selection.
     This function create a subselection from another selection by applying filters.
@@ -1000,6 +1019,7 @@ def insert_selection_from_source(
         source (str): Source to select from
         filters (dict/None, optional): a filters to create selection
         count (int/None, optional): Pre-computed variant count. If None, it does the computation
+        description (str/None, optional): Description of the source
 
     Returns:
         selection_id, if lines have been inserted; None otherwise (rollback).
@@ -1023,7 +1043,13 @@ def insert_selection_from_source(
         count = count_query(conn, sql_query)
 
     # Create selection
-    selection_id = insert_selection(conn, vql_query, name=name, count=count)
+    selection_id = insert_selection(
+        conn = conn,
+        query = vql_query,
+        name = name,
+        count = count,
+        description = description
+    )
 
     # DROP indexes
     # For joins between selections and variants tables
@@ -1036,7 +1062,7 @@ def insert_selection_from_source(
     # PS: We use DISTINCT keyword to statisfy the unicity constraint on
     # (variant_id, selection_id) of "selection_has_variant" table.
     # TODO: is DISTINCT useful here? How a variant could be associated several
-    # times with an association?
+    # times with an association? ==> YES it is
 
     # Optimized only for the creation of a selection from set operations
     # variant_id is the only useful column here
@@ -1061,8 +1087,41 @@ def insert_selection_from_source(
 
 
 def insert_selection_from_samples(
-    conn: sqlite3.Connection, samples: list, name="samples", gt_min=0, force=True
-):
+    conn: sqlite3.Connection,
+    samples: list,
+    name: str = SAMPLES_SELECTION_NAME,
+    gt_min: int = 0,
+    force: bool = True,
+    description: str = None
+) -> int:
+    """Create a selection from samples.
+    This function create a subselection from a list of samples.
+
+    Examples:
+
+    Create a subselection from samples ["sample1", "sample2"].
+
+        insert_selection_from_samples(
+            conn,
+            samples = ["sample1", "sample2"],
+            name = "samples",
+            gt_min = 0,
+            force = True,
+            description = None
+        )
+
+    Args:
+        conn (sqlite3.connection): Sqlite3 connection
+        samples (list): List of sample names
+        name (str/<SAMPLES_SELECTION_NAME>, optional): Name of selection (constant variable by default)
+        gt_min (int/0, optional): a filters to create selection
+        force (bool/True, optional): Force insertion of selection if exists
+        description (str/None, optional): Description of the source
+
+    Returns:
+        selection_id, if lines have been inserted; None if selection exists and not force; None otherwise (rollback).
+    """
+
     samples_clause = "(" + ",".join([f"'{i}'" for i in samples]) + ")"
     ids = ",".join(
         [
@@ -1074,6 +1133,10 @@ def insert_selection_from_samples(
     query = f"""SELECT distinct(id) FROM variants INNER JOIN genotypes ON genotypes.variant_id = variants.id 
     WHERE genotypes.sample_id IN ({ids}) AND genotypes.gt > {gt_min}"""
 
+    # Construct description automatically from samples
+    if description == None and (name == SAMPLES_SELECTION_NAME or name == CURRENT_SAMPLE_SELECTION_NAME):
+        description = ",".join(samples)
+
     # check if same query
     selections = get_selections(conn)
     query_in_db = None
@@ -1084,18 +1147,24 @@ def insert_selection_from_samples(
     # Create/modify selection
     if query_in_db != query or force:
         LOGGER.debug(f"""Source '{name}' created/updated""")
-        insert_selection_from_sql(
-            conn,
-            query,
-            name,
+        return insert_selection_from_sql(
+            conn = conn,
+            query = query,
+            name = name,
+            description = description
         )
     else:
         LOGGER.debug(f"""Source '{name}' already in DB""")
-
+        return None
 
 
 def insert_selection_from_sql(
-    conn: sqlite3.Connection, query: str, name: str, count=None, from_selection=False
+    conn: sqlite3.Connection,
+    query: str,
+    name: str,
+    count: int =None,
+    from_selection: bool = False,
+    description: str = None 
 ) -> int:
     """Create a selection from sql variant query.
 
@@ -1116,6 +1185,7 @@ def insert_selection_from_sql(
         from_selection (bool, optional): Use a different
             field name for variants ids; `variant_id` if `from_selection` is `True`,
             just `id` if `False`.
+        description (str/"", optional): Description of the source
 
     Returns:
         selection_id, if lines have been inserted; None otherwise (rollback).
@@ -1125,10 +1195,19 @@ def insert_selection_from_sql(
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
     if count is None:
-        count = count_query(conn, query)
+        count = count_query(
+            conn = conn,
+            query = query
+        )
 
     # Create selection
-    selection_id = insert_selection(conn, query, name=name, count=count)
+    selection_id = insert_selection(
+        conn = conn,
+        query = query,
+        name = name,
+        count = count,
+        description = description
+    )
 
     # DROP indexes
     # For joins between selections and variants tables
@@ -1175,7 +1254,11 @@ def insert_selection_from_sql(
 
 
 def insert_selection_from_bed(
-    conn: sqlite3.Connection, source: str, target: str, bed_intervals
+    conn: sqlite3.Connection,
+    source: str,
+    target: str,
+    bed_intervals,
+    description: str = None
 ) -> int:
     """Create a new selection based on the given intervals taken from a BED file
 
@@ -1193,6 +1276,10 @@ def insert_selection_from_bed(
     Returns:
         lastrowid, if lines have been inserted; None otherwise.
     """
+
+    # generate description
+    if not description:
+        description = "from BED file"
 
     cur = conn.cursor()
 
@@ -1231,7 +1318,13 @@ def insert_selection_from_bed(
         variants.pos <= bed_table.end"""
     )
 
-    return insert_selection_from_sql(conn, query, target, from_selection=True)
+    return insert_selection_from_sql(
+        conn = conn,
+        query = query,
+        name = target,
+        from_selection=True,
+        description = description
+    )
 
 
 def get_selections(conn: sqlite3.Connection) -> List[dict]:
@@ -2597,7 +2690,7 @@ def insert_variants(
     # Count total variants . I cannot use "total" variable like before for the update features.
 
     true_total = conn.execute("SELECT COUNT(*) FROM variants").fetchone()[0]
-    insert_selection(conn, "", name=cst.DEFAULT_SELECTION_NAME, count=true_total)
+    insert_selection(conn, query="", name=DEFAULT_SELECTION_NAME, count=true_total)
 
 
 def get_variant_as_group(
