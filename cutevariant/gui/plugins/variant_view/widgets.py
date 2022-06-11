@@ -1314,19 +1314,22 @@ class VariantView(QWidget):
         """Create a menu when clicking on a variant line"""
         menu = QMenu(self)
 
+        config = Config("variables") or {}
+        formatted_variant = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+
         current_variant = self.model.variant(index.row())
-        full_variant = sql.get_variant(self.conn, current_variant["id"])
+        
+        if re.findall("ann.", formatted_variant):
+            full_variant = sql.get_variant(self.conn, current_variant["id"], with_annotations=True) # Need with_annotations=True for variant name
+            for ann in full_variant.get("annotations", [{}])[0]:
+                full_variant["annotations___" + str(ann)] = full_variant.get("annotations", [{}])[0][ann]
+            formatted_variant = formatted_variant.replace("ann.", "annotations___")
+        else:
+            full_variant = sql.get_variant(self.conn, current_variant["id"])
         # Update variant with currently displayed fields (not in variants table)
         full_variant.update(current_variant)
 
-        # Copy action: Copy the variant reference ID in to the clipboard
-        # Get variant_name_pattern
-        config = Config("variables") or {}
-        formatted_variant = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-        if len(full_variant["annotations"]):
-            for ann in full_variant["annotations"][0]:
-                full_variant["annotations___" + str(ann)] = full_variant["annotations"][0][ann]
-        formatted_variant = formatted_variant.replace("ann.", "annotations___")
+        # variant_name
         variant_name = formatted_variant.format(**full_variant)
 
         menu.addAction(

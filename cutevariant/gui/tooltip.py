@@ -4,12 +4,18 @@ Code needs improvement . Avoid multiple embbeded if
 """
 import re
 import sqlite3
+import textwrap
 
 from cutevariant.config import Config
 from cutevariant.gui import style as Style
 from cutevariant.core import sql
 from cutevariant import constants as cst
 
+
+NO_TAG_TEXT = "<i>no tags</i>"
+NO_COMMENT_TEXT = "<i>no comment</i>"
+TEXTWRAP_WIDTH = 60
+TEXTWRAP_HOLDER = "..."
 
 def genotype_tooltip(data: dict, conn: sqlite3.Connection):
 
@@ -19,145 +25,119 @@ def genotype_tooltip(data: dict, conn: sqlite3.Connection):
 
     # extract all info for one sample
     genotype = {}
-    if variant_id and sample:
-        genotype = next(sql.get_genotypes(conn, variant_id, fields, [sample]))
-    else:
+    if not variant_id or not sample:
         return "No genotype"
-
-    # Get variant_name_pattern
-    config = Config("variables") or {}
-    variant_name_pattern = (
-        config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-    )
-
-    # get fields description
-    fields_description = {}
-    for f in sql.get_fields(conn):
-        fields_description[f.get("name")] = f.get("description", f.get("name"))
-
-    # all genotype values
-    genotype_values_text = ""
-    for f in genotype:
-        v = genotype[f]
-        if f not in [
-            "sample_id",
-            "variant_id",
-            "name",
-            "gt",
-            "classification",
-            "tags",
-            "comment",
-        ]:
-            f_desc = fields_description.get(f, "unknown")
-            genotype_values_text += (
-                f"<tr><td>{f}</td><td width='20'></td><td>{v}</td><td width='20'></td><td><small>{f_desc}</small></td></tr>"
-            )
-    genotype["genotype_values_text"] = genotype_values_text
-
-    # classification
-    config = Config("classifications")
-    classifications = config.get("genotypes", [])
-    classification = genotype.get("classification", 0)
-    classification_text = ""
-    classification_color = ""
-    style = None
-    for i in classifications:
-        if i["number"] == classification:
-            style = i
-    if style:
-        if "name" in style:
-            classification_text += style["name"]
-            if "description" in style:
-                classification_text += f" (" + style["description"].strip() + ")"
-        if "color" in style:
-            classification_color = style["color"]
-    genotype["classification_text"] = classification_text
-    genotype["classification_color"] = classification_color
-
-    # extract info from variant
-    variant = sql.get_variant(conn, variant_id, with_annotations=True)
-    if len(variant["annotations"]):
-        for ann in variant["annotations"][0]:
-            variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-    variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-    variant_name = variant_name_pattern.format(**variant)
-    genotype["variant_name"] = variant_name
-
-    # tag genotype
-    if genotype["gt"]:
-        genotype_text = cst.GENOTYPE_DESC.get(int(genotype["gt"]), "Unknown")#["name"]
     else:
-        genotype_text = "<i>no tag</i>"
-    genotype["genotype_text"] = genotype_text
+        genotype = next(sql.get_genotypes(conn, variant_id, fields, [sample]))
 
-    # tags text
-    if genotype["tags"]:
-        tags_text = genotype["tags"].replace(cst.HAS_OPERATOR, "<br>")
-    else:
-        tags_text = "<i>no tag</i>"
-    genotype["tags_text"] = tags_text
+        # Get variant_name_pattern
+        config = Config("variables") or {}
+        variant_name_pattern = (
+            config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+        )
 
-    # comment text
-    if genotype["comment"]:
-        comment_text = genotype["comment"].replace("\n", "<br>")
-    else:
-        comment_text = "<i>no comment</i>"
-    genotype["comment_text"] = comment_text
+        # get fields description
+        fields_description = {}
+        for f in sql.get_fields(conn):
+            field_name_prefix = ""
+            field_name_prefix = f.get("category","").replace("annotations","ann.").replace("samples","samples.").replace("variants","")
+            fields_description[field_name_prefix+f.get("name")] = f.get("description", f.get("name"))
 
-    # tooltip
-    # tooltip = """
-    #     <table>
-    #         <tr><td>Sample</td><td width='0'></td><td><b>{name}</b></td></tr> 
-    #         <tr><td>Variant</td><td width='0'></td><td><b>{variant_name}</b></td></tr> 
-    #     </table>
-    #     <hr>
-    #     """.format(
-    #     **genotype
-    # )
-    tooltip = """
-        <table>
-            <tr><td>Genotype</td><td width='0'></td><td><b>{genotype_text}</b></td></tr> 
-        </table>
-        <hr>
-        """.format(
-        **genotype
-    )
-    if genotype["gt"]:
-        tooltip += """
-        <table>
-            <tr><td>Classification</td><td width='20'></td><td style='color:{classification_color}'>{classification_text}</td></tr> 
-            <tr><td>Tags</td><td width='20'></td><td>{tags_text}</td></tr> 
-            <tr><td>Comment</td><td width='20'></td><td>{comment_text}</td></tr> 
-        </table>
-        <hr>
-        <table>
-            {genotype_values_text}
-        </table>
-        """.format(
+        # all genotype values
+        genotype_values_text = ""
+        for f in genotype:
+            v = genotype[f]
+            if f not in [
+                "sample_id",
+                "variant_id",
+                "name",
+                "gt",
+                "classification",
+                "tags",
+                "comment",
+            ]:
+                f_desc = fields_description.get("samples."+f, "unknown")
+                f_desc = textwrap.shorten(f_desc, width=TEXTWRAP_WIDTH, placeholder=TEXTWRAP_HOLDER)
+                genotype_values_text += (
+                    f"<tr><td>{f}</td><td width='20'></td><td>{v}</td><td width='20'></td><td><small>{f_desc}</small></td></tr>"
+                )
+        genotype["genotype_values_text"] = genotype_values_text
+
+        # classification
+        config = Config("classifications")
+        classifications = config.get("genotypes", [])
+        classification = genotype.get("classification", 0)
+        classification_text = ""
+        classification_color = ""
+        style = None
+        for i in classifications:
+            if i["number"] == classification:
+                style = i
+                classification_text = style.get("name", "error")
+                classification_desc = style.get("description", "")
+                classification_color = style.get("color", "")
+                # classification text
+                classification_text += f" (" + classification_desc + ")"
+        # add to data
+        genotype["classification_text"] = classification_text
+        genotype["classification_color"] = classification_color
+
+        # extract info from variant
+        variant = sql.get_variant(conn, variant_id, with_annotations=True)
+        #if len(variant["annotations"]):
+        for ann in variant.get("annotations", [{}])[0]:
+            variant["annotations___" + str(ann)] = variant.get("annotations", [{}])[0][ann]
+        variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+        variant_name = variant_name_pattern.format(**variant)
+        genotype["variant_name"] = variant_name
+
+        # tag genotype
+        genotype["genotype_text"] = cst.GENOTYPE_DESC.get(int(genotype.get("gt",-1)), "unknown")
+
+        # tags text
+        genotype["tags_text"] = genotype.get("tags","").replace(cst.HAS_OPERATOR, "<br>") or NO_TAG_TEXT
+
+        # comment text
+        genotype["comment_text"] = genotype.get("comment","").replace("\n", "<br>") or NO_COMMENT_TEXT
+
+        # Genotype tooltip
+        tooltip = """
+            <table>
+                <tr><td>Genotype</td><td width='0'></td><td><b>{genotype_text}</b></td></tr> 
+            </table>
+            <hr>
+            """.format(
             **genotype
         )
-    else:
+
+        # Classification toolTip
         tooltip += """
-        <table>
-            <tr><td><i>no genotype</i></td></tr> 
-        </table>
-        """
+            <table>
+                <tr><td>Classification</td><td width='20'></td><td style='color:{classification_color}'>{classification_text}</td></tr> 
+                <tr><td>Tags</td><td width='20'></td><td>{tags_text}</td></tr> 
+                <tr><td>Comment</td><td width='20'></td><td>{comment_text}</td></tr> 
+            </table>
+            <hr>
+            <table>
+                {genotype_values_text}
+            </table>
+            """.format(
+                **genotype
+        )
 
-    tooltip_variant = None
-    tooltip_variant = variant_tooltip(
-        dict(data), conn, counts = False, freqs = True
-    )
-    if tooltip_variant:
-        tooltip += "<hr><hr>" + tooltip_variant
+        tooltip_variant = variant_tooltip(
+            dict(data), conn, counts = False, freqs = True
+        )
+        if tooltip_variant:
+            tooltip += "<hr><hr>" + tooltip_variant
 
-    tooltip_sample = None
-    tooltip_sample = sample_tooltip(
-        dict(data), conn
-    )
-    if tooltip_sample:
-        tooltip += "<hr><hr>" + tooltip_sample
+        tooltip_sample = sample_tooltip(
+            dict(data), conn
+        )
+        if tooltip_sample:
+            tooltip += "<hr><hr>" + tooltip_sample
 
-    return tooltip
+        return tooltip
 
 
 def sample_tooltip(data: dict, conn: sqlite3.Connection, genotype_classification: bool = False):
@@ -171,10 +151,10 @@ def sample_tooltip(data: dict, conn: sqlite3.Connection, genotype_classification
         sample["id"] = sample["sample_id"]
         sample = dict(sql.get_sample(conn=conn, sample_id=sample["id"]))
     
-    if "name" in sample:
-        if sample["name"]:
-            name = sample["name"]
-            tooltip += f"Sample <b>{name}</b><hr>"
+    # if "name" in sample:
+    #     if sample["name"]:
+    name = sample.get("name","error")
+    tooltip += f"Sample <b>{name}</b><hr>"
 
     # Sample classification
     config = Config("classifications")
@@ -221,12 +201,19 @@ def sample_tooltip(data: dict, conn: sqlite3.Connection, genotype_classification
     #                 {nb_validation_genotype_message}
     #             </table>
     #         """
-        
+
+    sample_fields_mapping = {
+        "count_validation_positive_variant" : "validated variants",
+        "count_validation_negative_variant" : "rejected variants",
+
+    }
+
     info_all_fields = ""
     info_classification = ""
     for sample_field in sample:
         sample_field_value = str(sample[sample_field]).replace("\n", "<br>")
         sample_field_value_color = ""
+
         # all fields
         if sample_field not in ["id", "name", "classification", "tags", "comment"]:
             if sample_field == "phenotype":
@@ -237,41 +224,29 @@ def sample_tooltip(data: dict, conn: sqlite3.Connection, genotype_classification
                 sample_field_value = cst.SEX_DESC.get(
                     int(sample[sample_field]), "Unknown"
                 )
-            elif sample_field == "count_validation_positive_variant":
-                sample_field = "validated variants"
-            elif sample_field == "count_validation_negative_variant":
-                sample_field = "rejected variants"
+            sample_fields_mapping.get(sample_field,sample_field)
             sample_field = re.sub("_id$", "", sample_field)
             info_all_fields += f"<tr><td>{sample_field}</td><td width='20'></td><td style='color:{sample_field_value_color}'>{sample_field_value}</td></tr>"
         # classification fields
-        if sample_field in ["classification", "tags", "comment"]:
+        elif sample_field in ["classification", "tags", "comment"]:
             if sample_field == "tags":
-                if sample_field_value:
-                    sample_field_value = sample_field_value.replace(cst.HAS_OPERATOR, "<br>")
-                else:
-                    sample_field_value = "<i>no tag</i>"
+                sample_field_value = sample_field_value.replace(cst.HAS_OPERATOR, "<br>") or NO_TAG_TEXT
             elif sample_field == "comment":
-                if not sample_field_value:
-                    sample_field_value = "<i>no comment</i>"
+                sample_field_value = sample_field_value or NO_COMMENT_TEXT  
             elif sample_field == "classification":
                 if sample_field_value:
-                    sample_field_value = ""
-                    style = None
                     for i in sample_classifications:
                         if i["number"] == sample[sample_field]:
                             style = i
-                    if style:
-                        if "name" in style:
-                            sample_field_value += style["name"]
-                            if "description" in style:
-                                sample_field_value += (
-                                    f" (" + style["description"].strip() + ")"
-                                )
-                        if "color" in style:
-                            sample_field_value_color = style["color"]
+                            sample_field_value_name = style.get("name","error")
+                            sample_field_value_description = style.get("description","")
+                            sample_field_value_color = style.get("color","")
+                            sample_field_value = f"{sample_field_value_name} ({sample_field_value_description})"
                 else:
                     sample_field_value = "<i>no classification</i>"
+                            
             info_classification += f"<tr><td>{sample_field}</td><td width='20'></td><td style='color:{sample_field_value_color}'>{sample_field_value}</td></tr>"
+
     tooltip += f"""
         <table>
             {info_classification}
@@ -307,20 +282,21 @@ def variant_tooltip(data: dict, conn: sqlite3.Connection, fields: list = None, c
         config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
     )
 
+    # get fields description
+    fields_description = {}
+    for f in sql.get_fields(conn):
+        field_name_prefix = ""
+        field_name_prefix = f.get("category","").replace("annotations","ann.").replace("samples","samples.").replace("variants","")
+        fields_description[field_name_prefix+f.get("name")] = f.get("description", f.get("name"))
+
     # get varant classification
     config = Config("classifications")
     variant_classifications = config.get("variants", [])
 
-    # get fields description
-    fields_description = {}
-    for f in sql.get_fields(conn):
-        fields_description[f.get("name")] = f.get("description", f.get("name"))
-
     # extract info from variant
     variant_for_pattern = variant
-    if len(variant_for_pattern["annotations"]):
-        for ann in variant_for_pattern["annotations"][0]:
-            variant_for_pattern["annotations___" + str(ann)] = variant_for_pattern["annotations"][0][ann]
+    for ann in variant_for_pattern.get("annotations", [{}])[0]:
+        variant_for_pattern["annotations___" + str(ann)] = variant_for_pattern.get("annotations", [{}])[0][ann]
     variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
     variant_name = variant_name_pattern.format(**variant_for_pattern)
 
@@ -336,19 +312,31 @@ def variant_tooltip(data: dict, conn: sqlite3.Connection, fields: list = None, c
     if fields:
         message_variant_current_infos = "<table>"
         for field in fields:
+            f_desc = "unknown"
             if field.startswith("samples."):
                 k = field.split(".")
-                if k[2] == "gt":
+                genotype_field = k[2]
+                genotype_sample_name = k[1]
+                if genotype_field == "gt":
                     if variant[field] is None:
                         value_gt = -1
                     else:
                         value_gt = int(variant[field])
-                    value = Style.GENOTYPE.get(value_gt)["name"]
+                    #value = cst.GENOTYPE.get(value_gt)["name"]
+                    value = cst.GENOTYPE_DESC.get(value_gt, "unknown")
                 else:
                     value = variant[field]
+                #f_desc = f"Genotype ({genotype_field}) for sample '{genotype_sample_name}'"
+                f_desc = fields_description.get("samples."+genotype_field, f_desc)
+            # elif field.startswith("ann."):
+            #     k = field.split(".")
+            #     ann_field = k[1]
+            #     f_desc = fields_description.get(ann_field, f_desc)
             else:
                 value = str(variant[field]).replace(cst.HAS_OPERATOR,"<br>")
-            message_variant_current_infos += f"<tr><td>{field}</td><td width='20'></td><td>{value}</td></tr>"
+            f_desc = fields_description.get(field, f_desc)
+            f_desc = textwrap.shorten(f_desc, width=TEXTWRAP_WIDTH, placeholder=TEXTWRAP_HOLDER)
+            message_variant_current_infos += f"<tr><td>{field}</td><td width='20'></td><td>{value}</td><td width='20'></td><td><small>{f_desc}</small></td></tr>"
         message_variant_current_infos += "</table>"
 
     # variant count and freq and classification
@@ -361,10 +349,12 @@ def variant_tooltip(data: dict, conn: sqlite3.Connection, fields: list = None, c
         value_color = ""
         if field.startswith("count_") and counts:
             field_desc = fields_description[field]
+            field_desc = textwrap.shorten(field_desc, width=TEXTWRAP_WIDTH, placeholder=TEXTWRAP_HOLDER)
             message_variant_counts += f"<tr><td>{field}</td><td width='20'></td><td>{value}</td><td width='20'></td><td><small>{field_desc}</small></td></tr>"
         elif field.startswith("freq_") and freqs:
             #field = "database frequency"
             field_desc = fields_description.get(field, "unknown")
+            field_desc = textwrap.shorten(field_desc, width=TEXTWRAP_WIDTH, placeholder=TEXTWRAP_HOLDER)
             value = str(value*100) + "%"
             message_variant_freqs += f"<tr><td>{field}</td><td width='20'></td><td>{value}</td><td width='20'></td><td><small>{field_desc}</small></td></tr>"
         elif field in ["classification", "tags", "comment"]:
@@ -372,27 +362,31 @@ def variant_tooltip(data: dict, conn: sqlite3.Connection, fields: list = None, c
                 if value:
                     value = value.replace(cst.HAS_OPERATOR, "<br>")
                 else:
-                    value = "<i>no tag</i>"
-            if field == "comment":
+                    value = NO_TAG_TEXT
+            elif field == "comment":
                 if not value:
-                    value = "<i>no comment</i>"
+                    value = NO_COMMENT_TEXT
                 else:
                     value = value.replace("\n","<br>")
-            if field == "classification":
-                value = "" #str(value)
+            elif field == "classification":
+                #value = "" #str(value)
                 style = None
                 for i in variant_classifications:
                     if i["number"] == variant[field]:
                         style = i
-                if style:
-                    if "name" in style:
-                        value += style["name"]
-                        if "description" in style:
-                            value += (
-                                f" (" + style["description"].strip().replace("\n","<br>") + ")"
-                            )
-                    if "color" in style:
-                        value_color = style["color"]
+                        value_name = style.get("name","")
+                        value_description = style.get("description","").strip().replace("\n","<br>")
+                        value_color = style.get("color","")
+                        value = f"{value_name} ({value_description})"
+                # if style:
+                #     if "name" in style:
+                #         value += style["name"]
+                #         if "description" in style:
+                #             value += (
+                #                 f" (" + style["description"].strip().replace("\n","<br>") + ")"
+                #             )
+                #     if "color" in style:
+                #         value_color = style["color"]
             message_variant_classification += f"<tr><td>{field}</td><td width='20'></td><td style='color:{value_color}'>{value}</td></tr>"
     message_variant_classification += "</table>"
     message_variant_counts_freqs += f"{message_variant_counts}{message_variant_freqs}</table>"
