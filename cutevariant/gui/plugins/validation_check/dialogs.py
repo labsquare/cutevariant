@@ -37,10 +37,24 @@ class ValidationCheckDialog(PluginDialog):
 
         # Type combo box
         self.type_combo = QComboBox()
-        self.type_combo.addItem(FIcon(0xF04E6), self.tr("Variants already validated in some samples but not all of them"), self.ALREADY_VALIDATED)
-        self.type_combo.addItem(FIcon(0xF04E6), self.tr("Variants not validated but classified as Pathogenic (ACMG-5)"), self.PATHOGENIC)
-        self.type_combo.addItem(FIcon(0xF04E6), self.tr("Variants not validated but classified as Pathogenic (ACMG-5) or Likely pathogenic (ACMG-4)"), self.LIKELY_PATHOGENIC)
-        
+        self.type_combo.addItem(
+            FIcon(0xF04E6),
+            self.tr("Variants already validated in some samples but not all of them"),
+            self.ALREADY_VALIDATED,
+        )
+        self.type_combo.addItem(
+            FIcon(0xF04E6),
+            self.tr("Variants not validated but classified as Pathogenic (ACMG-5)"),
+            self.PATHOGENIC,
+        )
+        self.type_combo.addItem(
+            FIcon(0xF04E6),
+            self.tr(
+                "Variants not validated but classified as Pathogenic (ACMG-5) or Likely pathogenic (ACMG-4)"
+            ),
+            self.LIKELY_PATHOGENIC,
+        )
+
         self.form_box = QGroupBox()
 
         # Connect to check form
@@ -51,13 +65,9 @@ class ValidationCheckDialog(PluginDialog):
 
         self.form_box.setLayout(flayout)
 
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Cancel | QDialogButtonBox.Apply
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Apply)
         self.button_box.button(QDialogButtonBox.Apply).setDisabled(False)
-        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(
-            self.create_filter
-        )
+        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.create_filter)
         self.button_box.rejected.connect(self.reject)
 
         vlayout = QVBoxLayout()
@@ -74,8 +84,7 @@ class ValidationCheckDialog(PluginDialog):
         vlayout.addWidget(self.button_box)
         self.setLayout(vlayout)
         self.resize(300, 100)
-        #self.populate()
-        
+        # self.populate()
 
     def populate(self):
         """Fill combobox with samples from databases"""
@@ -100,7 +109,7 @@ class ValidationCheckDialog(PluginDialog):
         self.button_box.button(QDialogButtonBox.Apply).setEnabled(valid_form)
 
     def create_filter(self, conn: sqlite3.Connection):
-        """ build filter and send to the mainwindow.set_state_data """
+        """build filter and send to the mainwindow.set_state_data"""
 
         filter_type = self.type_combo.currentData()
 
@@ -120,16 +129,12 @@ class ValidationCheckDialog(PluginDialog):
 
         # create filters
         if len(variants) != 0:
-            filters = {
-                    "$or": variants
-                }
+            filters = {"$or": variants}
         else:
-            filters = {
-                    "$or": [ {"id":0} ]
-                }
+            filters = {"$or": [{"id": 0}]}
 
         # launch request/filters
-        self.mainwindow.set_state_data("filters",filters)
+        self.mainwindow.set_state_data("filters", filters)
         self.mainwindow.refresh_plugins()
         self.close()
 

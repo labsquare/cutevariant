@@ -100,9 +100,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         # Load classification
         config = Config("classifications")
         self.sample_classification = config.get("samples")
-        self.sample_classification = sorted(
-            self.sample_classification, key=lambda c: c["number"]
-        )
+        self.sample_classification = sorted(self.sample_classification, key=lambda c: c["number"])
         for item in self.sample_classification:
             self.class_combo.addItem(
                 FIcon(0xF012F, item.get("color", "gray")),
@@ -212,6 +210,7 @@ class PedigreeSectionWidget(AbstractSectionWidget):
         if "mother_id" in sample:
             self.mother_edit.setText(str(sample["mother_id"]))
 
+
 class PhenotypeSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -265,11 +264,7 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
         if "sex" in sample:
             self.sex_combo.setCurrentText(
                 next(
-                    (
-                        item["name"]
-                        for item in self.sex_list
-                        if item["number"] == sample["sex"]
-                    ),
+                    (item["name"] for item in self.sex_list if item["number"] == sample["sex"]),
                     "Unknown",
                 )
             )
@@ -364,17 +359,11 @@ class OccurenceModel(QAbstractTableModel):
                 )
 
                 # Get fields
-                variant = sql.get_variant(
-                    self._parent.conn, variant_id, with_annotations=True
-                )
+                variant = sql.get_variant(self._parent.conn, variant_id, with_annotations=True)
                 if len(variant["annotations"]):
                     for ann in variant["annotations"][0]:
-                        variant["annotations___" + str(ann)] = variant["annotations"][
-                            0
-                        ][ann]
-                variant_name_pattern = variant_name_pattern.replace(
-                    "ann.", "annotations___"
-                )
+                        variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+                variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
                 variant_text = variant_name_pattern.format(**variant)
                 return variant_text
 
@@ -454,13 +443,9 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
 
         count = self.model.rowCount()
         # total = len(list(sql.get_samples(self.conn)))
-        total = len(
-            list(sql.get_sample_variant_classification(self.conn, sample["id"]))
-        )
+        total = len(list(sql.get_sample_variant_classification(self.conn, sample["id"])))
 
-        self.setWindowTitle(
-            OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})"
-        )
+        self.setWindowTitle(OccurrenceSectionWidget.WINDOW_TITLE_PREFIX + f" ({count}/{total})")
 
         ## Get samples count
 
@@ -634,8 +619,7 @@ class SampleWidget(QWidget):
             {
                 k: v
                 for k, v in sample.items()
-                if k
-                in ["family, classification", "comment", "tags", "sex", "phenotype"]
+                if k in ["family, classification", "comment", "tags", "sex", "phenotype"]
             }
         )
 
@@ -646,9 +630,7 @@ class SampleDialog(QDialog):
 
         self.sample_id = sample_id
         self.w = SampleWidget(conn)
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
         vLayout.addWidget(self.button_box)

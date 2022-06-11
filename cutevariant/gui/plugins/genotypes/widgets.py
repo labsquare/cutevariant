@@ -667,7 +667,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
         if config_classif == None or sample_classif == None:
             return False
-        
+
         locked = False
         for config in config_classif:
             if config["number"] == sample_classif and "lock" in config:

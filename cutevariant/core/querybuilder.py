@@ -109,7 +109,7 @@ def filters_to_flat(filters: dict):
     return flatten
 
 
-def is_annotation_join_required(fields, filters, order_by = None) -> bool:
+def is_annotation_join_required(fields, filters, order_by=None) -> bool:
     """Return True if SQL join annotation is required
 
     Args:
@@ -139,7 +139,7 @@ def is_annotation_join_required(fields, filters, order_by = None) -> bool:
     return False
 
 
-def samples_join_required(fields, filters, order_by = None) -> list:
+def samples_join_required(fields, filters, order_by=None) -> list:
     """Return sample list of sql join is required
 
     Args:

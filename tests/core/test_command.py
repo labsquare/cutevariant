@@ -74,9 +74,7 @@ def test_drop_cmd(conn):
     """
     # Create a selection named "subset"
     conn.execute("INSERT INTO selections (name) VALUES ('subset')")
-    assert "subset" in [
-        i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()
-    ]
+    assert "subset" in [i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()]
     ret = command.drop_cmd(conn, feature="selections", name="subset")
     assert "subset" not in [
         i["name"] for i in conn.execute("SELECT name FROM selections").fetchall()
@@ -96,17 +94,13 @@ def test_drop_cmd(conn):
 
 def test_bed_cmd(conn):
     """Test bed file insertion as selection"""
-    ret = command.bed_cmd(
-        conn, source="variants", target="test", path="examples/test.bed"
-    )
+    ret = command.bed_cmd(conn, source="variants", target="test", path="examples/test.bed")
     # Number of selections = id of last selection
     selection_number = conn.execute("SELECT COUNT(*) from selections").fetchone()[0]
     assert ret["id"] == selection_number
 
     # Test data in association table
-    variants_in_selection = conn.execute(
-        "SELECT COUNT(*) from selection_has_variant"
-    ).fetchone()[0]
+    variants_in_selection = conn.execute("SELECT COUNT(*) from selection_has_variant").fetchone()[0]
     # 3 variants are concerned by the bed intervals
     expected = 3
     assert variants_in_selection == expected
@@ -167,9 +161,7 @@ def test_create_command_from_obj(conn):
     - Test from VQL Object
     """
     ## From VQL Query ##########################################################
-    cmd = command.create_command_from_obj(
-        conn, vql.parse_one_vql("CREATE denovo FROM variants")
-    )
+    cmd = command.create_command_from_obj(conn, vql.parse_one_vql("CREATE denovo FROM variants"))
     expected_kwargs = {
         "cmd": "create_cmd",
         "source": "variants",
@@ -179,9 +171,7 @@ def test_create_command_from_obj(conn):
     print(cmd.keywords)
     assert cmd.keywords == expected_kwargs
 
-    cmd = command.create_command_from_obj(
-        conn, vql.parse_one_vql("CREATE denovo = a | b ")
-    )
+    cmd = command.create_command_from_obj(conn, vql.parse_one_vql("CREATE denovo = a | b "))
     print(cmd.keywords)
     expected_kwargs = {
         "cmd": "set_cmd",

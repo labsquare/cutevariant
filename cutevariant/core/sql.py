@@ -947,7 +947,7 @@ def insert_selection(
     query: str,
     name: str = "no_name",
     count: int = 0,
-    description: str = None
+    description: str = None,
 ) -> int:
     """Insert one record in the selection table and return the last insert id.
     This function is used by `insert_selection_from_[source|bed|sql]` functions.
@@ -994,7 +994,7 @@ def insert_selection_from_source(
     conn: sqlite3.Connection,
     name: str,
     source: str = DEFAULT_SELECTION_NAME,
-    filters = None,
+    filters=None,
     count: int = None,
     description: str = None,
 ) -> int:
@@ -1044,11 +1044,7 @@ def insert_selection_from_source(
 
     # Create selection
     selection_id = insert_selection(
-        conn = conn,
-        query = vql_query,
-        name = name,
-        count = count,
-        description = description
+        conn=conn, query=vql_query, name=name, count=count, description=description
     )
 
     # DROP indexes
@@ -1092,7 +1088,7 @@ def insert_selection_from_samples(
     name: str = SAMPLES_SELECTION_NAME,
     gt_min: int = 0,
     force: bool = True,
-    description: str = None
+    description: str = None,
 ) -> int:
     """Create a selection from samples.
     This function create a subselection from a list of samples.
@@ -1134,7 +1130,9 @@ def insert_selection_from_samples(
     WHERE genotypes.sample_id IN ({ids}) AND genotypes.gt > {gt_min}"""
 
     # Construct description automatically from samples
-    if description == None and (name == SAMPLES_SELECTION_NAME or name == CURRENT_SAMPLE_SELECTION_NAME):
+    if description == None and (
+        name == SAMPLES_SELECTION_NAME or name == CURRENT_SAMPLE_SELECTION_NAME
+    ):
         description = ",".join(samples)
 
     # check if same query
@@ -1147,12 +1145,7 @@ def insert_selection_from_samples(
     # Create/modify selection
     if query_in_db != query or force:
         LOGGER.debug(f"""Source '{name}' created/updated""")
-        return insert_selection_from_sql(
-            conn = conn,
-            query = query,
-            name = name,
-            description = description
-        )
+        return insert_selection_from_sql(conn=conn, query=query, name=name, description=description)
     else:
         LOGGER.debug(f"""Source '{name}' already in DB""")
         return None
@@ -1162,9 +1155,9 @@ def insert_selection_from_sql(
     conn: sqlite3.Connection,
     query: str,
     name: str,
-    count: int =None,
+    count: int = None,
     from_selection: bool = False,
-    description: str = None 
+    description: str = None,
 ) -> int:
     """Create a selection from sql variant query.
 
@@ -1195,18 +1188,11 @@ def insert_selection_from_sql(
     # Compute query count
     # TODO : this can take a while .... need to compute only one from elsewhere
     if count is None:
-        count = count_query(
-            conn = conn,
-            query = query
-        )
+        count = count_query(conn=conn, query=query)
 
     # Create selection
     selection_id = insert_selection(
-        conn = conn,
-        query = query,
-        name = name,
-        count = count,
-        description = description
+        conn=conn, query=query, name=name, count=count, description=description
     )
 
     # DROP indexes
@@ -1254,11 +1240,7 @@ def insert_selection_from_sql(
 
 
 def insert_selection_from_bed(
-    conn: sqlite3.Connection,
-    source: str,
-    target: str,
-    bed_intervals,
-    description: str = None
+    conn: sqlite3.Connection, source: str, target: str, bed_intervals, description: str = None
 ) -> int:
     """Create a new selection based on the given intervals taken from a BED file
 
@@ -1319,11 +1301,7 @@ def insert_selection_from_bed(
     )
 
     return insert_selection_from_sql(
-        conn = conn,
-        query = query,
-        name = target,
-        from_selection=True,
-        description = description
+        conn=conn, query=query, name=target, from_selection=True, description=description
     )
 
 
@@ -2035,9 +2013,7 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     )
 
     # Complementary index on sample_id
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS `idx_genotypes_sample_id` ON genotypes (`sample_id`)"
-    )
+    conn.execute("CREATE INDEX IF NOT EXISTS `idx_genotypes_sample_id` ON genotypes (`sample_id`)")
 
     # Complementary index on variant_id
     conn.execute(
@@ -2045,9 +2021,7 @@ def create_variants_indexes(conn, indexed_fields={"pos", "ref", "alt"}):
     )
 
     # Complementary index on gt
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS `idx_genotypes_gt` ON genotypes (`gt`)"
-    )
+    conn.execute("CREATE INDEX IF NOT EXISTS `idx_genotypes_gt` ON genotypes (`gt`)")
 
     # Complementary index oon classification
     conn.execute(
@@ -2342,7 +2316,10 @@ def get_variants_tree(
     #     yield item
 
 
-def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable = None,):
+def update_variants_counts(
+    conn: sqlite3.Connection,
+    progress_callback: Callable = None,
+):
     """Update all variants counts information from sample data.
 
     It computes count_var,count_hom, count_het, count_ref for each variants by reading how many samples belong to.
@@ -2365,7 +2342,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     # Update count_hom
     if progress_callback:
@@ -2380,7 +2357,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     # Update count_ref
     if progress_callback:
@@ -2395,7 +2372,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     # Update count_var
     if progress_callback:
@@ -2408,9 +2385,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
     )
 
     # sample_count
-    sample_count = conn.execute(
-        "SELECT COUNT(id) FROM samples"
-    ).fetchone()[0]
+    sample_count = conn.execute("SELECT COUNT(id) FROM samples").fetchone()[0]
 
     # Update count_tot
     if progress_callback:
@@ -2465,7 +2440,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     # case het
     conn.execute(
@@ -2478,7 +2453,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     # case ref
     conn.execute(
@@ -2491,7 +2466,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     # control hom
     conn.execute(
@@ -2504,7 +2479,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     # control het
     conn.execute(
@@ -2517,7 +2492,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     # control ref
     conn.execute(
@@ -2530,7 +2505,7 @@ def update_variants_counts(conn: sqlite3.Connection, progress_callback: Callable
             GROUP BY variant_id) as geno
         WHERE id = geno.variant_id;
         """
-    ) 
+    )
 
     conn.commit()
 
@@ -2935,22 +2910,22 @@ def insert_samples(conn, samples: list, import_id: str = None, import_vcf: str =
     :param import_id: importID tag for each samples
     """
 
-    current_date=datetime.today().strftime('%Y%m%d-%H%M%S')
+    current_date = datetime.today().strftime("%Y%m%d-%H%M%S")
 
     # import VCF
     import_vcf_tag = None
     if import_vcf:
-        import_vcf_tag="importVCF#"+import_vcf
+        import_vcf_tag = "importVCF#" + import_vcf
 
     # import DATE
     import_date_tag = None
-    import_date_tag="importDATE#"+current_date
-    
+    import_date_tag = "importDATE#" + current_date
+
     # import ID
     import_id_tag = None
     if not import_id:
-        import_id=current_date
-    import_id_tag="importID#"+import_id
+        import_id = current_date
+    import_id_tag = "importID#" + import_id
 
     # cursor
     cursor = conn.cursor()
@@ -2960,15 +2935,27 @@ def insert_samples(conn, samples: list, import_id: str = None, import_vcf: str =
         cursor.execute(f"INSERT OR IGNORE INTO samples (name) VALUES ('{sample}') ")
         # insert tags
         if import_vcf_tag:
-            cursor.execute(f"UPDATE samples SET tags = '{import_vcf_tag}' WHERE name = '{sample}' AND tags = '' ")
-            cursor.execute(f"UPDATE samples SET tags = tags || ',' || '{import_vcf_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_vcf_tag},%' ")
+            cursor.execute(
+                f"UPDATE samples SET tags = '{import_vcf_tag}' WHERE name = '{sample}' AND tags = '' "
+            )
+            cursor.execute(
+                f"UPDATE samples SET tags = tags || ',' || '{import_vcf_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_vcf_tag},%' "
+            )
         if import_date_tag:
-            cursor.execute(f"UPDATE samples SET tags = '{import_date_tag}' WHERE name = '{sample}' AND tags = '' ")
-            cursor.execute(f"UPDATE samples SET tags = tags || ',' || '{import_date_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_date_tag},%' ")
+            cursor.execute(
+                f"UPDATE samples SET tags = '{import_date_tag}' WHERE name = '{sample}' AND tags = '' "
+            )
+            cursor.execute(
+                f"UPDATE samples SET tags = tags || ',' || '{import_date_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_date_tag},%' "
+            )
         if import_id_tag:
-            cursor.execute(f"UPDATE samples SET tags = '{import_id_tag}' WHERE name = '{sample}' AND tags = '' ")
-            cursor.execute(f"UPDATE samples SET tags = tags || ',' || '{import_id_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_id_tag},%' ")
-    
+            cursor.execute(
+                f"UPDATE samples SET tags = '{import_id_tag}' WHERE name = '{sample}' AND tags = '' "
+            )
+            cursor.execute(
+                f"UPDATE samples SET tags = tags || ',' || '{import_id_tag}' WHERE name = '{sample}' AND tags != '' AND ',' || tags || ',' NOT LIKE '%,{import_id_tag},%' "
+            )
+
     # commit
     conn.commit()
 
@@ -3062,16 +3049,18 @@ def get_sample_nb_genotype_by_classification(conn, sample_id: int):
         )
     )
 
+
 def get_if_sample_has_classified_genotypes(conn, sample_id: int):
     """Get if sample id has classificed genotype (>0)"""
     conn.row_factory = sqlite3.Row
     res = conn.execute(
-            f"SELECT 1 as variant FROM genotypes WHERE genotypes.sample_id = '{sample_id}' AND classification > 0 LIMIT 1"
-        ).fetchone()
+        f"SELECT 1 as variant FROM genotypes WHERE genotypes.sample_id = '{sample_id}' AND classification > 0 LIMIT 1"
+    ).fetchone()
     if res:
         return True
     else:
         return False
+
 
 def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List[str] = None):
     """Get samples annotation for a specific variant using different filters
@@ -3107,7 +3096,7 @@ def get_genotypes(conn, variant_id: int, fields: List[str] = None, samples: List
 def get_genotype_rowid(conn: sqlite3.Connection, variant_id: int, sample_id: int):
     """
     Used to determine rowid to fill the "history" table
-    
+
     Args:
         sample_id (int): sql sample id
         variant_id (int): sql variant id
@@ -3224,7 +3213,7 @@ def create_triggers(conn):
         """
     )
 
-     # variants count validations on genotypes update
+    # variants count validations on genotypes update
     conn.execute(
         """
         CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_after_update_on_genotypes AFTER UPDATE ON genotypes
@@ -3270,9 +3259,18 @@ def create_triggers(conn):
 
     ###### trigers for history
 
-    tables_fields_triggered={
+    tables_fields_triggered = {
         "variants": ["favorite", "classification", "tags", "comment"],
-        "samples": ["classification", "tags", "comment", "family_id", "father_id", "mother_id", "sex", "phenotype"],
+        "samples": [
+            "classification",
+            "tags",
+            "comment",
+            "family_id",
+            "father_id",
+            "mother_id",
+            "sex",
+            "phenotype",
+        ],
         "genotypes": ["tags", "comment"],
     }
 
@@ -3375,9 +3373,9 @@ def import_reader(
     if progress_callback:
         progress_callback("Insert samples")
     if reader.filename:
-        import_vcf=os.path.basename(reader.filename)
+        import_vcf = os.path.basename(reader.filename)
     else:
-        import_vcf=None
+        import_vcf = None
     insert_samples(conn, samples=reader.get_samples(), import_id=import_id, import_vcf=import_vcf)
 
     # insert ped

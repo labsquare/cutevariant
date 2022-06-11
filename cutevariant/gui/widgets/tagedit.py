@@ -26,6 +26,7 @@ import re
 
 from cutevariant.gui.ficon import FIcon
 
+
 class TagEdit(QWidget):
     def __init__(self, parent=None):
         super().__init__()

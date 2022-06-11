@@ -69,9 +69,7 @@ class CutestyleFormatter(Formatter):
         if value == "NULL" or value == "None":
             font = QFont()
             font.setItalic(True)
-            color = option.palette.color(
-                QPalette.BrightText if is_selected else QPalette.Text
-            )
+            color = option.palette.color(QPalette.BrightText if is_selected else QPalette.Text)
             color = cm.contrast_color(color, factor=300)
             return {"font": font, "color": color}
 
@@ -161,9 +159,7 @@ class CutestyleFormatter(Formatter):
                 width = metrics.boundingRect(value).width()
                 height = metrics.height()
 
-                rect = QRect(
-                    x, (option.rect.height() - height) * 0.5, width + 10, height
-                )
+                rect = QRect(x, (option.rect.height() - height) * 0.5, width + 10, height)
 
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)

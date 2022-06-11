@@ -11,7 +11,9 @@ from PySide6.QtGui import QColor
 ################################################################################
 def create_logger():
     logger = logging.getLogger(__name__)
-    formatter = logging.Formatter("%(levelname)s:[%(dirname)s/%(filename)s:%(lineno)s:%(funcName)s()] %(message)s")
+    formatter = logging.Formatter(
+        "%(levelname)s:[%(dirname)s/%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"
+    )
 
     stdout_handler = logging.StreamHandler()
     stdout_handler.setFormatter(formatter)

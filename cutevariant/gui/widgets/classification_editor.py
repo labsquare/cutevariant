@@ -11,7 +11,7 @@ from cutevariant.gui.ficon import FIcon
 #     "description": "sdfsdf"
 # }
 
-LOCKED_SECTION=["samples"]
+LOCKED_SECTION = ["samples"]
 
 
 class ClassificationDialog(QDialog):

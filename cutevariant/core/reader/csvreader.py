@@ -76,9 +76,7 @@ class CsvReader(AbstractReader):
         # Fields descriptions
         self.fields = None
 
-        LOGGER.debug(
-            "CsvReader::init: CSV fields found: %s", self.csv_reader.fieldnames
-        )
+        LOGGER.debug("CsvReader::init: CSV fields found: %s", self.csv_reader.fieldnames)
 
     def __del__(self):
         del self.device

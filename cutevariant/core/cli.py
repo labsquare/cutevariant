@@ -68,9 +68,7 @@ the arguments.""",
 
     # Common parser: Database file requirement #################################
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument(
-        "--db", help="SQLite database. By default, $CUTEVARIANT_DB is used."
-    )
+    parent_parser.add_argument("--db", help="SQLite database. By default, $CUTEVARIANT_DB is used.")
 
     # Create DB parser #########################################################
     createdb_parser = sub_parser.add_parser(
@@ -176,7 +174,6 @@ the arguments.""",
             with create_reader(args.input) as reader:
                 sql.import_reader(conn, reader)
 
-
         print("The database is successfully created!")
         exit()
 
@@ -199,9 +196,7 @@ the arguments.""",
             )
 
         if args.table == "samples":
-            display_sql_results(
-                (i.values() for i in sql.get_samples(conn)), ["id", "name"]
-            )
+            display_sql_results((i.values() for i in sql.get_samples(conn)), ["id", "name"])
 
         if args.table == "selections":
             display_sql_results(
@@ -210,9 +205,7 @@ the arguments.""",
             )
 
         if args.table == "wordsets":
-            display_sql_results(
-                (i.values() for i in sql.get_wordsets(conn)), ["id", "word_count"]
-            )
+            display_sql_results((i.values() for i in sql.get_wordsets(conn)), ["id", "word_count"])
 
     # Remove parser ############################################################
     if args.subparser == "remove":

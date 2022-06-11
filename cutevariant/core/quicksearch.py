@@ -82,9 +82,7 @@ def parse_coords_query(query: str) -> bool:
         # Don't create a filter, to avoid confusion
         if end < start:
             return dict()
-        return {
-            "$and": [{"chr": chrom}, {"pos": {"$gte": start}}, {"pos": {"$lte": end}}]
-        }
+        return {"$and": [{"chr": chrom}, {"pos": {"$gte": start}}, {"pos": {"$lte": end}}]}
     else:
         return dict()
 

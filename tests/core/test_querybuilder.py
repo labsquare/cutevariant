@@ -4,6 +4,7 @@ from tests.utils import create_conn
 
 import cutevariant.constants as cst
 
+
 def test_order_by():
     conn = create_conn()
     query = querybuilder.build_sql_query(

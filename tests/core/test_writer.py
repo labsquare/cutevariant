@@ -33,9 +33,7 @@ def test_bed_writer(conn):
 
     # Read databases
     expected = []
-    for record in conn.execute(
-        "SELECT chr, pos as 'start', pos+1 as 'end' FROM variants"
-    ):
+    for record in conn.execute("SELECT chr, pos as 'start', pos+1 as 'end' FROM variants"):
         chrom = str(record["chr"])
         start = str(record["start"])
         end = str(record["end"])

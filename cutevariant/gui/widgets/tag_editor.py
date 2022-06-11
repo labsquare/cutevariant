@@ -11,7 +11,7 @@ from cutevariant.gui.ficon import FIcon
 #     "description": "sdfsdf"
 # }
 
-LOCKED_SECTION=["samples"]
+LOCKED_SECTION = ["samples"]
 
 
 class TagDialog(QDialog):
@@ -64,7 +64,7 @@ class TagDialog(QDialog):
         tag = {}
         # tag["number"] = int(self.number_edit.text())
         tag["name"] = self.name_edit.text()
-        #tag["lock"] = self.lock_edit.isChecked() or False
+        # tag["lock"] = self.lock_edit.isChecked() or False
         tag["description"] = self.descr_edit.toPlainText()
         tag["color"] = self.color_edit.text()
         return tag
@@ -131,11 +131,9 @@ class TagModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if index.column() == 0:
                 return self._data[index.row()]["name"]
-            
+
             elif index.column() == 1:
                 return self._data[index.row()]["description"]
-
-            
 
         if role == Qt.DecorationRole and index.column() == 0:
             return QIcon(FIcon(0xF04F9, self._data[index.row()]["color"]))

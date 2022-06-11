@@ -56,11 +56,11 @@ class PedModel(QAbstractTableModel):
         )
 
     def rowCount(self, index=QModelIndex()) -> int:
-        """ override """
+        """override"""
         return len(self.samples_data)
 
     def columnCount(self, index=QModelIndex()) -> int:
-        """ override """
+        """override"""
         if index == QModelIndex():
             return len(self.headers)
 
@@ -142,7 +142,7 @@ class PedModel(QAbstractTableModel):
             return value
 
     def setData(self, index: QModelIndex, value, role=Qt.EditRole):
-        """ overrided """
+        """overrided"""
 
         if not index.isValid():
             return
@@ -153,16 +153,14 @@ class PedModel(QAbstractTableModel):
 
         return False
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: Qt.DisplayRole
-    ):
-        """ overrided """
+    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.DisplayRole):
+        """overrided"""
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self.headers[section]
 
     def flags(self, index: QModelIndex):
-        """ overrided """
+        """overrided"""
         if not index.isValid():
             return
 
@@ -188,9 +186,7 @@ class PedDelegate(QItemDelegate):
         # Keep the rows of erroneous samples (same father/mother ids)
         self.erroneous_samples = set()
 
-    def createEditor(
-        self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
-    ):
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
         """Return editor widget for columns of PedView
 
         Notes:
@@ -240,9 +236,7 @@ class PedDelegate(QItemDelegate):
 
         return super().createEditor(parent, option, index)
 
-    def setModelData(
-        self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex
-    ):
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex):
         """Set the data for the item at the given index in the model to the
         contents of the given editor.
         """
@@ -297,9 +291,7 @@ class PedView(QTableView):
         self.setAlternatingRowColors(True)
         self.verticalHeader().hide()
         self.setItemDelegate(self.delegate)
-        self.setEditTriggers(
-            QAbstractItemView.CurrentChanged | QAbstractItemView.DoubleClicked
-        )
+        self.setEditTriggers(QAbstractItemView.CurrentChanged | QAbstractItemView.DoubleClicked)
         self.delegate.parthenogenesis_detected.connect(self.message)
         # PED file for the model
         self.outfile = None

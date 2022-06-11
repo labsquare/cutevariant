@@ -54,7 +54,7 @@ class MultiComboBox(QComboBox):
             item = self.find_words(text)
             if item is None:
                 item = self.addItem(text)
-                
+
             item.setCheckState(Qt.Checked)
 
         self.updateText()

@@ -75,9 +75,7 @@ class SamplesEditorModel(QAbstractTableModel):
 
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
 
@@ -100,13 +98,9 @@ class SamplesEditor(QWidget):
         super().__init__()
 
         self.btn_box = QDialogButtonBox()
-        self.add_btn = self.btn_box.addButton(
-            "Add selection", QDialogButtonBox.AcceptRole
-        )
+        self.add_btn = self.btn_box.addButton("Add selection", QDialogButtonBox.AcceptRole)
 
-        self.clear_btn = self.btn_box.addButton(
-            "Clear selection", QDialogButtonBox.ResetRole
-        )
+        self.clear_btn = self.btn_box.addButton("Clear selection", QDialogButtonBox.ResetRole)
         self.btn_box.addButton("Close", QDialogButtonBox.RejectRole)
         self.btn_box.accepted.connect(self._on_accept)
         self.btn_box.rejected.connect(self.close)
@@ -179,9 +173,7 @@ class SamplesEditor(QWidget):
         self.toolbar.addWidget(self.tag_choice)
 
         self.toolbar.addSeparator()
-        clear_action = self.toolbar.addAction(
-            QIcon(), "Clear filters", self.clear_filters
-        )
+        clear_action = self.toolbar.addAction(QIcon(), "Clear filters", self.clear_filters)
 
     def _load_filters(self):
         if self.conn:
@@ -217,9 +209,7 @@ class SamplesEditor(QWidget):
     def _on_filter_changed(self):
         tag_list = self.tag_choice._model.get_checked()
         fam_list = self.family_choice._model.get_checked()
-        class_list = [
-            str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]
-        ]
+        class_list = [str(i["data"]) for i in self.statut_choice._model.items() if i["checked"]]
 
         # clean previous query line
         previous_query_line_list = []

@@ -326,7 +326,9 @@ class LinkSettings(AbstractSettingsWidget):
 
             if index:
                 # Edit the current item in the list
-                self.link_model.edit_link(index, name.text(), url.text(), bool(browser.checkState()), False)
+                self.link_model.edit_link(
+                    index, name.text(), url.text(), bool(browser.checkState()), False
+                )
             else:
                 # Add the item to the list
                 self.link_model.add_link(name.text(), url.text(), bool(browser.checkState()), False)

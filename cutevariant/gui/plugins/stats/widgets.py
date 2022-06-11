@@ -7,7 +7,6 @@ from PySide6.QtCore import *
 from cutevariant.core.sql import get_sql_connection, get_field_info, get_fields
 
 
-
 from cutevariant.gui.sql_thread import SqlThread
 
 from cutevariant.gui import style, plugin, FIcon
@@ -43,12 +42,8 @@ class StatsModel(QAbstractTableModel):
         self.current_table = []
 
         self._load_stats_thread = SqlThread(self.conn)
-        self._load_stats_thread.started.connect(
-            lambda: self.stats_is_loading.emit(True)
-        )
-        self._load_stats_thread.finished.connect(
-            lambda: self.stats_is_loading.emit(False)
-        )
+        self._load_stats_thread.started.connect(lambda: self.stats_is_loading.emit(True))
+        self._load_stats_thread.finished.connect(lambda: self.stats_is_loading.emit(False))
         self._load_stats_thread.result_ready.connect(self.on_stats_loaded)
         self._load_stats_thread.error.connect(self.error_raised)
 
@@ -120,9 +115,7 @@ class StatsModel(QAbstractTableModel):
             metric_name = self.current_table[index.row()][0]
             return StatsModel.metrics.get(
                 metric_name,
-                self.tr(
-                    "Oooops, something's wrong, I have no description for this one..."
-                ),
+                self.tr("Oooops, something's wrong, I have no description for this one..."),
             )
 
     def headerData(self, section, orientation, role):
@@ -162,9 +155,7 @@ class StatsModel(QAbstractTableModel):
             return
 
         if self.is_stats_loading():
-            LOGGER.debug(
-                "Cannot load data. Thread is not finished. You can call interrupt() "
-            )
+            LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
             return
 
         self.field_name = field_name
@@ -193,9 +184,7 @@ class LoadingTableView(QTableView):
         if self.is_loading():
             painter = QPainter(self.viewport())
 
-            painter.drawText(
-                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
-            )
+            painter.drawText(self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ..."))
 
         if self.error_message:
             painter = QPainter(self.viewport())
@@ -245,9 +234,7 @@ class StatsWidget(plugin.PluginWidget):
         self.stats_model = StatsModel()
         self.tableview_stats.setModel(self.stats_model)
 
-        self.combobox_field.currentTextChanged.connect(
-            self.on_current_field_selected_changed
-        )
+        self.combobox_field.currentTextChanged.connect(self.on_current_field_selected_changed)
 
         self.stats_model.stats_is_loading.connect(self.tableview_stats.set_loading)
         self.stats_model.error_raised.connect(self.tableview_stats.on_error)
@@ -276,11 +263,7 @@ class StatsWidget(plugin.PluginWidget):
         self.conn = conn
         self.combobox_field.clear()
         self.combobox_field.addItems(
-            [
-                field["name"]
-                for field in get_fields(self.conn)
-                if field["type"] in ("float", "int")
-            ]
+            [field["name"] for field in get_fields(self.conn) if field["type"] in ("float", "int")]
         )
         self.stats_model.conn = conn
 

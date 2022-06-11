@@ -33,6 +33,7 @@ SAMPLES_SELECTION_NAME = cst.SAMPLES_SELECTION_NAME or "samples"
 CURRENT_SAMPLE_SELECTION_NAME = cst.CURRENT_SAMPLE_SELECTION_NAME or "current_sample"
 LOCKED_SELECTIONS = [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]
 
+
 class SampleModel(QAbstractTableModel):
 
     NAME_COLUMN = 0
@@ -85,7 +86,9 @@ class SampleModel(QAbstractTableModel):
             if col == SampleModel.NAME_COLUMN:
                 return sample.get("name", "unknown")
             elif col == SampleModel.COMMENT_COLUMN:
-                count_validation_positive_variant = sample.get("count_validation_positive_variant", 0)
+                count_validation_positive_variant = sample.get(
+                    "count_validation_positive_variant", 0
+                )
                 if count_validation_positive_variant == 0:
                     count_validation_positive_variant = ""
                 return count_validation_positive_variant
@@ -117,7 +120,9 @@ class SampleModel(QAbstractTableModel):
 
             elif col == SampleModel.COMMENT_COLUMN:
                 comment = sample.get("comment", None)
-                count_validation_positive_variant = sample.get("count_validation_positive_variant", 0)
+                count_validation_positive_variant = sample.get(
+                    "count_validation_positive_variant", 0
+                )
                 if count_validation_positive_variant:
                     # return QIcon(FIcon(0xF017F, color))
                     return QIcon(FIcon(0xF017A, color))
@@ -131,7 +136,7 @@ class SampleModel(QAbstractTableModel):
             sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
-                sample_comment_tooltip = sample.get("comment","").replace("\n","<br>")
+                sample_comment_tooltip = sample.get("comment", "").replace("\n", "<br>")
                 return sample_comment_tooltip
 
             elif col == SampleModel.NAME_COLUMN:
@@ -331,9 +336,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("samples", copy.deepcopy(self.model.get_samples()))
 
         # Automatically create source on all samples
-        #self.on_create_samples_source(source_name="samples")
-
-
+        # self.on_create_samples_source(source_name="samples")
 
         # self.mainwindow.set_state_data("source", "samples")
         # self.mainwindow.refresh_plugins(sender=self)
@@ -401,7 +404,9 @@ class SamplesWidget(plugin.PluginWidget):
         # Add genotypes for all samples
         genotype_action = self.tool_bar.addAction(
             # FIcon(0xF0B38), "Show genotypes", self.on_add_genotypes
-            FIcon(0xF0AA1), "Show genotypes", self.on_add_genotypes
+            FIcon(0xF0AA1),
+            "Show genotypes",
+            self.on_add_genotypes,
         )
 
         self.tool_bar.widgetForAction(genotype_action).setToolButtonStyle(
@@ -434,9 +439,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu = QMenu(self)
 
-        menu.addAction(
-            FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit
-        )
+        menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit)
 
         menu.addMenu(self._create_classification_menu(sample))
         menu.addSeparator()
@@ -534,11 +537,13 @@ class SamplesWidget(plugin.PluginWidget):
             # fields = self.mainwindow.get_state_data("fields")
             # fields = [f for f in fields if not f.startswith("samples")]
             # fields += [f"samples.{sample_name}.gt"]
-            
+
             self.on_add_genotypes(samples=[sample_name], refresh=False)
 
             # Create/Update current_sample source
-            self.on_create_samples_source(source_name=CURRENT_SAMPLE_SELECTION_NAME, samples=[sample_name])
+            self.on_create_samples_source(
+                source_name=CURRENT_SAMPLE_SELECTION_NAME, samples=[sample_name]
+            )
 
             # self.mainwindow.set_state_data("fields", fields)
             # self.mainwindow.set_state_data("source", "current_sample")
@@ -547,7 +552,6 @@ class SamplesWidget(plugin.PluginWidget):
 
             # if "source_editor" in self.mainwindow.plugins:
             #     self.mainwindow.refresh_plugin("source_editor")
-
 
     def on_create_filter(self):
 
@@ -587,8 +591,9 @@ class SamplesWidget(plugin.PluginWidget):
 
             self.mainwindow.refresh_plugins(sender=self)
 
-
-    def on_create_samples_source(self, source_name: str = SAMPLES_SELECTION_NAME, samples: list = None):
+    def on_create_samples_source(
+        self, source_name: str = SAMPLES_SELECTION_NAME, samples: list = None
+    ):
         """Create source from a list of samples
 
         Args:
@@ -599,7 +604,9 @@ class SamplesWidget(plugin.PluginWidget):
             samples = self.model.get_samples()
 
         if len(samples):
-            sql.insert_selection_from_samples(self.model.conn, samples, name=source_name, force=False)
+            sql.insert_selection_from_samples(
+                self.model.conn, samples, name=source_name, force=False
+            )
             self.mainwindow.set_state_data("source", source_name)
             self.mainwindow.refresh_plugins(sender=self)
             if "source_editor" in self.mainwindow.plugins:
@@ -633,13 +640,13 @@ class SamplesWidget(plugin.PluginWidget):
     def remove_all_sample_fields(self, refresh=False):
         """remove all fields from samples
         Args:
-            
+
         """
         fields = self.mainwindow.get_state_data("fields")
         fields = [f for f in fields if not f.startswith("samples")]
         self.mainwindow.set_state_data("fields", fields)
         if refresh:
-                self.mainwindow.refresh_plugins(sender=self)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_register(self, mainwindow: MainWindow):
         """This method is called when the plugin is registered from the mainwindow.
