@@ -24,6 +24,8 @@ from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 from cutevariant.gui import tooltip as toolTip
 
 
+LOCK_TOOLTIP_MESSAGE = "Genotype can't be edited because the sample is locked"
+
 # TODO: move this function to commons functions?
 def is_locked(self, sample_id: int):
     """Prevents editing genotype if sample is classified as locked
@@ -187,7 +189,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
             )
 
         if is_locked(self,sample["id"]):
-            self.setToolTip("Genotype can't be edited because the sample is locked")
+            self.setToolTip(LOCK_TOOLTIP_MESSAGE)
             # self.tag_edit.setReadOnly(True)
             self.comment.preview_btn.setDisabled(True)
 
@@ -241,7 +243,7 @@ class PedigreeSectionWidget(AbstractSectionWidget):
             self.mother_edit.setText(str(sample["mother_id"]))
 
         if is_locked(self,sample["id"]):
-            self.setToolTip("Genotype can't be edited because the sample is locked")
+            self.setToolTip(LOCK_TOOLTIP_MESSAGE)
             # self.tag_edit.setReadOnly(True)
             self.family_edit.setDisabled(True)
             self.father_edit.setDisabled(True)
@@ -320,7 +322,7 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
             )
 
         if is_locked(self,sample["id"]):
-            self.setToolTip("Genotype can't be edited because the sample is locked")
+            self.setToolTip(LOCK_TOOLTIP_MESSAGE)
             # self.tag_edit.setReadOnly(True)
             self.sex_combo.setDisabled(True)
             self.phenotype_combo.setDisabled(True)
