@@ -24,6 +24,31 @@ from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 from cutevariant.gui import tooltip as toolTip
 
 
+# TODO: move this function to commons functions?
+def is_locked(self, sample_id: int):
+    """Prevents editing genotype if sample is classified as locked
+    A sample is considered locked if its classification has the boolean "lock: true" set in the Config (yml) file.
+
+    Args:
+        sample_id (int): sql sample id
+
+    Returns:
+        locked (bool) : lock status of sample attached to current genotype
+    """
+    config_classif = Config("classifications").get("samples", None)
+    sample = sql.get_sample(self.conn, sample_id)
+    sample_classif = sample.get("classification", None)
+
+    if config_classif == None or sample_classif == None:
+        return False
+
+    locked = False
+    for config in config_classif:
+        if config["number"] == sample_classif and "lock" in config:
+            if config["lock"] == True:
+                locked = True
+    return locked
+
 class AbstractSectionWidget(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__()
@@ -161,6 +186,11 @@ class EvaluationSectionWidget(AbstractSectionWidget):
                 )
             )
 
+        if is_locked(self,sample["id"]):
+            self.setToolTip("Genotype can't be edited because the sample is locked")
+            # self.tag_edit.setReadOnly(True)
+            self.comment.preview_btn.setDisabled(True)
+
 
 class PedigreeSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
@@ -209,6 +239,13 @@ class PedigreeSectionWidget(AbstractSectionWidget):
         # Load mother
         if "mother_id" in sample:
             self.mother_edit.setText(str(sample["mother_id"]))
+
+        if is_locked(self,sample["id"]):
+            self.setToolTip("Genotype can't be edited because the sample is locked")
+            # self.tag_edit.setReadOnly(True)
+            self.family_edit.setDisabled(True)
+            self.father_edit.setDisabled(True)
+            self.mother_edit.setDisabled(True)
 
 
 class PhenotypeSectionWidget(AbstractSectionWidget):
@@ -281,6 +318,12 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
                     "No",
                 )
             )
+
+        if is_locked(self,sample["id"]):
+            self.setToolTip("Genotype can't be edited because the sample is locked")
+            # self.tag_edit.setReadOnly(True)
+            self.sex_combo.setDisabled(True)
+            self.phenotype_combo.setDisabled(True)
 
 
 class OccurenceVerticalHeader(QHeaderView):
