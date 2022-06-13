@@ -13,14 +13,12 @@ def test_sample_report(conn):
     """
     r = SampleReport(conn, 1)
 
-    r._set_data()
     data = r._get_data()
     assert data["sample"]["name"] == "sacha"
 
     for i in range(len(TEMPLATES)):
 
         r.set_template(TEMPLATES[i])
-        assert r.get_template() == TEMPLATES[i]
 
         if os.path.exists(OUTPUTS[i]):
             os.remove(OUTPUTS[i])

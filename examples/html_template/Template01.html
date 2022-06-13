@@ -99,13 +99,13 @@
           </colgroup>
           <thead class="u-custom-color-1 u-table-header u-table-header-1">
             <tr style="height: 21px;">
-              {% for col in var_per_gt["header"] %}
+              {% for col in stats["var_per_gt"]["header"] %}
               <th class="u-border-1 u-border-custom-color-1 u-table-cell">{{ col }}</th>
               {% endfor %}
             </tr>
           </thead>
           <tbody class="u-table-body">
-            {% for row in var_per_gt["data"] %}
+            {% for row in stats["var_per_gt"]["data"] %}
             <tr style="height: 50px;">
               {% for col in row %}
               <td class="u-border-1 u-border-grey-30 u-table-cell">{{ col }}</td>
@@ -124,13 +124,13 @@
           </colgroup>
           <thead class="u-custom-color-1 u-table-header u-table-header-2">
             <tr style="height: 26px;">
-              {% for col in var_per_var_classif["header"] %}
+              {% for col in stats["var_per_var_classif"]["header"] %}
               <th class="u-border-1 u-border-palette-4-base u-table-cell">{{ col }}</th>
               {% endfor %}
             </tr>
           </thead>
           <tbody class="u-table-body">
-            {% for row in var_per_var_classif["data"] %}
+            {% for row in stats["var_per_var_classif"]["data"] %}
             <tr style="height: 50px;">
               {% for col in row %}
               <td class="u-border-1 u-border-grey-30 u-table-cell">{{ col }}</td>
@@ -150,13 +150,13 @@
           </colgroup>
           <thead class="u-custom-color-1 u-table-header u-table-header-3">
             <tr style="height: 21px;">
-              {% for row in var_per_gt_classif["data"] %}
+              {% for row in stats["var_per_gt_classif"]["data"] %}
               <th class="u-border-1 u-border-palette-4-base u-table-cell">{{ col }}</th>
               {% endfor %}
             </tr>
           </thead>
           <tbody class="u-table-body">
-            {% for row in var_per_gt_classif["data"] %}
+            {% for row in stats["var_per_gt_classif"]["data"] %}
             <tr style="height: 50px;">
               {% for col in row %}
               <td class="u-border-1 u-border-grey-30 u-table-cell">{{ col }}</td>
