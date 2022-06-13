@@ -133,7 +133,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         # Load tags      
         tags = []
         config = Config("tags")
-        for tag in config.get("variants", {}):
+        for tag in config.get("variants", []):
             tags.append(tag)
             self.tag_edit.addItem(tag.get("name",""))
         self.tag_edit.setText(",".join(variant.get("tags", "").split(self.TAG_SEPARATOR)))

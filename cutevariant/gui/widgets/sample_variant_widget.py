@@ -136,7 +136,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         # Load tags
         tags = []
         config = Config("tags")
-        for tag in config.get("variants", {}):
+        for tag in config.get("genotypes", []):
             tags.append(tag)
             self.tag_edit.addItem(tag.get("name",""))
         self.tag_edit.setText(",".join(genotype.get("tags", "").split(self.TAG_SEPARATOR)))
