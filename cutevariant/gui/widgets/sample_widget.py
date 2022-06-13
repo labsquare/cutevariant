@@ -7,6 +7,7 @@ from PySide6.QtGui import *
 
 from cutevariant.gui.widgets import MarkdownEditor
 from cutevariant.core import sql
+from cutevariant.core.report import SampleReport
 from cutevariant.config import Config
 
 from cutevariant.gui.ficon import FIcon
@@ -628,28 +629,78 @@ class SampleDialog(QDialog):
     def __init__(self, conn, sample_id, parent=None):
         super().__init__()
 
-        self.sample_id = sample_id
+        self._conn = conn
+        self._sample_id = sample_id
         self.w = SampleWidget(conn)
+
         self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        self.html_button = QPushButton("HTML report")
+        self.docx_button = QPushButton("Docx report")
+
+        self.button_layout = QHBoxLayout()
+        self.button_layout.addWidget(self.html_button)
+        self.button_layout.addWidget(self.docx_button)
+        self.button_layout.addStretch()
+        self.button_layout.addWidget(self.button_box)
+
         vLayout = QVBoxLayout(self)
         vLayout.addWidget(self.w)
-        vLayout.addWidget(self.button_box)
+        vLayout.addLayout(self.button_layout)
 
         self.load()
 
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
+        self.html_button.clicked.connect(self.export_html_report)
+        self.docx_button.clicked.connect(self.export_docx_report)
 
         # self.resize(800, 600)
 
     def load(self):
-        self.w.load(self.sample_id)
+        self.w.load(self._sample_id)
         self.setWindowTitle(self.w.windowTitle())
 
     def save(self):
-        self.w.save(self.sample_id)
+        self.w.save(self._sample_id)
         self.accept()
 
+    def export_html_report(self):
+        output = self.get_output_path(".html")
+        
+        if output != None:
+            report = SampleReport(self._conn, self._sample_id)
+            report.set_template(Config("Report").get("html_template"))
+            report.create(output)
+            QMessageBox.information(
+                None,
+                "",
+                "Report was successfully created",
+                QMessageBox.Ok
+            )
+
+    def export_docx_report(self):
+        output = self.get_output_path(".docx")
+
+        if output != None:
+            report = SampleReport(self._conn, self._sample_id)
+            report.set_template(Config("Report").get("docx_template"))
+            report.create(output)
+            QMessageBox.information(
+                None,
+                "",
+                "Report was successfully created",
+                QMessageBox.Ok
+            )
+
+    def get_output_path(self, file_type):
+        output = QFileDialog.getSaveFileName(self, "File name", QDir.homePath(), file_type, file_type)
+        if output[0] == "":
+            return None
+        if output[0].endswith(file_type):
+            output = output[0]
+        else:
+            output = output[0] + output[1]
+        return output
 
 if __name__ == "__main__":
     import sys
