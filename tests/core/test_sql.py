@@ -1,3 +1,4 @@
+from itertools import groupby
 import sqlite3
 import pytest
 import tempfile
@@ -736,6 +737,17 @@ def test_get_variant_as_group(conn):
     )
 
     assert observed_genes == expected_genes
+
+
+def test_get_variant_groupby_for_samples(conn):
+    groupby = "genotypes.gt"
+    samples = [1]
+    r = tuple(sql.get_variant_groupby_for_samples(conn, groupby, samples))
+    assert r == ({'count': 1, 'gt': 0}, {'count': 1, 'gt': 1})
+
+    groupby = "variants.classification"
+    r = tuple(sql.get_variant_groupby_for_samples(conn, groupby, samples))
+    assert r == ({'classification': 0, 'count': 2},)
 
 
 def test_get_samples(conn):

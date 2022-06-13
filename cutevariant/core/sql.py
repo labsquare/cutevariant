@@ -2603,7 +2603,7 @@ def get_variant_as_group(
         yield res
 
 
-def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samples: List[int], order_by=True):
+def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samples: List[int], order_by=True) -> typing.Tuple[dict]:
     """Get count of variants for any field in "variants" or "genotype", 
     limited to samples in list
 
@@ -2612,6 +2612,9 @@ def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samp
         groupby (str): Field defining the GROUP BY
         samples (List[int]): list of sample ids on which the search is applied
         order_by (bool, optional): If True, results are ordered by the groupby field. Defaults to True.
+    
+    Return:
+        tuple of dict ; each containing one group and its count
     """
 
     samples = ",".join([str(s) for s in samples])
