@@ -3,6 +3,7 @@ import logging
 import re
 import json
 import os
+import shutil
 
 from .bgzf import BgzfBlocks
 
@@ -135,3 +136,29 @@ def contrast_color(color: QColor, factor=200):
         new_color = color.lighter(factor)
 
     return new_color
+
+
+def recursive_overwrite(src: str, dest: str, ignore=None):
+    """Credits to https://stackoverflow.com/a/15824216
+    Recursively copy a file or directory, overwriting files if they exist
+
+    Args:
+        src (_type_): source file or directory
+        dest (_type_): destination
+        ignore (_type_, optional): ignored files
+    """
+    if os.path.isdir(src):
+        if not os.path.isdir(dest):
+            os.makedirs(dest)
+        files = os.listdir(src)
+        if ignore is not None:
+            ignored = ignore(src, files)
+        else:
+            ignored = set()
+        for f in files:
+            if f not in ignored:
+                recursive_overwrite(os.path.join(src, f), 
+                                    os.path.join(dest, f), 
+                                    ignore)
+    else:
+        shutil.copyfile(src, dest)

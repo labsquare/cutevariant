@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html style="font-size: 16px;">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="keywords" content="">
+  <meta name="description" content="">
+  <title>Template</title>
+  <link rel="stylesheet" href="nicepage.css" media="screen">
+  <link rel="stylesheet" href="Template01.css" media="screen">
+  <meta name="generator" content="Nicepage 4.12.14, nicepage.com">
+  <link id="u-theme-google-font" rel="stylesheet"
+    href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i|Open+Sans:300,300i,400,400i,500,500i,600,600i,700,700i,800,800i">
+
+
+
+
+  <script type="application/ld+json">{
+		"@context": "http://schema.org",
+		"@type": "Organization",
+		"name": ""
+}</script>
+  <meta name="theme-color" content="#478ac9">
+  <meta property="og:title" content="Template">
+  <meta property="og:type" content="website">
+</head>
+
+<body class="u-body u-overlap u-xl-mode">
+  <header class="u-clearfix u-header" id="sec-76a2">
+    <div class="u-clearfix u-sheet u-valign-middle u-sheet-1">
+      <img class="u-image u-image-default u-image-1" src="images/1200px-Logo_CHU_Strasbourg.svg.png" alt=""
+        data-image-width="1200" data-image-height="1107">
+      <div class="u-align-center u-container-style u-custom-color-1 u-group u-radius-6 u-shape-round u-group-1">
+        <div class="u-container-layout u-container-layout-1">
+          <p class="u-align-left u-text u-text-default u-text-1">Rapport clinique d'échantillon</p>
+          <p class="u-text u-text-default u-text-2">Rapport clinique d'échantillon</p>
+        </div>
+      </div>
+      <p class="u-text u-text-default u-text-3">Généré par CuteVariant</p>
+    </div>
+  </header>
+  <section class="u-clearfix u-section-1" id="sec-f536">
+    <div class="u-clearfix u-sheet u-sheet-1">
+      <div class="u-border-3 u-border-custom-color-2 u-expanded-width u-line u-line-horizontal u-line-1"></div>
+      <h3 class="u-text u-text-custom-color-3 u-text-default u-text-1">Informations sur l'échantillon</h3>
+      <div class="u-clearfix u-expanded-width u-layout-wrap u-layout-wrap-1">
+        <div class="u-layout">
+          <div class="u-layout-row">
+            <div class="u-container-style u-layout-cell u-size-30 u-layout-cell-1">
+              <div class="u-container-layout u-valign-top u-container-layout-1">
+                <p class="u-text u-text-default u-text-2">
+                  <span style="font-weight: 700;">Nom de l'échantillon :&nbsp;</span>{{ sample["name"] }}&nbsp;<br>
+                </p>
+                <p class="u-text u-text-default u-text-3">
+                  <span style="font-weight: 700;"> Classification :&nbsp;</span>{{ sample["classification"] }}
+                </p>
+              </div>
+            </div>
+            <div class="u-container-style u-layout-cell u-size-30 u-layout-cell-2">
+              <div class="u-container-layout u-valign-top u-container-layout-2">
+                <p class="u-text u-text-default u-text-4">
+                  <span style="font-weight: 700;"> Date : <span style="font-weight: 400;">{{ date }}</span>&nbsp;
+                  </span>
+                  <br>
+                </p>
+                <p class="u-text u-text-default u-text-5"> Utilisateur : <span style="font-weight: 400;">{{ user
+                    }}&nbsp;</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="u-text u-text-default u-text-6">Tags :&nbsp;</p>
+      <ul class="u-text u-text-default u-text-7">
+        {% for row in sample["tags"] %}
+        <li>{{row}}</li>
+        {% endfor %}
+      </ul>
+      <p class="u-text u-text-default u-text-8">
+        <span style="font-weight: 700;"> Commentaires : <span style="font-weight: 400;">{{ sample["comment"]
+            }}&nbsp;</span>
+        </span>
+        <br>
+      </p>
+    </div>
+  </section>
+  <section class="u-clearfix u-section-2" id="sec-4ca7">
+    <div class="u-clearfix u-sheet u-sheet-1">
+      <div class="u-border-3 u-border-custom-color-2 u-expanded-width u-line u-line-horizontal u-line-1"></div>
+      <h3 class="u-text u-text-custom-color-3 u-text-default u-text-1">Statistiques</h3>
+      <h5 class="u-text u-text-default u-text-2">Variants par génotype</h5>
+      <div class="u-expanded-width u-table u-table-responsive u-table-1">
+        <table class="u-table-entity">
+          <colgroup>
+            <col width="50%">
+            <col width="50%">
+          </colgroup>
+          <thead class="u-custom-color-1 u-table-header u-table-header-1">
+            <tr style="height: 21px;">
+              {% for col in stats["var_per_gt"]["header"] %}
+              <th class="u-border-1 u-border-custom-color-1 u-table-cell">{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody class="u-table-body">
+            {% for row in stats["var_per_gt"]["data"] %}
+            <tr style="height: 50px;">
+              {% for col in row %}
+              <td class="u-border-1 u-border-grey-30 u-table-cell">{{ col }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <h5 class="u-text u-text-default u-text-3">Variants par classification de variants</h5>
+      <div class="u-expanded-width u-table u-table-responsive u-table-2">
+        <table class="u-table-entity">
+          <colgroup>
+            <col width="50%">
+            <col width="50%">
+          </colgroup>
+          <thead class="u-custom-color-1 u-table-header u-table-header-2">
+            <tr style="height: 26px;">
+              {% for col in stats["var_per_var_classif"]["header"] %}
+              <th class="u-border-1 u-border-palette-4-base u-table-cell">{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody class="u-table-body">
+            {% for row in stats["var_per_var_classif"]["data"] %}
+            <tr style="height: 50px;">
+              {% for col in row %}
+              <td class="u-border-1 u-border-grey-30 u-table-cell">{{ col }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <h5 class="u-text u-text-default u-text-4">Variants par classification de génotypes<br>
+      </h5>
+      <div class="u-expanded-width u-table u-table-responsive u-table-3">
+        <table class="u-table-entity">
+          <colgroup>
+            <col width="50%">
+            <col width="50%">
+          </colgroup>
+          <thead class="u-custom-color-1 u-table-header u-table-header-3">
+            <tr style="height: 21px;">
+              {% for row in stats["var_per_gt_classif"]["data"] %}
+              <th class="u-border-1 u-border-palette-4-base u-table-cell">{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody class="u-table-body">
+            {% for row in stats["var_per_gt_classif"]["data"] %}
+            <tr style="height: 50px;">
+              {% for col in row %}
+              <td class="u-border-1 u-border-grey-30 u-table-cell">{{ col }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  <section class="u-clearfix u-section-3" id="sec-06db">
+    <div class="u-clearfix u-sheet u-sheet-1">
+      <div class="u-border-3 u-border-custom-color-2 u-expanded-width u-line u-line-horizontal u-line-1"></div>
+      <h3 class="u-text u-text-custom-color-3 u-text-default u-text-1">Variants</h3>
+      <p class="u-text u-text-default u-text-2">(with classification number &gt;= {{ classification_threshold }})</p>
+      {% for var in variants %}
+      <p class="u-text u-text-default u-text-3"> Variant name : {{ var["variant_name"] }}</p>
+      <div class="u-expanded-width u-table u-table-responsive u-table-1">
+        <table class="u-table-entity">
+          <colgroup>
+            <col width="20%">
+            <col width="20.09%">
+            <col width="20.09%">
+            <col width="19.82%">
+            <col width="20%">
+          </colgroup>
+          <thead class="u-custom-color-1 u-table-header u-table-header-1">
+            <tr style="height: 32px;">
+              <th class="u-border-1 u-border-palette-4-base u-table-cell">Variant name</th>
+              <th class="u-border-1 u-border-palette-4-base u-table-cell">GT</th>
+              <th class="u-border-1 u-border-palette-4-base u-table-cell">AD</th>
+              <th class="u-border-1 u-border-palette-4-base u-table-cell">DP</th>
+              <th class="u-border-1 u-border-palette-4-base u-table-cell">VAF</th>
+            </tr>
+          </thead>
+          <tbody class="u-table-body">
+            <tr style="height: 50px;">
+              <td class="u-border-1 u-border-grey-30 u-grey-5 u-table-cell u-table-cell-6">{{ var["variant_name"] }}
+              </td>
+              <td class="u-border-1 u-border-grey-30 u-table-cell">{{var["samples"]["gt"]}}</td>
+              <td class="u-border-1 u-border-grey-30 u-table-cell"> {{var["samples"]["ad"] }}</td>
+              <td class="u-border-1 u-border-grey-30 u-table-cell">{{var["samples"]["dp"] }}</td>
+              <td class="u-border-1 u-border-grey-30 u-table-cell">{{var["samples"]["vaf"] }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="u-clearfix u-expanded-width u-gutter-24 u-layout-wrap u-layout-wrap-1">
+        <div class="u-layout">
+          <div class="u-layout-row">
+            <div class="u-container-style u-layout-cell u-radius-18 u-shape-round u-size-30 u-layout-cell-1">
+              <div class="u-border-2 u-border-custom-color-1 u-container-layout u-container-layout-1"><span
+                  class="u-file-icon u-icon u-text-custom-color-2 u-icon-1"><img src="images/2.png" alt=""></span>
+                <h4 class="u-text u-text-custom-color-2 u-text-default u-text-3">Annotations du variant</h4>
+                <p class="u-text u-text-default u-text-4">Classification : {{ var["classification"]}}&nbsp;</p>
+                <p class="u-text u-text-default u-text-5">&nbsp;​Tags :</p>
+                <ul class="u-text u-text-default u-text-6">
+                  {% for row in sample["tags"] %}
+                  <li>{{row}}</li>
+                  {% endfor %}
+                </ul>
+                <p class="u-text u-text-default u-text-7">&nbsp;​Commentaire : {{ var["comment"] }}</p>
+              </div>
+            </div>
+            <div class="u-container-style u-layout-cell u-radius-18 u-shape-round u-size-30 u-layout-cell-2">
+              <div class="u-border-2 u-border-custom-color-1 u-container-layout u-container-layout-2"><span
+                  class="u-file-icon u-icon u-text-custom-color-2 u-icon-2"><img src="images/2.png" alt=""></span>
+                <h4 class="u-text u-text-custom-color-2 u-text-default u-text-8">Annotations du génotype</h4>&nbsp;</p>
+                <p class="u-text u-text-default u-text-10">Classification : {{ var["samples"]["classification"] }}&nbsp;
+                </p>
+                <p class="u-text u-text-default u-text-10">&nbsp;​Tags :</p>
+                <ul class="u-text u-text-default u-text-11">
+                  {% for row in sample["tags"] %}
+                  <li>{{row}}</li>
+                  {% endfor %}
+                </ul>
+                <p class="u-text u-text-default u-text-12">&nbsp;​Commentaire : {{ var["samples"]["comment"] }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+
+  <footer class="u-align-center u-clearfix u-footer u-white u-footer" id="sec-4ef0">
+    <div class="u-align-left u-clearfix u-sheet u-sheet-1"></div>
+  </footer>
+  <section class="u-backlink u-clearfix u-grey-80">
+    <a class="u-link" href="https://nicepage.com/website-templates" target="_blank">
+      <span>Website Templates</span>
+    </a>
+    <p class="u-text">
+      <span>created with</span>
+    </p>
+    <a class="u-link" href="" target="_blank">
+      <span>Website Builder Software</span>
+    </a>.
+  </section>
+</body>
+
+</html>

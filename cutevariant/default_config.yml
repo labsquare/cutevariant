@@ -87,6 +87,7 @@ tags:
     description: tag2
     name: variant#tag2
 
+
 variant_view:
   memory_cache: 32
   rows_per_page: 50

@@ -70,7 +70,7 @@ def test_model_pagination(qtbot, conn):
     assert model.hasPage(2)
     model.nextPage()
 
-    with qtbot.waitSignal(model.load_finished, timeout=10000):
+    with qtbot.waitSignal(model.load_finished, timeout=None):
         model.load()
 
     assert model.total == 3
