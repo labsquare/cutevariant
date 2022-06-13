@@ -134,17 +134,12 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         self.variant_label.setText(variant_text)
 
         # Load tags
-        # if "tags" in genotype:
-        #     self.tag_edit.setText(",".join(genotype["tags"].split(self.TAG_SEPARATOR)))
-        if "tags" in genotype:
-            config = Config("tags")
-            if "genotypes" in config:
-                tags = []
-                for tag in config["genotypes"]:
-                    tags.append(tag)
-                self.tag_edit.addItems(tags)
-
-            self.tag_edit.setText(",".join(genotype["tags"].split(self.TAG_SEPARATOR)))
+        tags = []
+        config = Config("tags")
+        for tag in config.get("variants", {}):
+            tags.append(tag)
+            self.tag_edit.addItem(tag.get("name",""))
+        self.tag_edit.setText(",".join(genotype.get("tags", "").split(self.TAG_SEPARATOR)))
 
         # Load comment
         if "comment" in genotype:
