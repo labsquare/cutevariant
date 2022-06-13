@@ -130,17 +130,14 @@ class EvaluationSectionWidget(AbstractSectionWidget):
             # Bug with pyside.. need to cast int
             self.favorite.setCheckState(Qt.Checked if variant["favorite"] == 1 else Qt.Unchecked)
 
-        # Load tags
-        if "tags" in variant:
-            config = Config("tags")
-            if "variants" in config:
-                tags = []
-                for tag in config["variants"]:
-                    tags.append(tag)
-                self.tag_edit.addItems(tags)
-
-            self.tag_edit.setText(",".join(variant["tags"].split(self.TAG_SEPARATOR)))
-
+        # Load tags      
+        tags = []
+        config = Config("tags")
+        for tag in config.get("variants", []):
+            tags.append(tag)
+            self.tag_edit.addItem(tag.get("name",""))
+        self.tag_edit.setText(",".join(variant.get("tags", "").split(self.TAG_SEPARATOR)))
+            
         # Load comment
         if "comment" in variant:
             self.comment.setPlainText(variant["comment"])

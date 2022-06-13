@@ -66,26 +66,27 @@ classifications:
 
 tags:
   genotypes:
-  - name: "Geno1"
-    description: "Description1 "
-    color: 'dimgray'
-  - name: "Geno2"
-    description: "Description2 "
-    color: 'orange'
+  - color: '#144eff'
+    description: tag2
+    name: genotype#tag2
+  - color: '#ff343e'
+    description: tag1
+    name: genotype#tag1
   samples:
-  - name: "Sample1"
-    description: "Description1 "
-    color: 'dimgray'
-  - name: "Sample2"
-    description: "Description2 "
-    color: 'orange'
+  - color: '#3251ff'
+    description: tag2
+    name: sample#tag2
+  - color: '#ff3932'
+    description: tag1
+    name: sample#tag1
   variants:
-  - name: "Variant1"
-    description: "Description1 "
-    color: 'dimgray'
-  - name: "Variant2"
-    description: "Description2 "
-    color: 'orange'
+  - color: '#ff201e'
+    description: tag1
+    name: variant#tag1
+  - color: '#2e3dff'
+    description: tag2
+    name: variant#tag2
+
 
 variant_view:
   memory_cache: 32
