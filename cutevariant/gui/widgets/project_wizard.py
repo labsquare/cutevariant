@@ -52,7 +52,10 @@ class ProjectPage(QWizardPage):
             reply = QMessageBox.warning(
                 self,
                 self.tr("Overwrite ?"),
-                self.tr(f"a <b>{name}.db</b> project already exists in this directory. <br>" "Would you like to overwrite it ? All data will be lost."),
+                self.tr(
+                    f"a <b>{name}.db</b> project already exists in this directory. <br>"
+                    "Would you like to overwrite it ? All data will be lost."
+                ),
                 QMessageBox.Yes | QMessageBox.No,
             )
 
@@ -73,7 +76,15 @@ class ProjectPage(QWizardPage):
     def isComplete(self):
         """Conditions to unlock next button"""
 
-        return True if (QDir(self.path_edit.text()).exists() and self.path_edit.text() and self.name_edit.text()) else False
+        return (
+            True
+            if (
+                QDir(self.path_edit.text()).exists()
+                and self.path_edit.text()
+                and self.name_edit.text()
+            )
+            else False
+        )
 
 
 class FilePage(QWizardPage):

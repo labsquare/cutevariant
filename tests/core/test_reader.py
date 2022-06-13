@@ -28,9 +28,7 @@ def test_snpeff3():
     assert "eff" in names
 
 
-@pytest.mark.parametrize(
-    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
-)
+@pytest.mark.parametrize("reader", READERS, ids=[str(i.__class__.__name__) for i in READERS])
 def test_fields(reader):
     fields = tuple(reader.get_fields())
     field_names = [f["name"] for f in fields]
@@ -46,9 +44,7 @@ def test_fields(reader):
         check_field_schema(field)
 
     # test field genotypes
-    sample_fields = [
-        field["name"] for field in fields if field["category"] == "samples"
-    ]
+    sample_fields = [field["name"] for field in fields if field["category"] == "samples"]
     assert "gt" in sample_fields
     assert "dp" in sample_fields
 
@@ -57,9 +53,7 @@ def test_fields(reader):
     assert len(field_with_categories) == len(set(field_with_categories))
 
 
-@pytest.mark.parametrize(
-    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
-)
+@pytest.mark.parametrize("reader", READERS, ids=[str(i.__class__.__name__) for i in READERS])
 def test_extra_fields(reader):
     fields = tuple(reader.get_extra_fields())
     field_names = [f["name"] for f in fields]
@@ -87,9 +81,7 @@ def test_extra_fields(reader):
         assert "dp" not in field_names
 
 
-@pytest.mark.parametrize(
-    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
-)
+@pytest.mark.parametrize("reader", READERS, ids=[str(i.__class__.__name__) for i in READERS])
 def test_variants(reader):
 
     # test if variant field name match name from get_fields
@@ -117,9 +109,7 @@ def test_variants(reader):
         check_variant_schema(variant)
 
 
-@pytest.mark.parametrize(
-    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
-)
+@pytest.mark.parametrize("reader", READERS, ids=[str(i.__class__.__name__) for i in READERS])
 def test_extra_variants(reader):
     def check_value(value: str):
         # check if value is okay !
@@ -170,9 +160,7 @@ def test_extra_variants(reader):
                         check_value(value)
 
 
-@pytest.mark.parametrize(
-    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
-)
+@pytest.mark.parametrize("reader", READERS, ids=[str(i.__class__.__name__) for i in READERS])
 def test_create_db(reader):
 
     conn = sqlite3.connect(":memory:")

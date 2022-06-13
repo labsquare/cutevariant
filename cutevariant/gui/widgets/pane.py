@@ -29,9 +29,7 @@ class Pane(QFrame):
         # build expand buttons
         expand_button = QToolButton()
         expand_button.setAutoRaise(True)
-        expand_button.setIcon(
-            self.style().standardIcon(QStyle.SP_TitleBarUnshadeButton)
-        )
+        expand_button.setIcon(self.style().standardIcon(QStyle.SP_TitleBarUnshadeButton))
         expand_button.setIconSize(QSize(14, 14))
         expand_button.clicked.connect(self.toggle_visible)
 

@@ -118,9 +118,7 @@ def count_cmd(
     # This leads to a fault in the pagination hiding the latest variants if
     # more than 50 must be displayed.
 
-    variants_fields = set(
-        field["name"] for field in sql.get_field_by_category(conn, "variants")
-    )
+    variants_fields = set(field["name"] for field in sql.get_field_by_category(conn, "variants"))
 
     if set(fields).issubset(variants_fields) and not filters and not group_by:
         # All fields are in variants table
@@ -236,15 +234,11 @@ def create_cmd(
     )
 
     LOGGER.debug("command:create_cmd:: %s", sql_query)
-    selection_id = sql.insert_selection_from_source(
-        conn, target, source, filters, count
-    )
+    selection_id = sql.insert_selection_from_source(conn, target, source, filters, count)
     return dict() if selection_id is None else {"id": selection_id}
 
 
-def set_cmd(
-    conn: sqlite3.Connection, target: str, first: str, second: str, operator, **kwargs
-):
+def set_cmd(conn: sqlite3.Connection, target: str, first: str, second: str, operator, **kwargs):
     """Perform set operation like intersection, union and difference between two table selection
 
     This following VQL command:
@@ -281,9 +275,7 @@ def set_cmd(
     sql_query = func_query[operator](query_first, query_second)
     LOGGER.debug("command:set_cmd:: %s", sql_query)
 
-    selection_id = sql.insert_selection_from_sql(
-        conn, sql_query, target, from_selection=False
-    )
+    selection_id = sql.insert_selection_from_sql(conn, sql_query, target, from_selection=False)
     return dict() if selection_id is None else {"id": selection_id}
 
 

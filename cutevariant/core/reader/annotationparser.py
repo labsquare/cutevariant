@@ -368,9 +368,7 @@ class VepParser(BaseParser):
         # annotations field names will be sanitized in handle_descriptions()
 
         # Help to remove duplicated fields from annotations
-        self.variant_field_names = {
-            field["name"] for field in fields if field["name"] != "csq"
-        }
+        self.variant_field_names = {field["name"] for field in fields if field["name"] != "csq"}
 
         for field in fields:
             if field["name"] == "csq":
@@ -480,9 +478,7 @@ class SnpEffParser(BaseParser):
         self.annotation_field_name = list()
         fields = tuple(fields)
         # Help to remove duplicated fields from annotations
-        self.variant_field_names = {
-            field["name"] for field in fields if field["name"] != "ann"
-        }
+        self.variant_field_names = {field["name"] for field in fields if field["name"] != "ann"}
 
         for field in fields:
             if field["name"] == "ann":

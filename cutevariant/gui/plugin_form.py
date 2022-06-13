@@ -101,9 +101,7 @@ class PluginCreator(QDialog):
 
         # Setup name QLineEdit
         self.le_name = QLineEdit()
-        self.le_name.setPlaceholderText(
-            self.tr("The plugin name, as a space-separated class name")
-        )
+        self.le_name.setPlaceholderText(self.tr("The plugin name, as a space-separated class name"))
         self.le_name.setToolTip(self.le_name.placeholderText())
         self.name_validator = QRegularExpressionValidator()
         # Allow letters only
@@ -114,14 +112,10 @@ class PluginCreator(QDialog):
         self.le_resulting_module = QLineEdit("")
         self.le_resulting_module.setReadOnly(True)
         self.le_name.textChanged.connect(
-            lambda s: self.le_resulting_module.setText(
-                camel_to_snake(human_to_camel(s))
-            )
+            lambda s: self.le_resulting_module.setText(camel_to_snake(human_to_camel(s)))
         )
         self.le_resulting_module.setPlaceholderText(
-            self.tr(
-                "The name of the resulting python module (generated from plugin name)"
-            )
+            self.tr("The name of the resulting python module (generated from plugin name)")
         )
         self.le_resulting_module.setToolTip(self.le_resulting_module.placeholderText())
 
@@ -186,9 +180,7 @@ Try answering:
         frame_layout.addWidget(self.check_add_dialog)
         frame_layout.addWidget(self.check_add_settings)
 
-        self.dialog_box = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
+        self.dialog_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.dialog_box.button(QDialogButtonBox.Ok).clicked.connect(self.accept)
         self.dialog_box.button(QDialogButtonBox.Cancel).clicked.connect(self.reject)
 

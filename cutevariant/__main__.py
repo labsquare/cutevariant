@@ -46,6 +46,7 @@ from cutevariant import __version__
 import faulthandler
 import os
 
+
 faulthandler.enable()
 
 
@@ -74,13 +75,7 @@ def main():
     load_network_settings()
 
     # Load app styles
-    LOGGER.info("Load style")
-    app.setStyle(QStyleFactory.create("Fusion"))
     load_styles(app)
-
-    # # Uncomment those line to clear settings
-    # settings = QSettings()
-    # settings.clear()
 
     # Set icons set
     LOGGER.info("Load font")
@@ -103,7 +98,7 @@ def main():
     splash.show()
     app.processEvents()
 
-    #  Drop settings if old version
+    # Check version
     settings = QSettings()
     settings_version = settings.value("version", None)
     if settings_version is None or parse_version(settings_version) < parse_version(__version__):
@@ -112,10 +107,6 @@ def main():
 
     # Display
     w = MainWindow()
-
-    # STYLES = cst.DIR_STYLES + "frameless.qss"
-    # with open(STYLES,"r") as file:
-    #     w.setStyleSheet(file.read())
 
     w.show()
     splash.finish(w)
@@ -165,9 +156,10 @@ def load_styles(app):
     # Display current style
     style_config = config.get("style", {})
     theme = style_config.get("theme", cst.BASIC_STYLE)
-    # Apply selected style by calling on the method in style module based on its
-    # name; equivalent of style.dark(app)
-    getattr(style, theme.lower())(app)
+
+    mystyle = style.AppStyle()
+    mystyle.load_theme(theme.lower() + ".yaml")
+    app.setStyle(mystyle)
 
 
 def load_translations(app):

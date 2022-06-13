@@ -10,6 +10,7 @@ from cutevariant.gui.widgets import DictWidget, MarkdownEditor, TagEdit
 
 from cutevariant import constants, LOGGER
 
+
 class QHLine(QFrame):
     def __init__(self):
         super(QHLine, self).__init__()
@@ -45,18 +46,17 @@ class GenotypeSectionWidget(AbstractSectionWidget):
 
         self.view.set_dict(genotype)
 
-        self.view.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.view.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
 
     def get_genotype(self):
         return {}
 
+
 class EvaluationSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        if hasattr(constants, 'HAS_OPERATOR'):
+        if hasattr(constants, "HAS_OPERATOR"):
             self.TAG_SEPARATOR = constants.HAS_OPERATOR
         else:
             self.TAG_SEPARATOR = ","
@@ -90,7 +90,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         # Load classification
         config = Config("classifications")
         self.genotype_classification = config.get("genotypes")
-        self.genotype_classification = sorted(self.genotype_classification, key= lambda c: c["number"])
+        self.genotype_classification = sorted(
+            self.genotype_classification, key=lambda c: c["number"]
+        )
         for item in self.genotype_classification:
             self.class_combo.addItem(
                 FIcon(0xF012F, item.get("color", "gray")),
@@ -101,7 +103,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
     def get_genotype(self) -> dict:
         genotype = {
             "classification": self.class_combo.currentData(),
-            "tags": self.TAG_SEPARATOR.join([tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]),
+            "tags": self.TAG_SEPARATOR.join(
+                [tag.strip() for tag in self.tag_edit.text().split(",") if tag.strip()]
+            ),
             "comment": self.comment.toPlainText(),
         }
 
@@ -111,7 +115,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load Sample name
         sample = sql.get_sample(self.conn, genotype.get("sample_id", 0))
-        #sample_name = sample.get("name", None)
+        # sample_name = sample.get("name", None)
         if "name" in sample:
             self.sample_label.setText(str(sample["name"]))
 
@@ -135,9 +139,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         if "tags" in genotype:
             config = Config("tags")
             if "genotypes" in config:
-                tags = {}
+                tags = []
                 for tag in config["genotypes"]:
-                    tags[tag["name"]]=tag["description"]
+                    tags.append(tag)
                 self.tag_edit.addItems(tags)
 
             self.tag_edit.setText(",".join(genotype["tags"].split(self.TAG_SEPARATOR)))
@@ -162,7 +166,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         if self.is_locked(genotype["sample_id"]):
             self.setToolTip("Genotype can't be edited because the sample is locked")
-            #self.tag_edit.setReadOnly(True)
+            # self.tag_edit.setReadOnly(True)
             self.comment.preview_btn.setDisabled(True)
             self.class_combo.setDisabled(True)
 
@@ -182,7 +186,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         if config_classif == None or sample_classif == None:
             return False
-        
+
         locked = False
         for config in config_classif:
             if config["number"] == sample_classif and "lock" in config:
@@ -210,13 +214,12 @@ class VariantSectionWidget(AbstractSectionWidget):
             {i: v for i, v in variant.items() if i not in ["variant_id", "annotations", "samples"]}
         )
 
-        self.view.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.view.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
 
     def get_genotype(self):
         return {}
+
 
 class SampleSectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
@@ -233,17 +236,14 @@ class SampleSectionWidget(AbstractSectionWidget):
 
         sample = sql.get_sample(self.conn, genotype["sample_id"])
 
-        self.view.set_dict(
-            {i: v for i, v in sample.items() if i not in ["sample_id"]}
-        )
+        self.view.set_dict({i: v for i, v in sample.items() if i not in ["sample_id"]})
 
-        self.view.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.view.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.view.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
 
     def get_genotype(self):
         return {}
+
 
 class HistorySectionWidget(AbstractSectionWidget):
     def __init__(self, parent: QWidget = None):
@@ -283,6 +283,7 @@ class SampleVariantWidget(QWidget):
     w.save(sample_id, variant_id)
 
     """
+
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__()
 
@@ -348,12 +349,19 @@ class SampleVariantWidget(QWidget):
         """
         sample = sql.get_sample(self._conn, sample_id)
         fields = sql.get_table_columns(self._conn, "genotypes")
-        genotype = [g for g in sql.get_genotypes(self.conn, variant_id, fields=fields, samples=[sample["name"]])]
+        genotype = [
+            g
+            for g in sql.get_genotypes(
+                self.conn, variant_id, fields=fields, samples=[sample["name"]]
+            )
+        ]
         if len(genotype) > 1:
-            LOGGER.error(f"Multiple genotypes returned for variant_id:{variant_id} with sample_id:{sample_id}")
+            LOGGER.error(
+                f"Multiple genotypes returned for variant_id:{variant_id} with sample_id:{sample_id}"
+            )
             return None
-        #sql.get_genotypes keeps in output every field that was in samples={sample}
-        #If not removed, sql.update_genotype will crash because they don't exist in "genotypes" table
+        # sql.get_genotypes keeps in output every field that was in samples={sample}
+        # If not removed, sql.update_genotype will crash because they don't exist in "genotypes" table
         genotype[0].pop("name", None)
         return genotype[0]
 
@@ -426,13 +434,8 @@ class SampleVariantWidget(QWidget):
         Returns:
             str: a string representation of a sample
         """
-        return repr(
-            {
-                k: v
-                for k, v in sample.items()
-                if k in ["classification", "comment", "tags"]
-            }
-        )
+        return repr({k: v for k, v in sample.items() if k in ["classification", "comment", "tags"]})
+
 
 class SampleVariantDialog(QDialog):
     def __init__(self, conn, sample_id, variant_id, parent=None):
@@ -469,7 +472,9 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/devel_7june2022.db")
+    conn = sql.get_sql_connection(
+        "L:/Archives/NGS/BIO_INFO/BIO_INFO_Sam/scripts/cutevariant_project/devel_7june2022.db"
+    )
 
     w = SampleVariantDialog(conn, 1, 7)
 

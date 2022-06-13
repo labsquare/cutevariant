@@ -81,16 +81,12 @@ class RangeSlider(QWidget):
 
         self.opt.sliderPosition = self.first_position
         x_left_handle = (
-            self.style()
-            .subControlRect(QStyle.CC_Slider, self.opt, QStyle.SC_SliderHandle)
-            .right()
+            self.style().subControlRect(QStyle.CC_Slider, self.opt, QStyle.SC_SliderHandle).right()
         )
 
         self.opt.sliderPosition = self.second_position
         x_right_handle = (
-            self.style()
-            .subControlRect(QStyle.CC_Slider, self.opt, QStyle.SC_SliderHandle)
-            .left()
+            self.style().subControlRect(QStyle.CC_Slider, self.opt, QStyle.SC_SliderHandle).left()
         )
 
         groove_rect = self.style().subControlRect(
@@ -152,17 +148,14 @@ class RangeSlider(QWidget):
         self.rangeChanged.emit(self.first_position, self.second_position)
 
     def sizeHint(self):
-        """ override """
+        """override"""
         SliderLength = 84
         TickSpace = 5
 
         w = SliderLength
         h = self.style().pixelMetric(QStyle.PM_SliderThickness, self.opt, self)
 
-        if (
-            self.opt.tickPosition & QSlider.TicksAbove
-            or self.opt.tickPosition & QSlider.TicksBelow
-        ):
+        if self.opt.tickPosition & QSlider.TicksAbove or self.opt.tickPosition & QSlider.TicksBelow:
             h += TickSpace
 
         return (

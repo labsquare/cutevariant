@@ -19,6 +19,9 @@ LOG_LEVELS = {
 MAX_RECENT_PROJECTS = 5
 MIN_COMPLETION_LETTERS = 1
 DEFAULT_SELECTION_NAME = "variants"
+SAMPLES_SELECTION_NAME = "samples"
+CURRENT_SAMPLE_SELECTION_NAME = "current_sample"
+
 # version from which database files are supported (included)
 MIN_AUTHORIZED_DB_VERSION = "0.2.0"
 
@@ -52,7 +55,15 @@ OPERATORS_SQL_2_PY = {
 }
 
 # OPERATOR HAS
-HAS_OPERATOR=","
+HAS_OPERATOR = ","
+
+# FIELD TYPE
+FIELD_TYPE = {
+    "float": {"name": "floating ", "icon": 0xF0B0D, "color": "#2e9599"},
+    "int": {"name": "integer", "icon": 0xF0B10, "color": "#f7dc68"},
+    "str": {"name": "text", "icon": 0xF0B1A, "color": "#f46c3f"},
+    "bool": {"name": "boolean", "icon": 0xF0B09, "color": "#a7226f"},
+}
 
 # Phenotype
 PHENOTYPE_DESC = {2: "Affected", 1: "Unaffected"}

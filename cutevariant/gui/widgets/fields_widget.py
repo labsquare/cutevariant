@@ -7,6 +7,7 @@ import sqlite3
 
 from cutevariant.core import sql
 from cutevariant.gui import FIcon, style
+from cutevariant import constants as cst
 
 
 class FieldsModel(QAbstractListModel):
@@ -42,9 +43,11 @@ class FieldsModel(QAbstractListModel):
             return int(Qt.Checked if self._items[index.row()]["checked"] else Qt.Unchecked)
 
         if role == Qt.DecorationRole:
-            data_type = self._items[index.row()]["type"]
-            s = style.FIELD_TYPE.get(data_type)
-            return QIcon(FIcon(s["icon"], s["color"]))
+            data_type = self._items[index.row()].get("type", "str")
+            s = cst.FIELD_TYPE.get(
+                data_type, cst.FIELD_TYPE.get("str", {"icon": 0xF000E, "color": "red"})
+            )
+            return QIcon(FIcon(s.get("icon"), s.get("color")))
 
     def setData(self, index: QModelIndex, value: typing.Any, role: Qt.ItemDataRole) -> bool:
 

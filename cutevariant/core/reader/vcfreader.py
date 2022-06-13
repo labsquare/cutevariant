@@ -69,9 +69,7 @@ class VcfReader(AbstractReader):
         """
         # Note: number of lines is computed in parent class
         super().__init__(filename)
-        vcf_reader = vcf.VCFReader(
-            filename=filename, strict_whitespace=True, encoding="utf-8"
-        )
+        vcf_reader = vcf.VCFReader(filename=filename, strict_whitespace=True, encoding="utf-8")
         self.samples = vcf_reader.samples
         self.annotation_parser = None
         self.metadata = vcf_reader.metadata
@@ -203,9 +201,7 @@ class VcfReader(AbstractReader):
                 for name in record.INFO:
                     if name.lower() not in forbidden_field:
                         if isinstance(record.INFO[name], list):
-                            variant[name.lower()] = ",".join(
-                                [str(i) for i in record.INFO[name]]
-                            )
+                            variant[name.lower()] = ",".join([str(i) for i in record.INFO[name]])
                         else:
                             variant[name.lower()] = record.INFO[name]
 
@@ -304,9 +300,7 @@ class VcfReader(AbstractReader):
         }
 
         # Read VCF
-        vcf_reader = vcf.VCFReader(
-            filename=self.filename, strict_whitespace=True, encoding="utf-8"
-        )
+        vcf_reader = vcf.VCFReader(filename=self.filename, strict_whitespace=True, encoding="utf-8")
 
         # Read VCF INFO fields
         for field_name, info in vcf_reader.infos.items():
@@ -329,9 +323,7 @@ class VcfReader(AbstractReader):
 
             if field_name == "GT":
                 # Edit description of Genotype field
-                description += (
-                    " (0: homozygous_ref, 1: heterozygous, 2: homozygous_alt)"
-                )
+                description += " (0: homozygous_ref, 1: heterozygous, 2: homozygous_alt)"
                 field_type = VCF_TYPE_MAPPING["Integer"]
 
             yield {

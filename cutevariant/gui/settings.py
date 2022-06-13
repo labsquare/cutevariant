@@ -207,6 +207,7 @@ class ClassificationSettingsWidget(AbstractSettingsWidget):
         classifications = config.get(self.section, [])
         self.widget.set_classifications(classifications)
 
+
 class TagSettingsWidget(AbstractSettingsWidget):
     """Allow to configure proxy settings for widgets that require internet connection
     These settings will apply application-wide (i.e. every QNetworkAccessManager will have these as defaults)

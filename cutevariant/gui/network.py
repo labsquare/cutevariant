@@ -2,8 +2,6 @@ from PySide6.QtCore import QSettings
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkProxy
 
 
-
-
 from cutevariant import LOGGER
 
 PROXY_TYPES = {

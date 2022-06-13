@@ -811,9 +811,7 @@ class VariantView(QWidget):
         self.log_edit.hide()
         self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
         self.log_edit.setStyleSheet(
-            "QWidget{{background-color:'{}'; color:'{}'}}".format(
-                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
-            )
+            "QWidget{{background-color:'{}'; color:'{}'}}".format("orange", "black")
         )
 
         # Setup model
@@ -932,6 +930,13 @@ class VariantView(QWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.top_bar.addWidget(spacer)
+
+        self.source_label = QLabel("source")
+        self.top_bar.addWidget(self.source_label)
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.top_bar.addWidget(spacer)
         # -----------Resize action ----------
 
         self.resize_action = self.top_bar.addAction(FIcon(0xF142A), self.tr("Auto resize"))
@@ -1004,7 +1009,7 @@ class VariantView(QWidget):
         if self.log_edit.isHidden():
             self.log_edit.show()
 
-        icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
+        icon_64 = FIcon(0xF0027, "black").to_base64(18, 18)
 
         self.log_edit.setText(
             """<div height=100%>
@@ -1030,6 +1035,8 @@ class VariantView(QWidget):
         self.log_edit.hide()
         self.model.interrupt()
         self.model.load()
+
+        self.source_label.setText(self.model.source)
 
         # display sort indicator
         order_by = self.model.order_by
@@ -1058,8 +1065,7 @@ class VariantView(QWidget):
         cache = cm.bytes_to_readable(self.model.cache_size())
         max_cache = cm.bytes_to_readable(self.model.max_cache_size())
         self.cache_label.setText(str(" Cache {} of {}".format(cache, max_cache)))
-        if LOGGER.getEffectiveLevel() != DEBUG:
-            self.view.setColumnHidden(0, True)
+
         self.view.scrollToTop()
 
         #  Select first row
@@ -1307,28 +1313,31 @@ class VariantView(QWidget):
         """Create a menu when clicking on a variant line"""
         menu = QMenu(self)
 
+        config = Config("variables") or {}
+        formatted_variant = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+
         current_variant = self.model.variant(index.row())
-        full_variant = sql.get_variant(self.conn, current_variant["id"])
+
+        if re.findall("ann.", formatted_variant):
+            full_variant = sql.get_variant(
+                self.conn, current_variant["id"], with_annotations=True
+            )  # Need with_annotations=True for variant name
+            for ann in full_variant.get("annotations", [{}])[0]:
+                full_variant["annotations___" + str(ann)] = full_variant.get("annotations", [{}])[
+                    0
+                ][ann]
+            formatted_variant = formatted_variant.replace("ann.", "annotations___")
+        else:
+            full_variant = sql.get_variant(self.conn, current_variant["id"])
         # Update variant with currently displayed fields (not in variants table)
         full_variant.update(current_variant)
 
-        # Copy action: Copy the variant reference ID in to the clipboard
-        # Get variant_name_pattern
-        config = Config("variables") or {}
-        formatted_variant = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-        if len(full_variant["annotations"]):
-            for ann in full_variant["annotations"][0]:
-                full_variant["annotations___" + str(ann)] = full_variant["annotations"][0][ann]
-        formatted_variant = formatted_variant.replace("ann.", "annotations___")
+        # variant_name
         variant_name = formatted_variant.format(**full_variant)
 
-        menu.addSection(FIcon(0xF014C), variant_name)
-
-        menu.addSeparator()
-
         menu.addAction(
-            FIcon(0xF14E6),
-            "Edit Variant",
+            FIcon(0xF064F),
+            f"Edit Variant '{variant_name}'",
             self._show_variant_dialog,
         )
 
@@ -1369,31 +1378,23 @@ class VariantView(QWidget):
             # find sample lock/unlock
             validation_menu_lock = False
             validation_menu_text = f"Sample {sample_name} Genotype..."
-            if style.SAMPLE_CLASSIFICATION[sample_valid].get("lock"):
+
+            if self.is_locked(sample_id):
                 validation_menu_lock = True
-                validation_menu_text = "Sample {sample_name} locked"
+                validation_menu_text = f"Sample {sample_name} locked"
 
             menu.addSeparator()
 
             sample_validation_menu = QMenu(self.tr(f"{validation_menu_text}"))
-
             menu.addMenu(sample_validation_menu)
 
-            if validation_menu_lock:
+            sample_validation_menu.setIcon(FIcon(0xF0009))
+            sample_validation_menu.addAction(f"Edit Genotype", self._show_sample_variant_dialog)
 
-                # Validation for sample locked
-                sample_validation_menu.setIcon(FIcon(0xF0009))
-                sample_validation_menu.setEnabled(False)
-
-            else:
-
-                # Validation for sample Unlocked
-                sample_validation_menu.setIcon(FIcon(0xF0009))
+            if not validation_menu_lock:
                 sample_validation_menu.addMenu(self.create_validation_menu(genotype))
-                sample_validation_menu.addAction(
-                    f"Edit Genotype...", self._show_sample_variant_dialog
-                )
-                menu.addMenu(sample_validation_menu)
+
+            # menu.addMenu(sample_validation_menu)
 
         # Edit menu
         menu.addSeparator()
@@ -1411,6 +1412,30 @@ class VariantView(QWidget):
         )
 
         return menu
+
+    def is_locked(self, sample_id: int):
+        """Prevents editing genotype if sample is classified as locked
+        A sample is considered locked if its classification has the boolean "lock: true" set in the Config (yml) file.
+
+        Args:
+            sample_id (int): sql sample id
+
+        Returns:
+            locked (bool) : lock status of sample attached to current genotype
+        """
+        config_classif = Config("classifications").get("samples", None)
+        sample = sql.get_sample(self.conn, sample_id)
+        sample_classif = sample.get("classification", None)
+
+        if config_classif == None or sample_classif == None:
+            return False
+
+        locked = False
+        for config in config_classif:
+            if config["number"] == sample_classif and "lock" in config:
+                if config["lock"] == True:
+                    locked = True
+        return locked
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Override: Show contextual menu over the current variant"""
@@ -1600,7 +1625,11 @@ class VariantView(QWidget):
 
             sql.update_genotypes(self.conn, data)
 
-            self.parent.mainwindow.refresh_plugin("genotypes")
+            if "genotypes" in self.parent.mainwindow.plugins:
+                self.parent.mainwindow.refresh_plugin("genotypes")
+
+            if "samples" in self.parent.mainwindow.plugins:
+                self.parent.mainwindow.refresh_plugin("samples")
 
     def update_tags(self, tags: list = []):
         """Update tags of the variant
@@ -1737,9 +1766,7 @@ class VariantView(QWidget):
         if header_name_match_sample:
             sample_name = header_name_match_sample[0][0]
             sample_infos = sql.search_samples(self.conn, name=sample_name)
-            for sample_info in sample_infos:
-                sample_classification = sample_info["classification"]
-            if style.SAMPLE_CLASSIFICATION[sample_classification].get("lock"):
+            if self.is_locked(sample_infos.get("id", 0)):
                 validation_menu_lock = True
 
         # Menu Validation for sample

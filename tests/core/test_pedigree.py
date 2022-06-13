@@ -44,6 +44,8 @@ def test_import_pedfile():
         "phenotype": 1,
         "classification": 0,
         "comment": "",
+        "count_validation_negative_variant": 0,
+        "count_validation_positive_variant": 0,
     }
     expected_second_sample = {
         "id": 2,
@@ -55,6 +57,8 @@ def test_import_pedfile():
         "phenotype": 2,
         "classification": 0,
         "comment": "",
+        "count_validation_negative_variant": 0,
+        "count_validation_positive_variant": 0,
     }
 
     # Third sample is not conform

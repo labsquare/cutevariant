@@ -157,18 +157,14 @@ VQL_TO_TREE_CASES = {
     "SELECT chr,pos,ref,alt FROM variants WHERE ref =~'^[AG]$' AND alt =~'^[CT]$'": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref", "alt"],
-        "filters": {
-            "$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]
-        },
+        "filters": {"$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]},
         "source": "variants",
     },
     # Test not regexp
     "SELECT chr,pos,ref,alt FROM variants WHERE ref !~'^[AG]$' AND alt !~'^[CT]$'": {
         "cmd": "select_cmd",
         "fields": ["chr", "pos", "ref", "alt"],
-        "filters": {
-            "$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]
-        },
+        "filters": {"$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]},
         "source": "variants",
     },
     # Test 19 Test ANY

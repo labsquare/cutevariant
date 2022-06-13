@@ -307,9 +307,7 @@ if __name__ == "__main__":
     model.load(document)
 
     # Sanity check
-    assert json.dumps(model.json(), sort_keys=True) == json.dumps(
-        document, sort_keys=True
-    )
+    assert json.dumps(model.json(), sort_keys=True) == json.dumps(document, sort_keys=True)
 
     view.show()
     view.resize(500, 300)

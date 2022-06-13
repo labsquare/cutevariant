@@ -450,6 +450,8 @@ def test_get_samples_from_query(conn):
         "phenotype": 1,
         "classification": 4,
         "comment": "",
+        "count_validation_negative_variant": 0,
+        "count_validation_positive_variant": 0,
     }
     expected_second_sample = {
         "id": 2,
@@ -461,6 +463,8 @@ def test_get_samples_from_query(conn):
         "phenotype": 0,
         "classification": 2,
         "comment": "",
+        "count_validation_negative_variant": 0,
+        "count_validation_positive_variant": 0,
     }
 
     assert expected_first_sample in samples

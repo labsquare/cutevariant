@@ -546,7 +546,7 @@ class ImportThread(QThread):
             # Import VARIANT FILE
             self.finished_status.emit(False)
             self.emit_progress("**Import Variants**")
-            import_id=self.import_id
+            import_id = self.import_id
             with create_reader(self.filename, self.annotation_parser) as reader:
                 self._reader = reader
                 sql.import_reader(

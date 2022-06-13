@@ -17,9 +17,7 @@ def test_query_dialog(qtbot):
 
 def test_query_model(qtmodeltester):
     model = QueryListModel()
-    model.add_preset(
-        "sacha", "Une requête sauvegardée", "SELECT chr,pos,ref FROM variants"
-    )
+    model.add_preset("sacha", "Une requête sauvegardée", "SELECT chr,pos,ref FROM variants")
     model.add_preset(
         "charles", "Sa requête aussi", "SELECT chr FROM variants WHERE ann.gene='CFTR'"
     )

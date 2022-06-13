@@ -38,9 +38,7 @@ class TrioAnalysisDialog(PluginDialog):
         self.type_combo = QComboBox()
 
         self.type_combo.addItem(self.tr("De novo mutation"), self.DE_NOVO)
-        self.type_combo.addItem(
-            self.tr("Autosomal Recessive"), self.AUTOSOMAL_RECESSIVE
-        )
+        self.type_combo.addItem(self.tr("Autosomal Recessive"), self.AUTOSOMAL_RECESSIVE)
         self.type_combo.addItem(self.tr("Autosomal Dominant"), self.AUTOSOMAL_DOMINANT)
         self.type_combo.addItem(self.tr("X-linked Recessive"), self.X_LINKED_RECESSIVE)
 
@@ -67,13 +65,9 @@ class TrioAnalysisDialog(PluginDialog):
 
         self.form_box.setLayout(flayout)
 
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Apply | QDialogButtonBox.Cancel
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Apply | QDialogButtonBox.Cancel)
         self.button_box.button(QDialogButtonBox.Apply).setDisabled(True)
-        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(
-            self.create_filter
-        )
+        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.create_filter)
         self.button_box.rejected.connect(self.reject)
 
         vlayout = QVBoxLayout()
@@ -125,7 +119,7 @@ class TrioAnalysisDialog(PluginDialog):
         self.button_box.button(QDialogButtonBox.Apply).setEnabled(valid_form)
 
     def create_filter(self):
-        """ build filter and send to the mainwindow.set_state_data """
+        """build filter and send to the mainwindow.set_state_data"""
 
         filter_type = self.type_combo.currentData()
 
@@ -154,26 +148,26 @@ class TrioAnalysisDialog(PluginDialog):
         elif filter_type == self.AUTOSOMAL_DOMINANT:
             filters = {
                 "$and": [
-                    {f"samples.{child}.gt" : 1.0},
+                    {f"samples.{child}.gt": 1.0},
                     {
                         "$or": [
                             {
                                 "$and": [
                                     {
-                                       f"samples.{father}.gt": 1.0,
+                                        f"samples.{father}.gt": 1.0,
                                     },
                                     {
-                                       f"samples.{mother}.gt": 0.0,
+                                        f"samples.{mother}.gt": 0.0,
                                     },
                                 ]
                             },
                             {
                                 "$and": [
                                     {
-                                      f"samples.{father}.gt":  0.0,
+                                        f"samples.{father}.gt": 0.0,
                                     },
                                     {
-                                      f"samples.{mother}.gt": 1.0,
+                                        f"samples.{mother}.gt": 1.0,
                                     },
                                 ]
                             },
@@ -185,14 +179,14 @@ class TrioAnalysisDialog(PluginDialog):
         elif filter_type == self.X_LINKED_RECESSIVE:
             filters = {
                 "$and": [
-                    {"chr":"X"},
+                    {"chr": "X"},
                     {f"samples.{father}.gt": 0},
                     {f"samples.{mother}.gt": 1},
                     {f"samples.{child}.gt": 0},
                 ]
             }
 
-        self.mainwindow.set_state_data("filters",filters)
+        self.mainwindow.set_state_data("filters", filters)
         self.mainwindow.refresh_plugins()
         self.close()
 

@@ -126,9 +126,7 @@ class DownloadDialog(QDialog):
         h_read = self.human_readable_bytes(read)
         h_speed = self.human_readable_bytes(speed) + "/sec"
 
-        self.info_label.setText(
-            f"Time remaining {h_remaining} - {h_read} of {h_total} ({h_speed})"
-        )
+        self.info_label.setText(f"Time remaining {h_remaining} - {h_read} of {h_total} ({h_speed})")
 
         # Set progression
         self.progress.setRange(0, total)
@@ -164,9 +162,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     dialog = DownloadDialog()
-    dialog.set_source(
-        QUrl("http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/mrna.fa.gz")
-    )
+    dialog.set_source(QUrl("http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/mrna.fa.gz"))
     dialog.set_destination(QDir("/tmp/"))
     dialog.start()
     dialog.show()
