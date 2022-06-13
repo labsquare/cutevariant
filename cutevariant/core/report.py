@@ -1,4 +1,6 @@
 import codecs
+import datetime
+import getpass
 import jinja2
 import os
 import shutil
@@ -144,6 +146,8 @@ class SampleReport(AbstractReport):
 
     def _get_data(self):
         return {
+            "date": datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
+            "user": getpass.getuser(),
             "sample" : self.get_sample(),
             "stats": self.get_stats(),
             "classification_threshold": self._variant_classif_threshold,
