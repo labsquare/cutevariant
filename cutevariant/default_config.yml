@@ -65,9 +65,27 @@ classifications:
     color: '#ed6d79'
 
 tags:
-  genotypes: ["geno1","geno2"]
-  samples: ["sample1","sample2"]
-  variants: ["variant1","variant2"]
+  genotypes:
+  - name: "Geno1"
+    description: "Description1 "
+    color: 'dimgray'
+  - name: "Geno2"
+    description: "Description2 "
+    color: 'orange'
+  samples:
+  - name: "Sample1"
+    description: "Description1 "
+    color: 'dimgray'
+  - name: "Sample2"
+    description: "Description2 "
+    color: 'orange'
+  variants:
+  - name: "Variant1"
+    description: "Description1 "
+    color: 'dimgray'
+  - name: "Variant2"
+    description: "Description2 "
+    color: 'orange'
 
 variant_view:
   memory_cache: 32
