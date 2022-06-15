@@ -624,9 +624,11 @@ class GenotypesWidget(plugin.PluginWidget):
             if self.is_locked(genotype.get("sample_id", 0)):
                 validation_menu_enable = False
                 validation_menu_title = "Classification (locked)"
+                tags_menu_title = "Tags (locked)"
             else:
                 validation_menu_enable = True
                 validation_menu_title = "Classification"
+                tags_menu_title = "Tags"
 
             menu.addAction(
                 FIcon(0xF064F),
@@ -634,6 +636,7 @@ class GenotypesWidget(plugin.PluginWidget):
                 self._show_sample_variant_dialog,
             )
 
+            # Classification menu
             cat_menu = menu.addMenu(validation_menu_title)
             cat_menu.setEnabled(validation_menu_enable)
 
@@ -648,6 +651,21 @@ class GenotypesWidget(plugin.PluginWidget):
                 action = cat_menu.addAction(FIcon(icon, item["color"]), item["name"])
                 action.setData(item["number"])
                 action.triggered.connect(self._on_classification_changed)
+
+            # tags menu
+            tags_menu = menu.addMenu(tags_menu_title)
+            tags_menu.setEnabled(validation_menu_enable)
+
+            tags_preset = Config("tags")
+
+            for item in tags_preset.get("genotypes",[]):
+
+                icon = 0xF04F9
+
+                action = tags_menu.addAction(FIcon(icon, item["color"]), item["name"])
+                action.setData(item["name"])
+                on_click = functools.partial(self._on_tags_changed, [item["name"]])
+                action.triggered.connect(on_click)
 
             menu.exec_(event.globalPos())
 
@@ -719,6 +737,37 @@ class GenotypesWidget(plugin.PluginWidget):
 
         if "samples" in self.mainwindow.plugins:
             self.mainwindow.refresh_plugin("samples")
+
+    def _on_tags_changed(self, tags: list = []):
+        """triggered from menu"""
+
+        for index in self.view.selectionModel().selectedRows():
+            
+            # current variant sample
+            row = index.row()
+            genotype = self.model.get_genotype(row)
+            genotype_variant_id = genotype["variant_id"]
+            genotype_sample_name = genotype["name"]
+
+            # current variant tags
+            current_genotype = next(sql.get_genotypes(
+                    self.conn,
+                    genotype_variant_id,
+                    ["tags"],
+                    [genotype_sample_name],
+                ))
+            current_tags_text = current_genotype.get("tags", None)
+            if current_tags_text:
+                current_tags = current_tags_text.split(cst.HAS_OPERATOR)
+            else:
+                current_tags = []
+
+            # append tags
+            for tag in tags:
+                current_tags.append(tag) if tag not in current_tags else current_tags
+
+            # update tags
+            self.model.edit([row], {"tags": cst.HAS_OPERATOR.join(current_tags)})
 
     def _on_clear_filters(self):
 
