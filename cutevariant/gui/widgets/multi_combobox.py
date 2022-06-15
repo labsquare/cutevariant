@@ -155,13 +155,13 @@ class MultiComboBox(QComboBox):
         """return list of words"""
         words = []
         for i in range(self.model().rowCount()):
-            words = self.model().item(i).text()
+            words.append(self.model().item(i).text())
 
         return words
 
     def find_words(self, word: str) -> QStandardItem:
 
-        items = self.model().findItems(word)
+        items = self.model().findItems(word, Qt.MatchExactly)
 
         if not items:
             return None
