@@ -9,6 +9,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
         "source": "variants",
+        "order_by": [],
     },
     # Test 1 bis
     'SELECT chr,pos,samples["sacha"].gt FROM variants WHERE samples["sacha"].gt = 1': {
@@ -16,6 +17,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {"$and": [{"samples.sacha.gt": {"$eq": 1.0}}]},
         "source": "variants",
+        "order_by": [],
     },
     # Test 2
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND b!=5 AND c<3": {
@@ -29,6 +31,7 @@ VQL_TO_TREE_CASES = {
                 {"c": {"$lt": 3}},
             ]
         },
+        "order_by": [],
     },
     # Test 2 bis avec IS NULL
     "SELECT chr,pos,ref FROM variants WHERE a = NULL": {
@@ -36,6 +39,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "ref"],
         "source": "variants",
         "filters": {"$and": [{"a": {"$eq": None}}]},
+        "order_by": [],
     },
     # Test 3
     "SELECT chr,pos,ref FROM variants WHERE a=3 AND (b=5 OR c=3)": {
@@ -53,6 +57,7 @@ VQL_TO_TREE_CASES = {
                 },
             ]
         },
+        "order_by": [],
     },
     # Test 4
     'SELECT chr,pos, samples["sacha"] FROM variants # comments are handled': {
@@ -60,6 +65,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "samples.sacha.gt"],
         "filters": {},
         "source": "variants",
+        "order_by": [],
     },
     'SELECT chr,pos, samples["sacha"] FROM variants ORDER BY chr': {
         "cmd": "select_cmd",
@@ -81,6 +87,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos"],
         "filters": {"$and": [{"consequence": {"$has": "exon"}}]},
         "source": "variants",
+        "order_by": [],
     },
     # Test 7bis - HAS
     "SELECT chr, pos  FROM variants WHERE consequence !HAS 'exon'": {
@@ -88,6 +95,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos"],
         "filters": {"$and": [{"consequence": {"$nhas": "exon"}}]},
         "source": "variants",
+        "order_by": [],
     },
     # Test 8
     "SELECT chr FROM variants WHERE some_field IN ('one', 'two')": {
@@ -95,6 +103,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr"],
         "source": "variants",
         "filters": {"$and": [{"some_field": {"$in": ["one", "two"]}}]},
+        "order_by": [],
     },
     # Test 9
     "SELECT chr FROM variants WHERE gene IN WORDSET['test']": {
@@ -102,6 +111,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr"],
         "source": "variants",
         "filters": {"$and": [{"gene": {"$in": {"$wordset": "test"}}}]},
+        "order_by": [],
     },
     # Test 10
     "CREATE denovo FROM variants": {
@@ -159,6 +169,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "ref", "alt"],
         "filters": {"$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]},
         "source": "variants",
+        "order_by": [],
     },
     # Test not regexp
     "SELECT chr,pos,ref,alt FROM variants WHERE ref !~'^[AG]$' AND alt !~'^[CT]$'": {
@@ -166,6 +177,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "ref", "alt"],
         "filters": {"$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]},
         "source": "variants",
+        "order_by": [],
     },
     # Test 19 Test ANY
     "SELECT chr,pos,ref,alt FROM variants WHERE samples[ANY].gt > 1": {
@@ -173,6 +185,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "ref", "alt"],
         "filters": {"$and": [{"samples.$any.gt": {"$gt": 1.0}}]},
         "source": "variants",
+        "order_by": [],
     },
     # Test 20 Test ANY
     "SELECT chr,pos,ref,alt FROM variants WHERE samples[?].gt > 1": {
@@ -180,6 +193,7 @@ VQL_TO_TREE_CASES = {
         "fields": ["chr", "pos", "ref", "alt"],
         "filters": {"$and": [{"samples.$all.gt": {"$gt": 1.0}}]},
         "source": "variants",
+        "order_by": [],
     },
 }
 

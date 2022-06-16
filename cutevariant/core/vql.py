@@ -219,6 +219,7 @@ class SelectCmd(metaclass=model_class):
             "fields": fields,
             "source": self.source,
             "filters": filters,
+            "order_by": order_by,
         }
 
         if order_by:
