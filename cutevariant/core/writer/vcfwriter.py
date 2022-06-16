@@ -30,10 +30,11 @@ class VcfWriter(AbstractWriter):
         conn,
         filename,
         fields=["chr", "pos", "ref", "alt"],
+        samples=[],
         source="variants",
         filters={},
     ):
-        super().__init__(conn, filename, fields, source, filters)
+        super().__init__(conn, filename, fields, samples, source, filters)
 
     def write_header(self, device):
 
@@ -134,6 +135,9 @@ class VcfWriter(AbstractWriter):
         sample_annotations = sql.get_genotypes(self.conn, variant_id, fields=fields)
 
         for annotations in sample_annotations:
+            if self.samples != [] and annotations["name"] not in self.samples:
+                continue
+        
             sssample = []
             for ann in annotations:
                 if ann in fields:
@@ -172,7 +176,10 @@ class VcfWriter(AbstractWriter):
 
         # Write the header (column labels) of the VCF
         samples = sql.get_samples(self.conn)
-        samples_name = "\t".join([item["name"] for item in samples])
+        if self.samples == []:
+            samples_name = "\t".join([item["name"] for item in samples])
+        else:
+            samples_name = "\t".join([item["name"] for item in samples if item["name"] in self.samples])
         device.write(
             f"#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  {samples_name}\n"
         )

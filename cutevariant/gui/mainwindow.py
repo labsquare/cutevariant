@@ -1079,6 +1079,7 @@ class MainWindow(QMainWindow):
             chosen_ext,
             file_name,
             fields=self.get_state_data("fields"),
+            samples=self.get_state_data("samples"),
             source=self.get_state_data("source"),
             filters=self.get_state_data("filters"),
         )

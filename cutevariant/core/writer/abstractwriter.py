@@ -26,11 +26,13 @@ class AbstractWriter:
         conn,
         filename,
         fields=["chr", "pos", "ref", "alt"],
+        samples=[],
         source="variants",
         filters={},
     ):
 
         self.fields = fields
+        self.samples = samples
         self.source = source
         self.filters = filters
         self.conn = conn

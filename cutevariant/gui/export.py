@@ -35,6 +35,7 @@ class ExportDialog(QDialog):
         conn: sqlite3.Connection,
         filename: str,
         fields=["chr", "pos", "ref", "alt"],
+        samples=[],
         source="variants",
         filters={},
         parent=None,
@@ -42,6 +43,7 @@ class ExportDialog(QDialog):
         super().__init__(parent)
 
         self.fields = fields
+        self.samples = samples
         self.source = source
         self.filters = filters
         self.conn = conn
@@ -105,8 +107,8 @@ class ExportDialog(QDialog):
 class BedExportDialog(ExportDialog):
     """Dialog to export database to a bed file"""
 
-    def __init__(self, conn, filename, fields, source, filters, parent=None):
-        super().__init__(conn, filename, fields, source, filters, parent)
+    def __init__(self, conn, filename, fields, samples, source, filters, parent=None):
+        super().__init__(conn, filename, fields, samples, source, filters, parent)
         self.set_central_widget(
             QLabel(self.tr("Will export BED file (tab-separated file with CHR, START, END)"))
         )
@@ -129,11 +131,12 @@ class CsvExportDialog(ExportDialog):
         conn: sqlite3.Connection,
         filename: str,
         fields,
+        samples,
         source,
         filters,
         parent=None,
     ):
-        super().__init__(conn, filename, fields, source, filters, parent)
+        super().__init__(conn, filename, fields, samples, source, filters, parent)
 
         form_layout = QFormLayout()
         self.combo = QComboBox()
@@ -181,8 +184,8 @@ class CsvExportDialog(ExportDialog):
 class PedExportDialog(ExportDialog):
     """Dialog to export database to a bed file"""
 
-    def __init__(self, conn, filename, fields, source, filters, parent=None):
-        super().__init__(conn, filename, fields, source, filters, parent)
+    def __init__(self, conn, filename, fields, samples, source, filters, parent=None):
+        super().__init__(conn, filename, fields, samples, source, filters, parent)
 
     def save(self):
         writer = PedWriter(self.conn, self.filename)
@@ -204,11 +207,12 @@ class VcfExportDialog(ExportDialog):
         conn: sqlite3.Connection,
         filename: str,
         fields,
+        samples,
         source,
         filters,
         parent=None,
     ):
-        super().__init__(conn, filename, fields, source, filters, parent)
+        super().__init__(conn, filename, fields, samples, source, filters, parent)
 
         self.group_box = QGroupBox()
         self.group_box.setTitle(self.tr("The following fields will be exported"))
@@ -228,7 +232,7 @@ class VcfExportDialog(ExportDialog):
         self.set_central_widget(self.group_box)
 
     def save(self):
-        writer = VcfWriter(self.conn, self.filename, self.fields, self.source, self.filters)
+        writer = VcfWriter(self.conn, self.filename, self.fields, self.samples, self.source, self.filters)
         success = self.save_from_writer(writer, "Exporting to VCF")
 
         if success:
@@ -253,6 +257,7 @@ class ExportDialogFactory:
         format_name: str,
         filename: str,
         fields=["chr", "pos", "ref", "alt"],
+        samples=[],
         source="variants",
         filters={},
     ):
@@ -261,6 +266,7 @@ class ExportDialogFactory:
             conn,
             filename,
             fields,
+            samples,
             source,
             filters,
         )
