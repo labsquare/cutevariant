@@ -188,7 +188,7 @@ class PedExportDialog(ExportDialog):
         super().__init__(conn, filename, fields, samples, source, filters, parent)
 
     def save(self):
-        writer = PedWriter(self.conn, self.filename)
+        writer = PedWriter(self.conn, self.filename, self.samples)
 
         success = self.save_from_writer(writer, "Saving PED file")
         if success:
