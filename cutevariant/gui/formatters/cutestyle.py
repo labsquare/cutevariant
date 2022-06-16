@@ -55,8 +55,9 @@ class CutestyleFormatter(Formatter):
         self.refresh()
 
     def refresh(self):
-        config = Config("variant_view")
-        self.TAGS_COLOR = {tag["name"]: tag["color"] for tag in config.get("tags", [])}
+        #config = Config("variant_view")
+        config = Config("tags")
+        self.TAGS_COLOR = {tag["name"]: tag["color"] for tag in config.get("variants", [])}
 
     def format(self, field: str, value: str, option, is_selected):
 
@@ -147,7 +148,7 @@ class CutestyleFormatter(Formatter):
             if value is None or value == "":
                 return {}
 
-            values = str(value).split("&")
+            values = str(value).split(cst.HAS_OPERATOR)
             font = QFont()
             metrics = QFontMetrics(font)
             x = 0
@@ -163,7 +164,8 @@ class CutestyleFormatter(Formatter):
 
                 painter.setFont(font)
                 # painter.setClipRect(option.rect, Qt.IntersectClip)
-                col = QColor("#D5E9F5")
+                # col = QColor("#D5E9F5")
+                col = QColor(self.TAGS_COLOR.get(value,"#D5E9F5"))
                 painter.setBrush(QBrush(col))
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
