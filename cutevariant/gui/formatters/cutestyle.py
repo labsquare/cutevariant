@@ -56,12 +56,10 @@ class CutestyleFormatter(Formatter):
 
     def refresh(self):
         # Tags colors
+        self.TAGS_COLOR = {}
         config = Config("tags")
-        tags_fusion = {}
-        tags_fusion = tags_fusion | {tag["name"]: tag["color"] for tag in config.get("samples", [])}
-        tags_fusion = tags_fusion | {tag["name"]: tag["color"] for tag in config.get("genotypes", [])}
-        tags_fusion = tags_fusion | {tag["name"]: tag["color"] for tag in config.get("variants", [])}
-        self.TAGS_COLOR = {tag: tags_fusion[tag] for tag in tags_fusion}
+        for tag in config.get("samples", []) + config.get("genotypes", []) + config.get("variants", []):
+            self.TAGS_COLOR[tag["name"]] = tag["color"] 
 
     def format(self, field: str, value: str, option, is_selected):
 
