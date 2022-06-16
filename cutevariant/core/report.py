@@ -167,7 +167,10 @@ class SampleReport(AbstractReport):
             template_dir = os.path.dirname(self._template)
             output_dir = os.path.dirname(output_path)
 
-            env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir), autoescape=True)
+            env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
+                                    autoescape=True,
+                                    extensions=['jinja_markdown.MarkdownExtension']
+            )
 
             template = env.get_template(os.path.basename(self._template))
             output = template.render(self._get_data())
