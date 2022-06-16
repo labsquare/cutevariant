@@ -55,9 +55,11 @@ class CutestyleFormatter(Formatter):
         self.refresh()
 
     def refresh(self):
-        #config = Config("variant_view")
+        # Tags colors
+        self.TAGS_COLOR = {}
         config = Config("tags")
-        self.TAGS_COLOR = {tag["name"]: tag["color"] for tag in config.get("variants", [])}
+        for tag in config.get("samples", []) + config.get("genotypes", []) + config.get("variants", []):
+            self.TAGS_COLOR[tag["name"]] = tag["color"] 
 
     def format(self, field: str, value: str, option, is_selected):
 
@@ -124,7 +126,6 @@ class CutestyleFormatter(Formatter):
             font = QFont()
             metrics = QFontMetrics(font)
             x = 0
-            # y = option.rect.center().y()
             pix = QPixmap(option.rect.size())
             pix.fill(Qt.transparent)
             painter = QPainter(pix)
@@ -132,9 +133,7 @@ class CutestyleFormatter(Formatter):
                 width = metrics.boundingRect(value).width()
                 height = metrics.height()
                 rect = QRect(x, 2, width + 15, height + 10)
-
                 painter.setFont(font)
-                # painter.setClipRect(option.rect, Qt.IntersectClip)
                 painter.setBrush(QBrush(QColor(self.SO_COLOR.get(value, "#90d4f7"))))
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
@@ -152,19 +151,14 @@ class CutestyleFormatter(Formatter):
             font = QFont()
             metrics = QFontMetrics(font)
             x = 0
-            # y = option.rect.center().y()
             pix = QPixmap(option.rect.size())
             pix.fill(Qt.transparent)
             painter = QPainter(pix)
             for index, value in enumerate(values):
                 width = metrics.boundingRect(value).width()
                 height = metrics.height()
-
                 rect = QRect(x, (option.rect.height() - height) * 0.5, width + 10, height)
-
                 painter.setFont(font)
-                # painter.setClipRect(option.rect, Qt.IntersectClip)
-                # col = QColor("#D5E9F5")
                 col = QColor(self.TAGS_COLOR.get(value,"#D5E9F5"))
                 painter.setBrush(QBrush(col))
                 painter.setPen(Qt.NoPen)
@@ -177,23 +171,3 @@ class CutestyleFormatter(Formatter):
 
         return super().format(field, value, option, is_selected)
 
-    # def paint(
-    #     self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
-    # ):
-    #     """Apply graphical formatting to each item in each displayed column in the view"""
-    #     brush = QBrush()
-    #     pen = QPen()
-    #     font = QFont()
-
-    #     if option.state & QStyle.State_Selected:
-    #         text_color = option.palette.color(QPalette.Normal, QPalette.BrightText)
-    #     else:
-    #         text_color = option.palette.color(QPalette.Normal, QPalette.Text)
-
-    #     is_selected = option.state & QStyle.State_Selected
-
-    #     # Default theme color
-    #     pen.setColor(text_color)
-
-    #     field_name = self.field_name(index).lower()
-    #     value = self.value(index)
