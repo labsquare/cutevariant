@@ -735,6 +735,11 @@ class VariantModel(QAbstractTableModel):
         else:
             return False
 
+    def removeColumn(self, column: int, parent: QModelIndex = QModelIndex()) -> bool:
+        self.beginRemoveColumns(parent, column, column)
+        self.fields = self.fields[:column] + self.fields[column + 1 :]
+        self.endRemoveColumns()
+
 
 class LoadingTableView(QTableView):
     """Movie animation displayed on VariantView for long SQL queries executed
@@ -1801,7 +1806,7 @@ class VariantView(QWidget):
 
         tags_preset = Config("tags")
 
-        for item in tags_preset.get("variants",[]):
+        for item in tags_preset.get("variants", []):
 
             icon = 0xF04F9
 
@@ -1928,11 +1933,12 @@ class VariantViewWidget(plugin.PluginWidget):
 
     def on_field_removed(self, field: str):
 
+        # TODO: Refactor to remove column based on field name...
         fields = self.view.model.fields
-
-        fields.remove(field)
-        self.view.model.fields = fields
+        field_index = fields.index(field)
+        self.view.model.removeColumn(field_index)
         self.view.load()
+        fields = self.view.model.fields
         self.mainwindow.set_state_data("fields", fields)
         self.mainwindow.refresh_plugins(sender=self)
 
