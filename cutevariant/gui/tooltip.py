@@ -88,9 +88,9 @@ def genotype_tooltip(data: dict, conn: sqlite3.Connection):
 
         # extract info from variant
         variant = sql.get_variant(conn, variant_id, with_annotations=True)
-        # if len(variant["annotations"]):
-        for ann in variant.get("annotations", [{}])[0]:
-            variant["annotations___" + str(ann)] = variant.get("annotations", [{}])[0][ann]
+        if len(variant.get("annotations", [{}])):
+            for ann in variant.get("annotations", [{}])[0]:
+                variant["annotations___" + str(ann)] = variant.get("annotations", [{}])[0][ann]
         variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
         variant_name = variant_name_pattern.format(**variant)
         genotype["variant_name"] = variant_name
@@ -311,10 +311,11 @@ def variant_tooltip(
 
     # extract info from variant
     variant_for_pattern = variant
-    for ann in variant_for_pattern.get("annotations", [{}])[0]:
-        variant_for_pattern["annotations___" + str(ann)] = variant_for_pattern.get(
-            "annotations", [{}]
-        )[0][ann]
+    if len(variant_for_pattern.get("annotations", [{}])):
+        for ann in variant_for_pattern.get("annotations", [{}])[0]:
+            variant_for_pattern["annotations___" + str(ann)] = variant_for_pattern.get(
+                "annotations", [{}]
+            )[0][ann]
     variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
     variant_name = variant_name_pattern.format(**variant_for_pattern)
 

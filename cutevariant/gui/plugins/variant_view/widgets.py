@@ -1319,7 +1319,7 @@ class VariantView(QWidget):
         menu = QMenu(self)
 
         config = Config("variables") or {}
-        formatted_variant = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+        formatted_variant = config.get("variant_name_pattern","{chr}:{pos} - {ref}>{alt}")
 
         current_variant = self.model.variant(index.row())
 
@@ -1327,11 +1327,12 @@ class VariantView(QWidget):
             full_variant = sql.get_variant(
                 self.conn, current_variant["id"], with_annotations=True
             )  # Need with_annotations=True for variant name
-            for ann in full_variant.get("annotations", [{}])[0]:
-                full_variant["annotations___" + str(ann)] = full_variant.get("annotations", [{}])[
-                    0
-                ][ann]
-            formatted_variant = formatted_variant.replace("ann.", "annotations___")
+            if len(full_variant.get("annotations", [{}])):
+                for ann in full_variant.get("annotations", [{}])[0]:
+                    full_variant["annotations___" + str(ann)] = full_variant.get("annotations", [{}])[
+                        0
+                    ][ann]
+                formatted_variant = formatted_variant.replace("ann.", "annotations___")
         else:
             full_variant = sql.get_variant(self.conn, current_variant["id"])
         # Update variant with currently displayed fields (not in variants table)
