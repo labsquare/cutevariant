@@ -372,6 +372,23 @@ class SamplesWidget(plugin.PluginWidget):
 
         return menu
 
+    def _create_tags_menu(self):
+        # Create classication action
+        tags_menu = QMenu(self.tr("Tags"))
+
+        tags_preset = Config("tags")
+
+        for item in tags_preset.get("samples",[]):
+
+            icon = 0xF04F9
+
+            action = tags_menu.addAction(FIcon(icon, item["color"]), item["name"])
+            action.setData(item["name"])
+            on_click = functools.partial(self.update_tags, [item["name"]])
+            action.triggered.connect(on_click)
+
+        return tags_menu
+
     def _setup_actions(self):
 
         # self.action_prev = self.tool_bar.addAction(FIcon(0xF0141), "Prev")
@@ -432,16 +449,17 @@ class SamplesWidget(plugin.PluginWidget):
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
 
         sample = self.model.get_sample(self.view.currentIndex().row())
-        if "name" in sample:
-            sample_name = sample["name"]
-        else:
-            sample_name = "unknown"
+        sample_name = sample.get("name", "unknown")
+        sample_id = sample.get("id", 0)
+   
 
         menu = QMenu(self)
 
         menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit)
 
         menu.addMenu(self._create_classification_menu(sample))
+        if not self.is_locked(sample_id):
+            menu.addMenu(self._create_tags_menu())
         menu.addSeparator()
 
         fields_menu = menu.addMenu("Add genotype fields ...")
@@ -456,6 +474,30 @@ class SamplesWidget(plugin.PluginWidget):
         menu.addAction(self.source_action)
 
         menu.exec(event.globalPos())
+
+    def is_locked(self, sample_id: int):
+        """Prevents editing genotype if sample is classified as locked
+        A sample is considered locked if its classification has the boolean "lock: true" set in the Config (yml) file.
+
+        Args:
+            sample_id (int): sql sample id
+
+        Returns:
+            locked (bool) : lock status of sample attached to current genotype
+        """
+        config_classif = Config("classifications").get("samples", None)
+        sample = sql.get_sample(self.model.conn, sample_id)
+        sample_classif = sample.get("classification", None)
+
+        if config_classif == None or sample_classif == None:
+            return False
+
+        locked = False
+        for config in config_classif:
+            if config["number"] == sample_classif and "lock" in config:
+                if config["lock"] == True:
+                    locked = True
+        return locked
 
     def on_edit(self):
 
@@ -524,6 +566,36 @@ class SamplesWidget(plugin.PluginWidget):
             self.model.update_sample(index.row(), update_data)
 
             LOGGER.debug(sample)
+
+    def update_tags(self, tags: list = []):
+        """Update tags of the variant
+
+        Args:
+            tags(list): A list of tags
+
+        """
+
+        for index in self.view.selectionModel().selectedRows():
+
+            # current variant
+            row = index.row()
+            sample = self.model.get_sample(row)
+            sample_id = sample["id"]
+
+            # current sample tags
+            current_sample = sql.get_sample(self.model.conn, sample_id)
+            current_tags_text = current_sample.get("tags", None)
+            if current_tags_text:
+                current_tags = current_tags_text.split(cst.HAS_OPERATOR)
+            else:
+                current_tags = []
+
+            # append tags
+            for tag in tags:
+                current_tags.append(tag) if tag not in current_tags else current_tags
+
+            # update tags
+            self.model.update_sample(row, {"tags": cst.HAS_OPERATOR.join(current_tags)})
 
     def on_show_variant(self):
 

@@ -182,7 +182,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         if is_locked(self,sample["id"]):
             self.setToolTip(LOCK_TOOLTIP_MESSAGE)
-            # self.tag_edit.setReadOnly(True)
+            self.tag_edit.setDisabled(True)
             self.comment.preview_btn.setDisabled(True)
 
 

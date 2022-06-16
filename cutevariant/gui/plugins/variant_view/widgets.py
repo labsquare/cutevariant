@@ -1346,6 +1346,7 @@ class VariantView(QWidget):
         # Classification menu
 
         menu.addMenu(self.create_classification_menu(index))
+        menu.addMenu(self.create_tags_menu(index))
         menu.addMenu(self.create_external_links_menu())
 
         menu.addAction(self.favorite_action)
@@ -1637,38 +1638,29 @@ class VariantView(QWidget):
         Args:
             tags(list): A list of tags
 
-        Todo:
-            Use custom sqlite type ?
         """
-
-        update_data = {}
-
-        is_multi_selection = len(self.view.selectionModel().selectedRows()) > 1
 
         for index in self.view.selectionModel().selectedRows():
 
-            variant = self.model.variants[index.row()]
+            # current variant
+            row = index.row()
+            variant = self.model.variants[row]
             variant_id = variant["id"]
-            update_data[index.row()] = copy.copy(tags)
 
-            if is_multi_selection:
-                # Keep previous tags
-                current_variant = sql.get_variant(self.conn, variant_id)
-                current_tag = current_variant.get("tags", "")
+            # current varaint tags
+            current_variant = sql.get_variant(self.conn, variant_id)
+            current_tags_text = current_variant.get("tags", None)
+            if current_tags_text:
+                current_tags = current_tags_text.split(cst.HAS_OPERATOR)
+            else:
+                current_tags = []
 
-                if current_tag:
-                    update_data[index.row()] += current_tag.split("&")
+            # append tags
+            for tag in tags:
+                current_tags.append(tag) if tag not in current_tags else current_tags
 
-        # Write to sql
-        print(update_data)
-        for row, data in update_data.items():
-            variant_id = self.model.variants[row]["id"]
-            print(row, variant_id, data)
-            sql_tags = "&".join(set(data))
-            if not sql_tags:
-                sql_tags = None
-
-            self.model.update_variant(row, {"tags": sql_tags})
+            # update tags
+            self.model.update_variant(row, {"tags": cst.HAS_OPERATOR.join(current_tags)})
 
     def edit_comment(self, index: QModelIndex):
         """Allow a user to add a comment for the selected variant"""
@@ -1800,6 +1792,25 @@ class VariantView(QWidget):
             action.triggered.connect(on_click)
 
         return class_menu
+
+    def create_tags_menu(self, index: QModelIndex):
+        # Create classication action
+        tags_menu = QMenu(self.tr("Tags"))
+
+        variant = self.model.variant(index.row())
+
+        tags_preset = Config("tags")
+
+        for item in tags_preset.get("variants",[]):
+
+            icon = 0xF04F9
+
+            action = tags_menu.addAction(FIcon(icon, item["color"]), item["name"])
+            action.setData(item["name"])
+            on_click = functools.partial(self.update_tags, [item["name"]])
+            action.triggered.connect(on_click)
+
+        return tags_menu
 
     def create_validation_menu(self, genotype):
         # Create classication action

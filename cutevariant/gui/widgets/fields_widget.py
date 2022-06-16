@@ -5,6 +5,8 @@ from PySide6.QtGui import *
 import typing
 import sqlite3
 
+import json
+
 from cutevariant.core import sql
 from cutevariant.gui import FIcon, style
 from cutevariant import constants as cst
@@ -38,6 +40,9 @@ class FieldsModel(QAbstractListModel):
 
         if role == Qt.UserRole:
             return self._items[index.row()]["search"]
+
+        if role == Qt.UserRole + 1:
+            return (self._items[index.row()]["name"], self._items[index.row()]["type"])
 
         if role == Qt.CheckStateRole:
             return int(Qt.Checked if self._items[index.row()]["checked"] else Qt.Unchecked)
@@ -90,7 +95,12 @@ class FieldsModel(QAbstractListModel):
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         if index.isValid():
-            return Qt.ItemIsEnabled | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable
+            return (
+                Qt.ItemIsEnabled
+                | Qt.ItemIsUserCheckable
+                | Qt.ItemIsSelectable
+                | Qt.ItemIsDragEnabled
+            )
 
         return Qt.NoItemFlags
 
@@ -131,6 +141,18 @@ class FieldsModel(QAbstractListModel):
 
         return new_fields
 
+    def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
+        fields = [idx.data(Qt.UserRole + 1) for idx in indexes]
+        res = QMimeData("cutevariant/typed-json")
+        res.setData(
+            "cutevariant/typed-json",
+            bytes(json.dumps({"type": "fields", "fields": fields}), "utf-8"),
+        )
+        return res
+
+    def mimeTypes(self) -> typing.List[str]:
+        return ["cutevariant/typed-json"]
+
 
 class FieldsWidget(QWidget):
 
@@ -140,6 +162,7 @@ class FieldsWidget(QWidget):
         super().__init__()
         self.view = QListView()
         self.view.setIconSize(QSize(24, 24))
+        self.view.setDragEnabled(True)
         self._model = FieldsModel()
         self._model.fields_changed.connect(self.fields_changed)
         self.proxy_model = QSortFilterProxyModel()
