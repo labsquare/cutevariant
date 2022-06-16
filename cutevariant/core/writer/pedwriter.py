@@ -23,7 +23,7 @@ class PedWriter(AbstractWriter):
             writer.save(conn)
     """
 
-    def __init__(self, conn, filename, samples):
+    def __init__(self, conn, filename, samples=[]):
         super().__init__(conn, filename, samples=samples)
 
     def async_save(self, *args, **kwargs):
