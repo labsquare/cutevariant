@@ -1314,7 +1314,7 @@ class VariantView(QWidget):
         menu = QMenu(self)
 
         config = Config("variables") or {}
-        formatted_variant = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+        formatted_variant = config.get("variant_name_pattern","{chr}:{pos} - {ref}>{alt}")
 
         current_variant = self.model.variant(index.row())
 
