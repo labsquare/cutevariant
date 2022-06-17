@@ -52,6 +52,7 @@ def is_locked(self, sample_id: int):
                 locked = True
     return locked
 
+
 class AbstractSectionWidget(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__()
@@ -159,7 +160,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         config = Config("tags")
         for tag in config.get("samples", []):
             tags.append(tag)
-            self.tag_edit.addItem(tag.get("name",""))
+            self.tag_edit.addItem(tag.get("name", ""))
         self.tag_edit.setText(",".join(sample.get("tags", "").split(self.TAG_SEPARATOR)))
 
         # Load comment
@@ -180,7 +181,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
                 )
             )
 
-        if is_locked(self,sample["id"]):
+        if is_locked(self, sample["id"]):
             self.setToolTip(LOCK_TOOLTIP_MESSAGE)
             self.tag_edit.setDisabled(True)
             self.comment.preview_btn.setDisabled(True)
@@ -234,7 +235,7 @@ class PedigreeSectionWidget(AbstractSectionWidget):
         if "mother_id" in sample:
             self.mother_edit.setText(str(sample["mother_id"]))
 
-        if is_locked(self,sample["id"]):
+        if is_locked(self, sample["id"]):
             self.setToolTip(LOCK_TOOLTIP_MESSAGE)
             # self.tag_edit.setReadOnly(True)
             self.family_edit.setDisabled(True)
@@ -313,7 +314,7 @@ class PhenotypeSectionWidget(AbstractSectionWidget):
                 )
             )
 
-        if is_locked(self,sample["id"]):
+        if is_locked(self, sample["id"]):
             self.setToolTip(LOCK_TOOLTIP_MESSAGE)
             # self.tag_edit.setReadOnly(True)
             self.sex_combo.setDisabled(True)
@@ -670,12 +671,10 @@ class SampleDialog(QDialog):
         self.w = SampleWidget(conn)
 
         self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
-        self.html_button = QPushButton("HTML report")
-        self.docx_button = QPushButton("Docx report")
+        self.html_button = QPushButton(self.tr("Create report ..."))
 
         self.button_layout = QHBoxLayout()
         self.button_layout.addWidget(self.html_button)
-        self.button_layout.addWidget(self.docx_button)
         self.button_layout.addStretch()
         self.button_layout.addWidget(self.button_box)
 
@@ -687,8 +686,7 @@ class SampleDialog(QDialog):
 
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
-        self.html_button.clicked.connect(self.export_html_report)
-        self.docx_button.clicked.connect(self.export_docx_report)
+        self.html_button.clicked.connect(self.export_report)
 
         # self.resize(800, 600)
 
@@ -700,43 +698,40 @@ class SampleDialog(QDialog):
         self.w.save(self._sample_id)
         self.accept()
 
-    def export_html_report(self):
-        output = self.get_output_path(".html")
-        
-        if output != None:
-            report = SampleReport(self._conn, self._sample_id)
-            report.set_template(Config("Report").get("html_template"))
-            report.create(output)
-            QMessageBox.information(
-                None,
-                "",
-                "Report was successfully created",
-                QMessageBox.Ok
+    def export_report(self):
+        """Create HTML report"""
+
+        # Get output file
+        output, _ = QFileDialog.getSaveFileName(
+            self, "File name", QDir.homePath(), self.tr("HTML (*.html)")
+        )
+        if not output:
+            return
+
+        if not output.endswith(".html"):
+            output += ".html"
+
+        # Get template
+        config = Config("report")
+        template = config.get("html_template", None)
+        if not template:
+            QMessageBox.warning(
+                self, "No template defined", "Please configure a template from settings"
             )
+            return
 
-    def export_docx_report(self):
-        output = self.get_output_path(".docx")
+        # Create report
+        report = SampleReport(self._conn, self._sample_id)
+        report.set_template(template)
+        report.create(output)
 
-        if output != None:
-            report = SampleReport(self._conn, self._sample_id)
-            report.set_template(Config("Report").get("docx_template"))
-            report.create(output)
-            QMessageBox.information(
-                None,
-                "",
-                "Report was successfully created",
-                QMessageBox.Ok
-            )
+        ret = QMessageBox.question(
+            self, "report", "Do you want to open the report ?", QMessageBox.Yes | QMessageBox.No
+        )
 
-    def get_output_path(self, file_type):
-        output = QFileDialog.getSaveFileName(self, "File name", QDir.homePath(), file_type, file_type)
-        if output[0] == "":
-            return None
-        if output[0].endswith(file_type):
-            output = output[0]
-        else:
-            output = output[0] + output[1]
-        return output
+        if ret == QMessageBox.Yes:
+            QDesktopServices.openUrl(output)
+
 
 if __name__ == "__main__":
     import sys

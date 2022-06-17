@@ -45,6 +45,15 @@ def is_gz_file(filepath):
         return test_f.read(3) == b"\x1f\x8b\x08"
 
 
+def create_fake_conn():
+    from cutevariant.core.reader import FakeReader
+    from cutevariant.core import sql
+
+    conn = sql.get_sql_connection(":memory:")
+    sql.import_reader(conn, FakeReader())
+    return conn
+
+
 def get_uncompressed_size(filepath):
     device = open(filepath, "rb")
     magic_4bytes = device.read()[:4]
@@ -157,8 +166,6 @@ def recursive_overwrite(src: str, dest: str, ignore=None):
             ignored = set()
         for f in files:
             if f not in ignored:
-                recursive_overwrite(os.path.join(src, f), 
-                                    os.path.join(dest, f), 
-                                    ignore)
+                recursive_overwrite(os.path.join(src, f), os.path.join(dest, f), ignore)
     else:
         shutil.copyfile(src, dest)

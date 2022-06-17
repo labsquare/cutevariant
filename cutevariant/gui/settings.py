@@ -523,11 +523,9 @@ class ReportSettingsWidget(AbstractSettingsWidget):
         self.setWindowIcon(FIcon(0xF1518))
 
         self.html_template = FileEdit()
-        self.docx_template = FileEdit()
 
         main_layout = QFormLayout()
         main_layout.addRow(self.tr("HTML template:"), self.html_template)
-        main_layout.addRow(self.tr("Docx template:"), self.docx_template)
 
         self.setLayout(main_layout)
 
@@ -535,11 +533,10 @@ class ReportSettingsWidget(AbstractSettingsWidget):
         """Save the selected variables in config"""
 
         # Config
-        config = Config("Report") or {}
+        config = Config("report") or {}
 
         # Save variables setting
         config["html_template"] = self.html_template.text()
-        config["docx_template"] = self.docx_template.text()
         config.save()
 
         # Clear pixmap cache
@@ -548,16 +545,13 @@ class ReportSettingsWidget(AbstractSettingsWidget):
     def load(self):
         """Setup widgets in ReportSettingsWidget"""
         self.html_template.clear()
-        self.docx_template.clear()
 
         # Config
-        config = Config("Report") or {}
+        config = Config("report") or {}
 
         # Set variables
         html = config.get("html_template", "")
-        docx = config.get("docx_template", "")
         self.html_template.setText(html)
-        self.docx_template.setText(docx)
 
 
 class SettingsDialog(QDialog):
