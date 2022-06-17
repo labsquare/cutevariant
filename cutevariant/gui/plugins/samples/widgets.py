@@ -3,30 +3,22 @@ import sqlite3
 import functools
 from typing import List
 
-from cutevariant import LOGGER
-from cutevariant.config import Config
-from cutevariant.gui import plugin, style
-from cutevariant.gui import MainWindow
-
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
-from cutevariant.core import sql
+
+from cutevariant import LOGGER
 from cutevariant import constants as cst
-
+from cutevariant.core import sql
+from cutevariant.config import Config
+from cutevariant.gui import plugin, style, MainWindow
+from cutevariant.gui.widgets import SampleDialog
+from cutevariant.gui.widgets import SamplesEditor
 from cutevariant.gui import FIcon
-from cutevariant.gui.widgets import (
-    SampleDialog,
-    SamplesEditor,
-)
-
 from cutevariant.gui import tooltip as toolTip
 
 import time
-
-# from gui.style import SAMPLE_CLASSIFICATION
-
 
 DEFAULT_SELECTION_NAME = cst.DEFAULT_SELECTION_NAME or "variants"
 SAMPLES_SELECTION_NAME = cst.SAMPLES_SELECTION_NAME or "samples"
@@ -36,15 +28,20 @@ LOCKED_SELECTIONS = [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAM
 
 class SampleModel(QAbstractTableModel):
 
+    """Contains current samples"""
+
     NAME_COLUMN = 0
     PHENOTYPE_COLUMN = 1
     SEX_COLUMN = 2
     COMMENT_COLUMN = 3
-    # INFO_COLUMN = 4
 
-    def __init__(self, conn: sqlite3.Connection = None) -> None:
+    def __init__(self, conn: sqlite3.Connection = None):
         super().__init__()
+
+        # real Model data samples
         self._samples = []
+
+        # Samples to loads
         self._selected_samples = []
         self.conn = conn
         self.classifications = []
@@ -57,7 +54,6 @@ class SampleModel(QAbstractTableModel):
 
     def load(self):
         """Loads all the samples from the database"""
-
         if self.conn:
             self.beginResetModel()
             self._samples.clear()
@@ -85,7 +81,8 @@ class SampleModel(QAbstractTableModel):
             sample = self._samples[index.row()]
             if col == SampleModel.NAME_COLUMN:
                 return sample.get("name", "unknown")
-            elif col == SampleModel.COMMENT_COLUMN:
+
+            if col == SampleModel.COMMENT_COLUMN:
                 count_validation_positive_variant = sample.get(
                     "count_validation_positive_variant", 0
                 )
@@ -94,7 +91,6 @@ class SampleModel(QAbstractTableModel):
                 return count_validation_positive_variant
 
         if role == Qt.DecorationRole:
-
             sample = self._samples[index.row()]
             color = QApplication.palette().color(QPalette.Text)
             color_alpha = QColor(QApplication.palette().color(QPalette.Text))
@@ -104,21 +100,21 @@ class SampleModel(QAbstractTableModel):
                 sex = sample.get("sex", None)
                 if sex == 1:
                     return QIcon(FIcon(0xF029D))
-                elif sex == 2:
+                if sex == 2:
                     return QIcon(FIcon(0xF029C))
-                elif sex == 0:
+                if sex == 0:
                     return QIcon(FIcon(0xF029E, color_alpha))
 
-            elif col == SampleModel.PHENOTYPE_COLUMN:
+            if col == SampleModel.PHENOTYPE_COLUMN:
                 phenotype = sample.get("phenotype")
                 if phenotype == 2:
                     return QIcon(FIcon(0xF08C9, color))
-                elif phenotype == 1:
+                if phenotype == 1:
                     return QIcon(FIcon(0xF05DD, color))
-                else:
-                    return QIcon(FIcon(0xF001A, color_alpha))
 
-            elif col == SampleModel.COMMENT_COLUMN:
+                return QIcon(FIcon(0xF001A, color_alpha))
+
+            if col == SampleModel.COMMENT_COLUMN:
                 comment = sample.get("comment", None)
                 count_validation_positive_variant = sample.get(
                     "count_validation_positive_variant", 0
@@ -126,10 +122,10 @@ class SampleModel(QAbstractTableModel):
                 if count_validation_positive_variant:
                     # return QIcon(FIcon(0xF017F, color))
                     return QIcon(FIcon(0xF017A, color))
-                elif comment:
+                if comment:
                     return QIcon(FIcon(0xF017A, color))
-                else:
-                    return QIcon(FIcon(0xF017A, color_alpha))
+
+                return QIcon(FIcon(0xF017A, color_alpha))
 
         if role == Qt.ToolTipRole:
 
@@ -139,14 +135,14 @@ class SampleModel(QAbstractTableModel):
                 sample_comment_tooltip = sample.get("comment", "").replace("\n", "<br>")
                 return sample_comment_tooltip
 
-            elif col == SampleModel.NAME_COLUMN:
+            if col == SampleModel.NAME_COLUMN:
                 sample_name_tooltip = self.get_tooltip(index.row())
                 return sample_name_tooltip
 
-            elif col == SampleModel.PHENOTYPE_COLUMN:
+            if col == SampleModel.PHENOTYPE_COLUMN:
                 return cst.PHENOTYPE_DESC.get(int(sample["phenotype"]), "Unknown")
 
-            elif col == SampleModel.SEX_COLUMN:
+            if col == SampleModel.SEX_COLUMN:
                 return cst.SEX_DESC.get(int(sample["sex"]), "Unknown")
 
     def get_tooltip(self, row: int) -> str:
@@ -170,9 +166,17 @@ class SampleModel(QAbstractTableModel):
         self._selected_samples.extend(samples)
         self.load()
 
-    def rowCount(self, index: QModelIndex = QModelIndex()):
+    def rowCount(self, index: QModelIndex = QModelIndex()) -> int:
+        """override"""
         if index == QModelIndex():
             return len(self._samples)
+        else:
+            return 0
+
+    def columnCount(self, index: QModelIndex = QModelIndex()) -> int:
+        """override"""
+        if index == QModelIndex():
+            return 4
         else:
             return 0
 
@@ -206,19 +210,16 @@ class SampleModel(QAbstractTableModel):
 
         self.endResetModel()
 
-    def columnCount(self, index: QModelIndex = QModelIndex()):
-        if index == QModelIndex():
-            return 4
-        else:
-            return 0
-
 
 class SampleVerticalHeader(QHeaderView):
+
+    """Customize Vertical header with icons"""
+
     def __init__(self, parent=None):
         super().__init__(Qt.Vertical, parent)
-        self.mainwindow = parent
 
-    def sizeHint(self):
+    def sizeHint(self) -> QSize:
+        """override"""
         return QSize(30, super().sizeHint().height())
 
     def paintSection(self, painter: QPainter, rect: QRect, section: int):
@@ -229,7 +230,6 @@ class SampleVerticalHeader(QHeaderView):
         painter.save()
         super().paintSection(painter, rect, section)
         try:
-
             classification = self.model().get_sample(section).get("classification", 0)
             name = self.model().get_sample(section).get("name", None)
 
@@ -262,15 +262,8 @@ class SampleVerticalHeader(QHeaderView):
 
 class SamplesWidget(plugin.PluginWidget):
 
-    # Location of the plugin in the mainwindow
-    # Can be : DOCK_LOCATION, CENTRAL_LOCATION, FOOTER_LOCATION
     LOCATION = plugin.DOCK_LOCATION
-    # Make the plugin enable. Otherwise, it will be not loaded
     ENABLE = True
-
-    # Refresh the plugin only if the following state variable changed.
-    # Can be : fields, filters, source
-
     REFRESH_STATE_DATA = {"samples"}
 
     def __init__(self, parent=None):
@@ -278,7 +271,6 @@ class SamplesWidget(plugin.PluginWidget):
 
         self.tool_bar = QToolBar()
         self.tool_bar.setIconSize(QSize(16, 16))
-        self.view = QTableView()
         self.add_button = QPushButton(self.tr("Add sample(s)"))
         self.add_button.clicked.connect(self.on_add_samples)
         # Empty widget
@@ -293,25 +285,24 @@ class SamplesWidget(plugin.PluginWidget):
         self.setWindowTitle(self.tr("Samples"))
 
         self.model = SampleModel(self.conn)
+
+        self.view = QTableView()
         self.view.setModel(self.model)
-        self.setContentsMargins(0, 0, 0, 0)
-
-        self._setup_actions()
-
         self.view.horizontalHeader().hide()
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        self.view.doubleClicked.connect(self.on_edit)
-        # self.view.clicked.connect(self.on_run)
-
         self.view.setShowGrid(False)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setVerticalHeader(SampleVerticalHeader(parent))
-        # self.model.modelReset.connect(self.on_model_changed)
+        self.view.doubleClicked.connect(self.on_edit)
 
+        # Setup actions
+        self._setup_actions()
+
+        # Build layout
         self.stack_layout = QStackedLayout()
         self.stack_layout.addWidget(self.empty_widget)
         self.stack_layout.addWidget(self.view)
@@ -345,8 +336,17 @@ class SamplesWidget(plugin.PluginWidget):
         if dialog.exec() == QDialog.Accepted:
             self.model.add_samples(dialog.get_selected_samples())
             self.on_model_changed()
-            self.remove_all_sample_fields()
-            self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
+
+            ret = QMessageBox.question(
+                self,
+                "Create new source",
+                "Would you like to create a new source from selected samples ? If you answer no, you can always do it later",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+
+            if ret == QMessageBox.Yes:
+                self.remove_all_sample_fields()
+                self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
     def _create_classification_menu(self, sample: List = None):
 
@@ -448,7 +448,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.genotype_action.triggered.connect(self.on_add_genotypes)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
-
+        """override"""
         sample = self.model.get_sample(self.view.currentIndex().row())
         sample_name = sample.get("name", "unknown")
         sample_id = sample.get("id", 0)
