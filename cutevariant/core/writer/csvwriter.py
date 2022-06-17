@@ -27,7 +27,7 @@ class CsvWriter(AbstractWriter):
         conn,
         filename,
         fields=["chr", "pos", "ref", "alt"],
-        samples=[],
+        samples=None,
         source="variants",
         filters={},
     ):

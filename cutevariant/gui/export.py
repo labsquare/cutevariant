@@ -35,7 +35,7 @@ class ExportDialog(QDialog):
         conn: sqlite3.Connection,
         filename: str,
         fields=["chr", "pos", "ref", "alt"],
-        samples=[],
+        samples=None,
         source="variants",
         filters={},
         parent=None,
@@ -257,7 +257,7 @@ class ExportDialogFactory:
         format_name: str,
         filename: str,
         fields=["chr", "pos", "ref", "alt"],
-        samples=[],
+        samples=None,
         source="variants",
         filters={},
     ):

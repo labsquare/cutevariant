@@ -23,13 +23,13 @@ class PedWriter(AbstractWriter):
             writer.save(conn)
     """
 
-    def __init__(self, conn, filename, samples=[]):
+    def __init__(self, conn, filename, samples=None):
         super().__init__(conn, filename, samples=samples)
 
     def async_save(self, *args, **kwargs):
 
         samples = list(sql.get_samples(self.conn))
-        if self.samples != []:
+        if self.samples != None:
             samples = [s for s in samples if s["name"] in self.samples]
         sample_map = dict((sample["id"], sample["name"]) for sample in samples)
 

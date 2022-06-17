@@ -30,7 +30,7 @@ class VcfWriter(AbstractWriter):
         conn,
         filename,
         fields=["chr", "pos", "ref", "alt"],
-        samples=[],
+        samples=None,
         source="variants",
         filters={},
     ):
@@ -135,7 +135,7 @@ class VcfWriter(AbstractWriter):
         sample_annotations = sql.get_genotypes(self.conn, variant_id, fields=fields)
 
         for annotations in sample_annotations:
-            if self.samples != [] and annotations["name"] not in self.samples:
+            if self.samples != None and annotations["name"] not in self.samples:
                 continue
         
             sssample = []
