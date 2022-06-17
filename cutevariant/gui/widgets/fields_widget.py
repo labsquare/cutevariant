@@ -143,12 +143,12 @@ class FieldsModel(QAbstractListModel):
 
     def mimeData(self, indexes: typing.List[QModelIndex]) -> QMimeData:
         fields = [idx.data(Qt.UserRole + 1) for idx in indexes]
-        res = QMimeData("cutevariant/typed-json")
-        res.setData(
+        self._mime_data = QMimeData("cutevariant/typed-json")
+        self._mime_data.setData(
             "cutevariant/typed-json",
             bytes(json.dumps({"type": "fields", "fields": fields}), "utf-8"),
         )
-        return res
+        return self._mime_data
 
     def mimeTypes(self) -> typing.List[str]:
         return ["cutevariant/typed-json"]
