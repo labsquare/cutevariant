@@ -280,9 +280,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.tool_bar.setIconSize(QSize(16, 16))
         self.view = QTableView()
         self.add_button = QPushButton(self.tr("Add sample(s)"))
-        self.sample_editor = SamplesEditor()
-        self.sample_editor.setWindowModality(Qt.ApplicationModal)
-        self.add_button.clicked.connect(self.sample_editor.show)
+        self.add_button.clicked.connect(self.on_add_samples)
         # Empty widget
         self.empty_widget = QWidget()
         self.empty_widget.setBackgroundRole(QPalette.Base)
@@ -313,7 +311,6 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setVerticalHeader(SampleVerticalHeader(parent))
         # self.model.modelReset.connect(self.on_model_changed)
-        self.sample_editor.sample_selected.connect(self.on_add_samples)
 
         self.stack_layout = QStackedLayout()
         self.stack_layout.addWidget(self.empty_widget)
@@ -341,11 +338,15 @@ class SamplesWidget(plugin.PluginWidget):
         # self.mainwindow.set_state_data("source", "samples")
         # self.mainwindow.refresh_plugins(sender=self)
 
-    def on_add_samples(self, samples: list):
-        self.model.add_samples(samples)
-        self.on_model_changed()
-        self.remove_all_sample_fields()
-        self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
+    def on_add_samples(self):
+
+        dialog = SamplesEditor(self.model.conn)
+
+        if dialog.exec() == QDialog.Accepted:
+            self.model.add_samples(dialog.get_selected_samples())
+            self.on_model_changed()
+            self.remove_all_sample_fields()
+            self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
     def _create_classification_menu(self, sample: List = None):
 
@@ -378,7 +379,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         tags_preset = Config("tags")
 
-        for item in tags_preset.get("samples",[]):
+        for item in tags_preset.get("samples", []):
 
             icon = 0xF04F9
 
@@ -395,7 +396,7 @@ class SamplesWidget(plugin.PluginWidget):
         # self.action_next = self.tool_bar.addAction(FIcon(0xF0142), "Next")
 
         self.add_action = self.tool_bar.addAction(
-            FIcon(0xF0010), "Add Sample(s)", self.sample_editor.show
+            FIcon(0xF0010), "Add Sample(s)", self.on_add_samples
         )
         self.rem_action = self.tool_bar.addAction(
             FIcon(0xF0BE5), "Remove selection", self.on_remove
@@ -451,7 +452,6 @@ class SamplesWidget(plugin.PluginWidget):
         sample = self.model.get_sample(self.view.currentIndex().row())
         sample_name = sample.get("name", "unknown")
         sample_id = sample.get("id", 0)
-   
 
         menu = QMenu(self)
 
@@ -741,8 +741,6 @@ class SamplesWidget(plugin.PluginWidget):
         """
         self.model.clear()
         self.model.conn = conn
-        self.sample_editor.conn = conn
-        self.sample_editor.load()
 
         # Chargement des classification
 

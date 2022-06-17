@@ -35,6 +35,21 @@ from cutevariant.gui.ficon import FIcon
 
 
 class SamplesEditorModel(QAbstractTableModel):
+
+    """A Model showing sqlite samples
+
+    Attributes:
+        conn (sqlite.Connection)
+        query (str): Samples filters
+
+    Examples:
+        model = SampleEditorModel(conn)
+        model.query = "boby status:3 classification:4"
+        model.load()
+
+
+    """
+
     def __init__(self, conn: sqlite3.Connection, parent=None):
         super().__init__(parent)
         self._data = []
@@ -55,8 +70,8 @@ class SamplesEditorModel(QAbstractTableModel):
 
         return 0
 
-    def data(self, index: QModelIndex, role: Qt.ItemDataRole):
-
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> typing.Any:
+        """override"""
         if not index.isValid():
             return
         if role == Qt.DisplayRole:
@@ -76,53 +91,62 @@ class SamplesEditorModel(QAbstractTableModel):
         return None
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
+        """override"""
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
 
     def load(self):
+        """Load samples from sqlite"""
         if self.conn:
             self.beginResetModel()
             self._data = list(sql.get_samples_from_query(self.conn, self.query))
 
             self.endResetModel()
 
-    def get_sample(self, row: int):
+    def get_sample(self, row: int) -> dict:
+        """Get all sample from row"""
         return self._data[row]
 
 
-class SamplesEditor(QWidget):
+class SamplesEditor(QDialog):
+
+    """A Widget to select samples from the databases"""
 
     sample_selected = Signal(list)
 
     def __init__(self, conn: sqlite3.Connection = None, parent=None):
         super().__init__()
 
-        self.btn_box = QDialogButtonBox()
-        self.add_btn = self.btn_box.addButton("Add selection", QDialogButtonBox.AcceptRole)
-
-        self.clear_btn = self.btn_box.addButton("Clear selection", QDialogButtonBox.ResetRole)
-        self.btn_box.addButton("Close", QDialogButtonBox.RejectRole)
-        self.btn_box.accepted.connect(self._on_accept)
-        self.btn_box.rejected.connect(self.close)
-
-        self.setWindowTitle(self.tr("Select sample(s)"))
-
-        self.toolbar = QToolBar()
-        self.line = QLineEdit()
-        self.line.setPlaceholderText("Search sample ...")
-        self.line.textChanged.connect(self._on_search)
-
+        # Create model
         self.model = SamplesEditorModel(conn)
 
+        # Create view
         self.view = QTableView()
         self.view.verticalHeader().hide()
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.MultiSelection)
         self.view.setModel(self.model)
+        self.view.selectionModel().selectionChanged.connect(self.on_selectionChanged)
 
+        # Create buttons box
+        self.btn_box = QDialogButtonBox()
+        self.btn_box.accepted.connect(self._on_accept)
+        self.btn_box.rejected.connect(self.close)
+        self.add_btn = self.btn_box.addButton("Add selection", QDialogButtonBox.AcceptRole)
+        self.clear_btn = self.btn_box.addButton("Clear selection", QDialogButtonBox.ResetRole)
         self.clear_btn.clicked.connect(self.view.selectionModel().clear)
+        self.btn_box.addButton("Close", QDialogButtonBox.RejectRole)
 
+        self.setWindowTitle(self.tr("Select sample(s)"))
+
+        # Create toolbar
+        self.toolbar = QToolBar()
+        self.line = QLineEdit()
+        self.line.setPlaceholderText("Search sample ...")
+        self.line.textChanged.connect(self._on_search)
+
+        # Create layout
         v_layout = QVBoxLayout(self)
         v_layout.addWidget(self.toolbar)
         v_layout.addWidget(self.line)
@@ -131,18 +155,14 @@ class SamplesEditor(QWidget):
 
         self._setup_actions()
 
-        # self.view.doubleClicked.connect(self._on_accept)
-        self.view.selectionModel().selectionChanged.connect(self.on_selectionChanged)
-
-        # TODO : CHARGER QD ON OUVRE LE WIDGET
         config = Config("classifications")
         self.CLASSIFICATION = config.get("samples")
 
         self.conn = conn
-
         self.on_selectionChanged()
 
     def load(self):
+        """Load samples"""
         self.model.load()
 
     def on_selectionChanged(self):
@@ -273,6 +293,7 @@ class SamplesEditor(QWidget):
 
     def _on_accept(self):
         self.sample_selected.emit(self.get_selected_samples())
+        self.accept()
 
     @property
     def conn(self):
@@ -287,12 +308,9 @@ class SamplesEditor(QWidget):
 
 if __name__ == "__main__":
     import sys
+    from cutevariant.commons import create_fake_conn
 
     app = QApplication(sys.argv)
 
-    conn = sql.get_sql_connection("/home/sacha/test.db")
-
-    w = SamplesEditor(conn)
-    w.show()
-
-    app.exec()
+    w = SamplesEditor(create_fake_conn())
+    w.exec()
