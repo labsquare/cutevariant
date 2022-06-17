@@ -176,7 +176,7 @@ class VcfWriter(AbstractWriter):
 
         # Write the header (column labels) of the VCF
         samples = sql.get_samples(self.conn)
-        if self.samples == []:
+        if self.samples == None:
             samples_name = "\t".join([item["name"] for item in samples])
         else:
             samples_name = "\t".join([item["name"] for item in samples if item["name"] in self.samples])
