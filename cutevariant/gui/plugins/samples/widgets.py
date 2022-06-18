@@ -337,16 +337,17 @@ class SamplesWidget(plugin.PluginWidget):
             self.model.add_samples(dialog.get_selected_samples())
             self.on_model_changed()
 
-            ret = QMessageBox.question(
-                self,
-                "Create new source",
-                "Would you like to create a new source from selected samples ? If you answer no, you can always do it later",
-                QMessageBox.Yes | QMessageBox.No,
-            )
+            # TODO : QMessagebox
+            # ret = QMessageBox.question(
+            #     self,
+            #     "Create new source",
+            #     "Would you like to create a new source from selected samples ? If you answer no, you can always do it later",
+            #     QMessageBox.Yes | QMessageBox.No,
+            # )
 
-            if ret == QMessageBox.Yes:
-                self.remove_all_sample_fields()
-                self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
+            # if ret == QMessageBox.Yes:
+            self.remove_all_sample_fields()
+            self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
     def _create_classification_menu(self, sample: List = None):
 
