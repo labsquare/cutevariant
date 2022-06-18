@@ -78,12 +78,14 @@ class FieldsModel(QAbstractListModel):
 
         self.beginResetModel()
         self._items.clear()
+
         for field in sql.get_fields(self.conn):
-            if field["category"] == "samples":
-                for sample in self.samples:
-                    self._items.append(self._create_item(field, sample))
-            else:
+            if field["category"] != "samples":
                 self._items.append(self._create_item(field))
+
+        for sample in self.samples:
+            for field in sql.get_field_by_category(self.conn, "samples"):
+                self._items.append(self._create_item(field, sample))
 
         self.endResetModel()
 
@@ -111,7 +113,7 @@ class FieldsModel(QAbstractListModel):
 
         elif field["category"] == "samples":
             name = field["name"]
-            new_item["field_name"] = f"sample.{sample}.{name}"
+            new_item["field_name"] = f"samples.{sample}.{name}"
             new_item["name"] = f"{sample}.{name}"
 
         else:
