@@ -108,7 +108,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     """
 
     ENABLE = True
-    REFRESH_STATE_DATA = {"fields"}
+    REFRESH_STATE_DATA = {"fields", "samples"}
 
     DEFAULT_FIELDS = ["chr", "pos", "ref", "alt"]
 
@@ -361,6 +361,13 @@ class FieldsEditorWidget(plugin.PluginWidget):
         """overrided from PluginWidget"""
         if self.mainwindow:
             self._is_refreshing = True
+
+            # Reload fields if there are new samples
+            samples = self.mainwindow.get_state_data("samples")
+            if self.widget_fields.get_samples() != samples:
+                self.widget_fields.set_samples(samples)
+                self.widget_fields.load()
+
             self.fields = self.mainwindow.get_state_data("fields")
             self._is_refreshing = False
             self.load_presets()

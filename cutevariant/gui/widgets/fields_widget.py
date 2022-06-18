@@ -20,6 +20,7 @@ class FieldsModel(QAbstractListModel):
         super().__init__()
         self.conn = conn
         self._items = []
+        self.samples = []
         self.dataChanged.connect(self.on_item_changed)
 
     def rowCount(self, parent=QModelIndex()):
@@ -78,18 +79,11 @@ class FieldsModel(QAbstractListModel):
         self.beginResetModel()
         self._items.clear()
         for field in sql.get_fields(self.conn):
-            # Do not keep samples fields
-            if field["category"] != "samples":
-
-                new_item = field
-
-                field["description"] = field["description"] or "No description"
-
-                new_item["checked"] = False
-                new_item["tooltip"] = self._create_tooltip(field)
-                new_item["field_name"] = self._create_field_name(field)
-                new_item["search"] = "{name} {description}".format(**field)
-                self._items.append(new_item)
+            if field["category"] == "samples":
+                for sample in self.samples:
+                    self._items.append(self._create_item(field, sample))
+            else:
+                self._items.append(self._create_item(field))
 
         self.endResetModel()
 
@@ -104,17 +98,30 @@ class FieldsModel(QAbstractListModel):
 
         return Qt.NoItemFlags
 
+    def _create_item(self, field: dict, sample: str = None) -> dict:
+
+        new_item = field
+        new_item["description"] = field["description"] or "No description"
+        new_item["checked"] = False
+        new_item["tooltip"] = self._create_tooltip(field)
+        new_item["search"] = "{name} {description}".format(**field)
+
+        if field["category"] == "annotations":
+            new_item["field_name"] = "ann.{name}".format(**field)
+
+        elif field["category"] == "samples":
+            name = field["name"]
+            new_item["field_name"] = f"sample.{sample}.{name}"
+            new_item["name"] = f"{sample}.{name}"
+
+        else:
+            new_item["field_name"] = field["name"]
+
+        return new_item
+
     def _create_tooltip(self, field: dict) -> str:
         """Create rich text tooltip from a field"""
         return "<b>{name}</b> ({type}) <br/>table:{category} <hr/>{description}".format(**field)
-
-    def _create_field_name(self, field: dict) -> str:
-        """Create VQL fields name"""
-
-        if field["category"] == "annotations":
-            return "ann.{name}".format(**field)
-
-        return field["name"]
 
     def set_fields(self, fields: typing.List[str]):
 
@@ -183,7 +190,6 @@ class FieldsWidget(QWidget):
 
     def load(self):
         if self._model.conn:
-
             self._model.load()
 
     def set_fields(self, fields: list):
@@ -191,6 +197,12 @@ class FieldsWidget(QWidget):
 
     def get_fields(self) -> list:
         return self._model.get_fields()
+
+    def set_samples(self, samples: typing.List[str]):
+        self._model.samples = samples
+
+    def get_samples(self) -> typing.List[str]:
+        return self._model.samples
 
     def clear(self):
         self._model.clear()
@@ -222,6 +234,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     w = FieldsWidget(conn)
+    w.set_samples(["sacha"])
     w.load()
 
     w.set_fields(["chr", "pos"])
