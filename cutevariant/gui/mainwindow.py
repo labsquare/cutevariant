@@ -927,7 +927,8 @@ class MainWindow(QMainWindow):
         self.write_settings()
 
         # Save session
-        self.save_session(self.get_last_session_path())
+        if self.conn:
+            self.save_session(self.get_last_session_path())
 
         # Don't forget to tell all the plugins that the window is being closed
         for plugin_obj in self.plugins.values():
@@ -996,9 +997,11 @@ class MainWindow(QMainWindow):
 
         # Execute first run
         if self._is_initialize:
-            self.load_session(self.get_last_session_path())
-            self._is_initialize = False
+            path = self.get_last_session_path()
+            if os.path.isfile(path):
+                self.load_session(path)
 
+        self._is_initialize = False
         return super().showEvent(event)
 
     def load_session(self, filename: str):
