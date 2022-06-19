@@ -165,6 +165,8 @@ class VariantModel(QAbstractTableModel):
         # Keep after all initialization
         self.conn = conn
 
+        self.mutex = QMutex()
+
         # Thread (1 for getting variant, 1 for getting count variant )
         self._load_variant_thread = SqlThread(self.conn)
         self._load_count_thread = SqlThread(self.conn)
@@ -550,7 +552,7 @@ class VariantModel(QAbstractTableModel):
             return
 
         LOGGER.debug("Start loading")
-
+        self.mutex.lock()
         offset = (self.page - 1) * self.limit
 
         # Add fields from group by
@@ -615,6 +617,8 @@ class VariantModel(QAbstractTableModel):
 
         else:
             self._load_variant_thread.start_function(lambda conn: list(load_func(conn)))
+
+        self.mutex.unlock()
 
     def on_variant_loaded(self):
         """
