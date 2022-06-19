@@ -314,6 +314,13 @@ class SamplesWidget(plugin.PluginWidget):
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
+    def to_json(self):
+        return {"samples": self.model.get_samples()}
+
+    def from_json(self, data: dict):
+        if "samples" in data:
+            self.model.add_samples(data["samples"])
+
     def on_model_changed(self):
 
         if self.model.rowCount() > 0:

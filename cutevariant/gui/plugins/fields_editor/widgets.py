@@ -392,7 +392,7 @@ class FieldsEditorWidget(plugin.PluginWidget):
     def from_json(self, data):
         """override from plugins: Unzerialize plugin state"""
 
-        if "checked_fields" in data:
+        if "fields" in data:
             self.widget_fields.set_fields(data["fields"])
 
 

@@ -471,14 +471,12 @@ class MainWindow(QMainWindow):
         #     self.tr("Export pedigree PED/PLINK"), self.export_ped
         # )
 
-        # self.file_menu.addSeparator()
+        self.file_menu.addSeparator()
 
-        # self.file_menu.addAction(
-        #     FIcon(0xF0193), self.tr("Save session ..."), self.save_session
-        # )
-        # self.file_menu.addAction(
-        #     FIcon(0xF0770), self.tr("Restore session ..."), self.load_session
-        # )
+        self.file_menu.addAction(FIcon(0xF0193), self.tr("Save session ..."), self.on_save_session)
+        self.file_menu.addAction(
+            FIcon(0xF0770), self.tr("Restore session ..."), self.on_load_session
+        )
 
         self.file_menu.addSeparator()
         ### Misc
@@ -929,8 +927,7 @@ class MainWindow(QMainWindow):
             plugin_obj.on_close()
         super().closeEvent(event)
 
-    def save_session(self):
-        """save plugin state into a json file"""
+    def on_save_session(self):
 
         filename, _ = QFileDialog.getSaveFileName(
             self,
@@ -938,6 +935,9 @@ class MainWindow(QMainWindow):
             QDir.home().path(),
             "Session file (*.session.json)",
         )
+
+        if not filename.endswith(".session.json"):
+            filename = filename + ".session.json"
 
         if os.path.exists(filename):
             ret = QMessageBox.warning(
@@ -950,22 +950,12 @@ class MainWindow(QMainWindow):
             if ret == QMessageBox.No:
                 return
 
-        if not filename.endswith(".session.json"):
-            filename = filename + ".session.json"
+        self.save_session(filename)
 
-        #  write sessions
-        session = {}
-        for name, plugin in self.plugins.items():
-            session[name] = plugin.to_json()
-
-        #  write file
-        with open(filename, "w") as file:
-            json.dump(session, file)
-
-    def load_session(self):
+    def on_load_session(self):
         filename, _ = QFileDialog.getOpenFileName(
             self,
-            self.tr("Save the session"),
+            self.tr("Load the session"),
             QDir.home().path(),
             "Session file (*.session.json)",
         )
@@ -973,14 +963,49 @@ class MainWindow(QMainWindow):
         if not os.path.exists(filename):
             return
 
+        self.load_session(filename)
+
+    def save_session(self, filename: str):
+        """save plugin state into a json file"""
+
+        session = {
+            "db_path": sql.get_database_file_name(self.conn),
+            "fields": self.get_state_data("fields"),
+            "source": self.get_state_data("source"),
+            "filters": self.get_state_data("filters"),
+            "order_by": self.get_state_data("order_by"),
+            "samples": self.get_state_data("samples"),
+        }
+
+        # save plugins
+        session["plugins"] = {}
+        for name, plugin in self.plugins.items():
+            session["plugins"][name] = plugin.to_json()
+
+        with open(filename, "w") as file:
+            json.dump(session, file)
+
+    def load_session(self, filename: str):
+
         # read sessions
         with open(filename) as file:
             state = json.load(file)
 
-        #  set plugins
-        for name, plugin in self.plugins.items():
-            if name in state:
-                plugin.from_json(state[name])
+        if "db_path" in state:
+            self.open_database_from_file(state["db_path"])
+
+            self.set_state_data("fields", state.get("fields", []))
+            self.set_state_data("source", state.get("source", "variants"))
+            self.set_state_data("filters", state.get("filters", {}))
+            self.set_state_data("order_by", state.get("order_by", []))
+            self.set_state_data("samples", state.get("samples", []))
+
+            self.refresh_plugins()
+
+            if "plugins" in state:
+                for name, plugin in self.plugins.items():
+                    if name in state["plugins"]:
+                        plugin.from_json(state["plugins"][name])
 
     def write_settings(self):
         """Store the state of this mainwindow.
