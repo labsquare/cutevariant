@@ -616,7 +616,7 @@ class MainWindow(QMainWindow):
 
         self.conn = conn
 
-        self._state_data.reset()
+        # self._state_data.reset()
 
         # Clear memoization cache for count_cmd
         sql.clear_lru_cache()
@@ -927,8 +927,7 @@ class MainWindow(QMainWindow):
         self.write_settings()
 
         # Save session
-        if self.conn:
-            self.save_session(self.get_last_session_path())
+        self.save_session(self.get_last_session_path())
 
         # Don't forget to tell all the plugins that the window is being closed
         for plugin_obj in self.plugins.values():
@@ -1011,7 +1010,6 @@ class MainWindow(QMainWindow):
             state = json.load(file)
 
         if "db_path" in state:
-            self.open_database_from_file(state["db_path"])
 
             self.set_state_data("fields", state.get("fields", []))
             self.set_state_data("source", state.get("source", "variants"))
@@ -1024,7 +1022,7 @@ class MainWindow(QMainWindow):
                     if name in state["plugins"]:
                         plugin.from_json(state["plugins"][name])
 
-            # self.refresh_plugins()
+            self.open_database_from_file(state["db_path"])
 
     def write_settings(self):
         """Store the state of this mainwindow.
