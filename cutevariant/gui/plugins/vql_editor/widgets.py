@@ -76,13 +76,6 @@ class VqlEditorWidget(plugin.PluginWidget):
         main_layout.setSpacing(0)
         self.setLayout(main_layout)
 
-    def to_json(self):
-        return {"query": self.text_edit.toPlainText()}
-
-    def from_json(self, data: dict):
-        if "query" in data:
-            self.text_edit.setPlainText(data["query"])
-
     def on_open_project(self, conn: sqlite3.Connection):
         """overrided from PluginWidget : Do not call this methods
 

@@ -384,17 +384,6 @@ class FieldsEditorWidget(plugin.PluginWidget):
         self.mainwindow.set_state_data("fields", self.fields)
         self.mainwindow.refresh_plugins(sender=self)
 
-    def to_json(self):
-        """override from plugins: Serialize plugin state"""
-
-        return {"fields": self.widget_fields.get_fields()}
-
-    def from_json(self, data):
-        """override from plugins: Unzerialize plugin state"""
-
-        if "fields" in data:
-            self.widget_fields.set_fields(data["fields"])
-
 
 if __name__ == "__main__":
     import sys

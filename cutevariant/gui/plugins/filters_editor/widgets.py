@@ -519,16 +519,6 @@ class FiltersEditorWidget(plugin.PluginWidget):
 
             self._update_view_geometry()
 
-    def to_json(self):
-        """override"""
-
-        return {"filters": self.filters}
-
-    def from_json(self, data):
-        """override"""
-        if "filters" in data:
-            self.filters = data["filters"]
-
     def load_presets(self):
         """Refresh self's preset model
         This method should be called by __init__ and on refresh

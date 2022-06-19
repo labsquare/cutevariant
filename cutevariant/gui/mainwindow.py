@@ -13,6 +13,7 @@ from logging import DEBUG
 # Qt imports
 from PySide6.QtCore import (
     QEventLoop,
+    QStandardPaths,
     Qt,
     QSettings,
     QByteArray,
@@ -202,13 +203,9 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-        # Auto open recent projects
-        recent = self.get_recent_projects()
-        if recent and os.path.isfile(recent[0]):
-            self.open_database_from_file(recent[0])
-
         # To avoid refreshing side effects upon project opening
         self._project_is_opening = False
+        self._is_initialize = True
 
     def set_state_data(self, key: str, value: typing.Any):
         """set state data value from key
@@ -361,7 +358,7 @@ class MainWindow(QMainWindow):
             self.dialog_plugins[dialog_action] = plugin_dialog_class
             dialog_action.triggered.connect(self.show_dialog)
 
-    def refresh_plugins(self, sender: plugin.PluginWidget = None):
+    def refresh_plugins(self, sender: plugin.PluginWidget = None, force_refresh=False):
         """Refresh all widget plugins
 
         It doesn't refresh a plugin if :
@@ -378,7 +375,7 @@ class MainWindow(QMainWindow):
         for plugin_obj in self.plugins.values():
             need_refresh = (
                 plugin_obj is not sender
-                and (plugin_obj.isVisible() or not plugin_obj.REFRESH_ONLY_VISIBLE)
+                and (plugin_obj.isVisible() or force_refresh or not plugin_obj.REFRESH_ONLY_VISIBLE)
                 and (set(plugin_obj.REFRESH_STATE_DATA) & self._state_data.changed)
                 and not self._project_is_opening
             )
@@ -912,6 +909,13 @@ class MainWindow(QMainWindow):
         if "variant_view" in self.plugins:
             self.plugins["variant_view"].view.select_all()
 
+    def get_last_session_path(self):
+        return QDir(
+            QStandardPaths.writableLocation(QStandardPaths.ConfigLocation)
+            + QDir.separator()
+            + "cutevariant"
+        ).absoluteFilePath("last.session.json")
+
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets
 
@@ -921,6 +925,9 @@ class MainWindow(QMainWindow):
         .. note:: Reset windowState if asked.
         """
         self.write_settings()
+
+        # Save session
+        self.save_session(self.get_last_session_path())
 
         # Don't forget to tell all the plugins that the window is being closed
         for plugin_obj in self.plugins.values():
@@ -985,6 +992,15 @@ class MainWindow(QMainWindow):
         with open(filename, "w") as file:
             json.dump(session, file)
 
+    def showEvent(self, event):
+
+        # Execute first run
+        if self._is_initialize:
+            self.load_session(self.get_last_session_path())
+            self._is_initialize = False
+
+        return super().showEvent(event)
+
     def load_session(self, filename: str):
 
         # read sessions
@@ -1000,12 +1016,12 @@ class MainWindow(QMainWindow):
             self.set_state_data("order_by", state.get("order_by", []))
             self.set_state_data("samples", state.get("samples", []))
 
-            self.refresh_plugins()
-
             if "plugins" in state:
                 for name, plugin in self.plugins.items():
                     if name in state["plugins"]:
                         plugin.from_json(state["plugins"][name])
+
+            self.refresh_plugins()
 
     def write_settings(self):
         """Store the state of this mainwindow.
