@@ -1024,7 +1024,7 @@ class MainWindow(QMainWindow):
                     if name in state["plugins"]:
                         plugin.from_json(state["plugins"][name])
 
-            self.refresh_plugins()
+            # self.refresh_plugins()
 
     def write_settings(self):
         """Store the state of this mainwindow.
