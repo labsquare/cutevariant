@@ -828,7 +828,11 @@ class VariantView(QWidget):
         self.view.setAlternatingRowColors(True)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+
         self.view.setVerticalHeader(VariantVerticalHeader())
+        self.view.verticalHeader().setSectionsClickable(True)
+        self.view.verticalHeader().sectionDoubleClicked.connect(self.on_double_clicked_vertical_header)
+
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -1752,26 +1756,52 @@ class VariantView(QWidget):
 
     def on_double_clicked(self, index: QModelIndex):
         """
-        React on double clicked
-        TODO : duplicate code with ContextMenu Event ! Need to refactor a bit
+        Action on default doubleClick
+        """
+        self.open_editor(index)
+
+    def on_double_clicked_vertical_header(self, index: QModelIndex):
+        """
+        Action on doubleClick on verticalHeader
+        """
+        self.open_editor(index)
+
+    def open_editor(self, index: QModelIndex):
+        """
+        Open Editor
+        Either Variant Editor or Genotype Editor (if genotype column)
         """
 
-        # Check if Edit Genotype
-        header_name = self.model.headers[index.column()]
-        header_name_match_sample = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
+        header_name_match_sample = False
         validation_menu_lock = False
+        no_genotype = False
         sample_name = "unknown"
-        if header_name_match_sample:
-            sample_name = header_name_match_sample[0][0]
-            sample_infos = sql.search_samples(self.conn, name=sample_name)
-            if self.is_locked(sample_infos.get("id", 0)):
-                validation_menu_lock = True
+
+        # Check if Edit Genotype
+        if type(index) is not int:
+            # Double click on horizontal header
+            header_name = self.model.headers[index.column()]
+            header_name_match_sample = re.findall(r"^samples.(\w+)\.(.*)$", header_name)
+            validation_menu_lock = False
+            no_genotype = False
+            sample_name = "unknown"
+            if header_name_match_sample:
+                sample_name = header_name_match_sample[0][0]
+                sample_infos = next(sql.search_samples(self.conn, name=sample_name))
+                if self.is_locked(sample_infos.get("id", 0)):
+                    validation_menu_lock = True
+                if index.data() == "NULL":
+                    no_genotype = True
 
         # Menu Validation for sample
         if header_name_match_sample:
             if validation_menu_lock:
                 QMessageBox.information(
-                    self, "sample locked", self.tr(f"Sample '{sample_name}' is locked")
+                    self, "Sample locked", self.tr(f"Sample '{sample_name}' is locked, genotype can not be changed")
+                )
+            elif no_genotype:
+                QMessageBox.information(
+                    self, "No genotype", self.tr(f"Sample '{sample_name}' does not have genotype for this variant")
                 )
             else:
                 self._show_sample_variant_dialog()
