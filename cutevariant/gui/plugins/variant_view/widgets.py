@@ -1773,7 +1773,7 @@ class VariantView(QWidget):
     def open_editor(self, index: QModelIndex):
         """
         Open Editor
-        Either Variant Editor or Genotype Editor (if genotype column)
+        Either Variant Editor (if variant column) or Genotype Editor (if genotype column)
         """
 
         header_name_match_sample = False

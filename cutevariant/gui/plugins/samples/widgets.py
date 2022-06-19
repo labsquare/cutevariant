@@ -296,8 +296,12 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.setShowGrid(False)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        
         self.view.setVerticalHeader(SampleVerticalHeader(parent))
-        self.view.doubleClicked.connect(self.on_edit)
+        self.view.verticalHeader().setSectionsClickable(True)
+        self.view.verticalHeader().sectionDoubleClicked.connect(self.on_double_clicked_vertical_header)
+
+        self.view.doubleClicked.connect(self.on_double_clicked) 
 
         # Setup actions
         self._setup_actions()
@@ -456,7 +460,8 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu = QMenu(self)
 
-        menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit)
+        #menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit)
+        menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_double_clicked) 
 
         menu.addMenu(self._create_classification_menu(sample))
         if not self.is_locked(sample_id):
@@ -499,6 +504,18 @@ class SamplesWidget(plugin.PluginWidget):
                 if config["lock"] == True:
                     locked = True
         return locked
+
+    def on_double_clicked(self):
+        """
+        Action on default doubleClick
+        """
+        self.on_edit()
+
+    def on_double_clicked_vertical_header(self):
+        """
+        Action on doubleClick on verticalHeader
+        """
+        self.on_edit()
 
     def on_edit(self):
 
