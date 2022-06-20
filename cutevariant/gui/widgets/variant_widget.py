@@ -108,21 +108,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load variant
         if "id" in variant:
-
-            # variant_id
+            # find variant name
             variant_id = variant["id"]
-
-            # Get variant_name_pattern
-            config = Config("variables") or {}
-            variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-
-            # Get fields
-            variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
-            if len(variant["annotations"]):
-                for ann in variant["annotations"][0]:
-                    variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-            variant_text = variant_name_pattern.format(**variant)
+            variant_text = cm.find_variant_name(conn=self.conn, variant_id=variant_id, troncate=False)
             self.variant_label.setText(variant_text)
 
         # Load favorite
@@ -552,9 +540,9 @@ class VariantWidget(QWidget):
         variant = sql.get_variant(self._conn, variant_id, with_annotations=True, with_samples=True)
         self.last_variant_hash = self.get_variant_hash(variant)
 
-        # # Set name
-        # name = "{chr}-{pos}-{ref}-{alt}".format(**variant)
-        self.setWindowTitle("Variant edition")
+        variant_name = cm.find_variant_name(conn=self.conn, variant_id=variant_id, troncate=True)
+
+        self.setWindowTitle(f"Variant edition - {variant_name}")
 
         for widget in self._section_widgets:
             widget.set_variant(variant)

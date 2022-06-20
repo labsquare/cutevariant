@@ -20,6 +20,7 @@ from cutevariant.gui.widgets import ChoiceButton
 from cutevariant import gui
 
 import cutevariant.constants as cst
+from cutevariant import commons as cm
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
 from cutevariant.gui import tooltip as toolTip
@@ -388,21 +389,8 @@ class OccurenceModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if index.column() == OccurenceModel.VARIANT_COLUMN:
                 variant_id = item.get("variant_id", "error")
-                variant_text = str(variant_id)
-
-                # Get variant_name_pattern
-                config = Config("variables") or {}
-                variant_name_pattern = (
-                    config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-                )
-
-                # Get fields
-                variant = sql.get_variant(self._parent.conn, variant_id, with_annotations=True)
-                if len(variant["annotations"]):
-                    for ann in variant["annotations"][0]:
-                        variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-                variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-                variant_text = variant_name_pattern.format(**variant)
+                # variant_text = str(variant_id)
+                variant_text = cm.find_variant_name(conn=self._parent.conn, variant_id=variant_id, troncate=False)
                 return variant_text
 
             if index.column() == OccurenceModel.CLASSIFICATION_COLUMN:
@@ -619,7 +607,7 @@ class SampleWidget(QWidget):
         self.last_sample_hash = self.get_sample_hash(sample)
 
         # # Set name
-        name = "{name}".format(**sample)
+        name = "Sample edition - {name}".format(**sample)
         self.setWindowTitle(name)
 
         for widget in self._section_widgets:

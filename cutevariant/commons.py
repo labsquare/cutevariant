@@ -169,3 +169,42 @@ def recursive_overwrite(src: str, dest: str, ignore=None):
                 recursive_overwrite(os.path.join(src, f), os.path.join(dest, f), ignore)
     else:
         shutil.copyfile(src, dest)
+
+
+def find_variant_name(conn, variant_id: int, troncate=False, troncate_len: int = 40):
+    """Find variant name from annotations and a pattern in settings
+
+    Args:
+        conn: database connexion
+        variant_id (int): variant ID
+        troncate (bool, optional): If name need to be troncated
+        troncate_len (int, optional): max len of variant name if need to be troncated  
+    """
+    from cutevariant.config import Config
+    from cutevariant.core import sql
+
+    if not conn:
+        return "unknown"
+
+    # Get variant_name_pattern
+    config = Config("variables") or {}
+    variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+
+    # Get fields
+    if variant_id:
+        with_annotations = re.findall("ann.", variant_name_pattern)
+        variant = sql.get_variant(conn, variant_id, with_annotations=with_annotations)
+        if len(variant["annotations"]) and with_annotations:
+            for ann in variant["annotations"][0]:
+                variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+        variant_name = variant_name_pattern.format(**variant)
+    else:
+        variant_name = "unknown"
+
+    # Troncate variant name
+    if troncate and len(variant_name) > troncate_len:
+        troncate_position = int(troncate_len / 2)
+        variant_name = variant_name[0:troncate_position] + "..." + variant_name[-troncate_position:]
+    
+    return variant_name
