@@ -24,10 +24,6 @@ Fields contains columns to select according sql table that they belong to.
 import sqlite3
 import re
 from functools import lru_cache
-from ast import literal_eval
-
-from black import validate_metadata
-
 
 # Custom imports
 from cutevariant.core import sql

@@ -1,52 +1,51 @@
 name: Release
 
   
-# when it active ? 
-on: 
-  push:
-    branches:
-      - master 
-  #push:
-    # tags:
-    #   - '*'
+# # when it active ? 
+# on: 
+#   push:
+#     branches:
+#       - master 
+#   #push:
+#     # tags:
+#     #   - '*'
+
+# jobs:
+#   # WINDOWS JOB 
+#   publish:
 
 
-jobs:
-  # WINDOWS JOB 
-  publish:
-    runs-on: windows-latest
+#     strategy:
+#       matrix:
+#         architecture: ['x64']
+#     steps:
+#       - uses: actions/checkout@v2
+#       - uses: actions/setup-python@v2
+#         with:
+#           python-version: '3.9'
+#           architecture: ${{matrix.architecture}}
+#       - name: install_deps
+#         run: "make install_deps"
+#       - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
+#         run : pip install PySide6
+#       - name: install windows deps 
+#         run: |
+#             pip install pywin32
+#             pip install PyInstaller==4.0
+#       - name: test
+#         run: python -m pytest tests/core
 
-    strategy:
-      matrix:
-        architecture: ['x64']
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-          architecture: ${{matrix.architecture}}
-      - name: install_deps
-        run: "make install_deps"
-      - name: install PySide6    # Parce que @ysard veut absolument les version deprecated
-        run : pip install PySide6
-      - name: install windows deps 
-        run: |
-            pip install pywin32
-            pip install PyInstaller==4.0
-      - name: test
-        run: python -m pytest tests/core
+#       - name: create binary 
+#         run: pyinstaller -i icon.ico --name="cutevariant_${{matrix.architecture}}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
 
-      - name: create binary 
-        run: pyinstaller -i icon.ico --name="cutevariant_${{matrix.architecture}}" --hidden-import json --add-data "cutevariant;cutevariant" cutevariant\__main__.py
+#       - name: Compress zip 
+#         uses: papeloto/action-zip@v1
+#         with:
+#           files: dist/
+#           dest: cutevariant-standalone-${{matrix.architecture}}.zip
 
-      - name: Compress zip 
-        uses: papeloto/action-zip@v1
-        with:
-          files: dist/
-          dest: cutevariant-standalone-${{matrix.architecture}}.zip
-
-      - name: Create installer
-        uses: joncloud/makensis-action@v3.6
+#       - name: Create installer
+#         uses: joncloud/makensis-action@v3.6
         
 
       # - name: Publish 
