@@ -389,7 +389,6 @@ class OccurenceModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if index.column() == OccurenceModel.VARIANT_COLUMN:
                 variant_id = item.get("variant_id", "error")
-                # variant_text = str(variant_id)
                 variant_text = cm.find_variant_name(conn=self._parent.conn, variant_id=variant_id, troncate=False)
                 return variant_text
 
