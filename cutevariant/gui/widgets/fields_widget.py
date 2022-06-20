@@ -45,6 +45,9 @@ class FieldsModel(QAbstractListModel):
         if role == Qt.UserRole + 1:
             return (self._items[index.row()]["name"], self._items[index.row()]["type"])
 
+        if role == Qt.UserRole + 2:
+            return self._items[index.row()]["field_name"]
+
         if role == Qt.CheckStateRole:
             return int(Qt.Checked if self._items[index.row()]["checked"] else Qt.Unchecked)
 

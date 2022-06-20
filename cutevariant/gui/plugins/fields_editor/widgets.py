@@ -206,6 +206,30 @@ class FieldsEditorWidget(plugin.PluginWidget):
         # self.preset_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.toolbar.addWidget(self.preset_button)
 
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        menu = QMenu(self)
+        menu.addAction(QIcon(), "Add filter", self.on_add_filter)
+        menu.exec(event.globalPos())
+
+    def on_add_filter(self):
+        dlg = FilterDialog(self.widget_fields.conn, self)
+        current_index = self.widget_fields.view.currentIndex()
+        selected_field = current_index.data(Qt.UserRole + 2)
+        dlg.set_field(selected_field)
+        if dlg.exec() == QDialog.Accepted:
+            one_filter = dlg.get_filter()
+            filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
+            if not filters:
+                filters = {"$and": []}
+
+            if "$and" in filters:
+                filters["$and"].append(one_filter)
+            if "$or" in filters:
+                filters["$or"].append(one_filter)
+
+            self.mainwindow.set_state_data("filters", filters)
+            self.mainwindow.refresh_plugins(sender=self)
+
     @property
     def fields(self):
         return self.widget_fields.get_fields()
