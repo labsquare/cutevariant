@@ -1427,7 +1427,6 @@ class FiltersModel(QAbstractItemModel):
         Returns:
             bool: True if condition was successfully added
         """
-
         # First case: row is not valid (usually -1 when dropping on a parent logical item)
         if row < 0 or row > self.rowCount(parent):
             self.add_condition_item(
@@ -1555,7 +1554,7 @@ class FiltersModel(QAbstractItemModel):
         if not indexes:
             return
 
-        data = QMimeData()
+        mime_data = super().mimeData(indexes)
         parent = indexes[0]
         coords = []
         # Compute coords of index by recursively finding parent's row until root index.
@@ -1563,14 +1562,12 @@ class FiltersModel(QAbstractItemModel):
         while parent != QModelIndex():
             coords.insert(0, parent.row())
             parent = parent.parent()
-
-        data = QMimeData()
-        data.setData(
+        mime_data.setData(
             "cutevariant/typed-json",
             bytes(json.dumps({"type": "internal_move", "coords": coords}), "utf-8"),
         )
 
-        return data
+        return mime_data
 
     def set_recursive_check_state(self, index, checked=True):
         """Recursive check of all subfilters"""
