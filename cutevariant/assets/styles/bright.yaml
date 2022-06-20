@@ -28,11 +28,10 @@ palette:
     highlighted_text: "#A2A4A5"
 
   colors:
-    red: "#red"
-    green: "#green"
-    blue: "blue"
-    orange: "orange"
-    yellow: "yellow"
-    purple: "purple"
-
+    red: "#F15F74"
+    green: "#98CB4A"
+    blue: "#5481E6"
+    orange: "#F76D3C"
+    yellow: "#F7D842"
+    purple: "#913CCD"
 

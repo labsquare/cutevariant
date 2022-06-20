@@ -22,6 +22,7 @@ class AppStyle(QProxyStyle):
         super().__init__(QStyleFactory.create("fusion"))
 
         self.theme = {}
+        self._colors = {}
         AppStyle.PALETTE_KEYS = {camel_to_snake(k): v for k, v in QPalette.ColorRole.values.items()}
         self.load_theme("dark.yaml")
 
@@ -29,6 +30,13 @@ class AppStyle(QProxyStyle):
 
         with open(DIR_STYLES + filename, "r") as file:
             self.theme = yaml.safe_load(file)
+
+            if "colors" in self.theme["palette"]:
+                self._colors = self.theme["palette"]["colors"]
+
+    def colors(self):
+        """return color lists"""
+        return self._colors
 
     def polish(self, value):
         """override"""

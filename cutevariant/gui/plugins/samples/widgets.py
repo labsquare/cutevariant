@@ -108,9 +108,11 @@ class SampleModel(QAbstractTableModel):
             if col == SampleModel.PHENOTYPE_COLUMN:
                 phenotype = sample.get("phenotype")
                 if phenotype == 2:
-                    return QIcon(FIcon(0xF08C9, color))
+                    col = QApplication.style().colors().get("red", "red")
+                    return QIcon(FIcon(0xF08C9, QColor(col)))
                 if phenotype == 1:
-                    return QIcon(FIcon(0xF05DD, color))
+                    col = QApplication.style().colors().get("green", "red")
+                    return QIcon(FIcon(0xF05DD, QColor(col)))
 
                 return QIcon(FIcon(0xF001A, color_alpha))
 

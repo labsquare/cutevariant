@@ -70,6 +70,7 @@ class ClassificationDialog(QDialog):
         return classification
 
     def _on_select_color(self):
+
         color = QColorDialog.getColor()
 
         if color:

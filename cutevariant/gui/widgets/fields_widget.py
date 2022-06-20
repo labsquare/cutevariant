@@ -56,7 +56,8 @@ class FieldsModel(QAbstractListModel):
             s = cst.FIELD_TYPE.get(
                 data_type, cst.FIELD_TYPE.get("str", {"icon": 0xF000E, "color": "red"})
             )
-            return QIcon(FIcon(s.get("icon"), s.get("color")))
+            color = QApplication.style().colors().get(s["color"], "black")
+            return QIcon(FIcon(s.get("icon"), color))
 
     def setData(self, index: QModelIndex, value: typing.Any, role: Qt.ItemDataRole) -> bool:
 

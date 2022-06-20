@@ -3,6 +3,7 @@ import logging
 import tempfile
 
 from pkg_resources import resource_filename
+from PySide6.QtWidgets import QApplication
 
 # Logging
 
@@ -59,10 +60,10 @@ HAS_OPERATOR = ","
 
 # FIELD TYPE
 FIELD_TYPE = {
-    "float": {"name": "floating ", "icon": 0xF0B0D, "color": "#2e9599"},
-    "int": {"name": "integer", "icon": 0xF0B10, "color": "#f7dc68"},
-    "str": {"name": "text", "icon": 0xF0B1A, "color": "#f46c3f"},
-    "bool": {"name": "boolean", "icon": 0xF0B09, "color": "#a7226f"},
+    "float": {"name": "floating ", "icon": 0xF0B0D, "color": "blue"},
+    "int": {"name": "integer", "icon": 0xF0B10, "color": "green"},
+    "str": {"name": "text", "icon": 0xF0B1A, "color": "purple"},
+    "bool": {"name": "boolean", "icon": 0xF0B09, "color": "orange"},
 }
 
 # Phenotype

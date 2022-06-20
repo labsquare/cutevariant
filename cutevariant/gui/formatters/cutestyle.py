@@ -13,7 +13,7 @@ from PySide6.QtGui import (
     QPixmap,
 )
 from PySide6.QtCore import Qt, QModelIndex, QRect, QUrl, QPoint
-from PySide6.QtWidgets import QStyleOptionViewItem, QStyle
+from PySide6.QtWidgets import QApplication, QStyleOptionViewItem, QStyle
 
 # Custom imports
 from cutevariant.gui.formatter import Formatter
@@ -39,10 +39,10 @@ class CutestyleFormatter(Formatter):
     }
 
     IMPACT_COLOR = {
-        "HIGH": "#ff4b5c",
-        "LOW": "#056674",
-        "MODERATE": "#ecad7d",
-        "MODIFIER": "#ecad7d",
+        "HIGH": "#F15F74",
+        "LOW": "#98CB4A",
+        "MODERATE": "#F76D3C",
+        "MODIFIER": "#F76D2C",
     }
 
     FAV_ICON = {0: FIcon(0xF00C3), 1: FIcon(0xF00C0)}
@@ -58,8 +58,10 @@ class CutestyleFormatter(Formatter):
         # Tags colors
         self.TAGS_COLOR = {}
         config = Config("tags")
-        for tag in config.get("samples", []) + config.get("genotypes", []) + config.get("variants", []):
-            self.TAGS_COLOR[tag["name"]] = tag["color"] 
+        for tag in (
+            config.get("samples", []) + config.get("genotypes", []) + config.get("variants", [])
+        ):
+            self.TAGS_COLOR[tag["name"]] = tag["color"]
 
     def format(self, field: str, value: str, option, is_selected):
 
@@ -90,7 +92,7 @@ class CutestyleFormatter(Formatter):
         #     return {"color": self.BASE_COLOR.get(value)}
 
         if field == "ann.gene" and not is_selected:
-            return {"color": "#6a9fca"}
+            return {"color": QApplication.style().colors().get("blue", "blue")}
 
         # if field == "classification":
         #     icon = self.ACMG_ICON.get(str(value), self.ACMG_ICON["0"])
@@ -159,7 +161,7 @@ class CutestyleFormatter(Formatter):
                 height = metrics.height()
                 rect = QRect(x, (option.rect.height() - height) * 0.5, width + 10, height)
                 painter.setFont(font)
-                col = QColor(self.TAGS_COLOR.get(value,"#D5E9F5"))
+                col = QColor(self.TAGS_COLOR.get(value, "#D5E9F5"))
                 painter.setBrush(QBrush(col))
                 painter.setPen(Qt.NoPen)
                 painter.drawRoundedRect(rect, 3, 3)
@@ -170,4 +172,3 @@ class CutestyleFormatter(Formatter):
             return {"pixmap": pix}
 
         return super().format(field, value, option, is_selected)
-

@@ -33,8 +33,8 @@ from PySide6.QtCore import (
     QLibraryInfo,
     Qt,
 )
-from PySide6.QtWidgets import QApplication, QSplashScreen, QStyleFactory
-from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QApplication, QSplashScreen, QStyleFactory, QColorDialog
+from PySide6.QtGui import QPixmap, QColor
 from PySide6.QtNetwork import QNetworkProxy
 
 # Custom imports
@@ -160,6 +160,9 @@ def load_styles(app):
     mystyle = style.AppStyle()
     mystyle.load_theme(theme.lower() + ".yaml")
     app.setStyle(mystyle)
+
+    for index, (key, color) in enumerate(mystyle.colors().items()):
+        QColorDialog.setCustomColor(index, QColor(color))
 
 
 def load_translations(app):
