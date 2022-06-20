@@ -146,16 +146,20 @@ def test_condition_to_sql():
         == "`variants`.`gene` REGEXP 'CFTR.+'"
     )
 
+    assert (
+        querybuilder.condition_to_sql({"comment": "C'est cool"})
+        == "`variants`.`comment` = 'C''est cool'"
+    )
 
-assert (
-    querybuilder.condition_to_sql({"samples.$all.gt": 1}, ["boby", "charles"])
-    == "(`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1)"
-)
+    assert (
+        querybuilder.condition_to_sql({"samples.$all.gt": 1}, ["boby", "charles"])
+        == "(`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1)"
+    )
 
-assert (
-    querybuilder.condition_to_sql({"samples.$any.gt": 1}, ["boby", "charles"])
-    == "(`sample_boby`.`gt` = 1 OR `sample_charles`.`gt` = 1)"
-)
+    assert (
+        querybuilder.condition_to_sql({"samples.$any.gt": 1}, ["boby", "charles"])
+        == "(`sample_boby`.`gt` = 1 OR `sample_charles`.`gt` = 1)"
+    )
 
 
 def test_fields_to_vql():
@@ -239,12 +243,7 @@ def test_filters_to_sql():
     # assert observed == expected
     # Test with Any sample special fields
 
-    filters = {
-        "$and": [
-            {"pos": 10},
-            {"samples.$all.gt": 1},
-        ]
-    }
+    filters = {"$and": [{"pos": 10}, {"samples.$all.gt": 1}]}
 
     observed = querybuilder.filters_to_sql(filters, ["boby", "charles"])
     expected = "(`variants`.`pos` = 10 AND (`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1))"

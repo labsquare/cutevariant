@@ -26,6 +26,8 @@ import re
 from functools import lru_cache
 from ast import literal_eval
 
+from black import validate_metadata
+
 
 # Custom imports
 from cutevariant.core import sql
@@ -340,6 +342,9 @@ def condition_to_sql(item: dict, samples=None) -> str:
         operator = "$eq"
         value = v
 
+    if isinstance(value, str):
+        value = value.replace("'", "''")
+
     # MAP operator
     sql_operator = PY_TO_SQL_OPERATORS[operator]
 
@@ -450,6 +455,7 @@ def condition_to_vql(item: dict) -> str:
 
     # Cast value
     if isinstance(value, str):
+        value = value.replace("'", "\\'")
         value = f"'{value}'"
 
     if isinstance(value, bool):

@@ -93,13 +93,13 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
             },
             {
                 # Strings simple quotes '...'
-                "pattern": r"\'.*\'",
+                "pattern": r"\'(\\.|[^\'])*\'",
                 "color": Qt.red,
                 "minimal": True,  # Need to stop match as soon as possible
             },
             {
                 # Strings double quotes: "..."
-                "pattern": r"\".*\"",
+                "pattern": r"\"(\\.|[^\"])*\"",
                 "color": Qt.red,
                 "minimal": True,  # Need to stop match as soon as possible
             },
