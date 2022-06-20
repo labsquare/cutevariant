@@ -13,6 +13,7 @@ import uuid
 from typing import Any, Iterable
 
 from cutevariant.gui import mainwindow, style, plugin, FIcon
+from cutevariant import constants as cst
 from cutevariant.core import sql, get_sql_connection
 from cutevariant.core.vql import parse_one_vql
 from cutevariant.core.querybuilder import (
@@ -933,6 +934,10 @@ class FiltersModel(QAbstractItemModel):
                 if item.get_value() == "$or":
                     return QIcon(FIcon(0xF08E5))
 
+            if index.column() == COLUMN_FIELD and item.type == FilterItem.CONDITION_TYPE:
+
+                return QIcon(FIcon(0xF044A, QApplication.style().colors().get("blue", "white")))
+
             if index.column() == COLUMN_REMOVE:
                 if index.parent() != QModelIndex():
                     return QIcon(FIcon(0xF0156, "red"))
@@ -1849,7 +1854,7 @@ class FiltersDelegate(QStyledItemDelegate):
         i = index.parent()
         while i.isValid():
             i = i.parent()
-            level += 1
+            level += 10
 
         return level
 
@@ -2051,7 +2056,7 @@ class FiltersWidget(QTreeView):
 
         self.header().setStretchLastSection(False)
         self.header().setSectionResizeMode(COLUMN_FIELD, QHeaderView.Interactive)
-        self.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Fixed)
+        self.header().setSectionResizeMode(COLUMN_OPERATOR, QHeaderView.Interactive)
         self.header().setSectionResizeMode(COLUMN_VALUE, QHeaderView.Stretch)
         self.header().setSectionResizeMode(COLUMN_CHECKBOX, QHeaderView.ResizeToContents)
         self.header().setSectionResizeMode(COLUMN_REMOVE, QHeaderView.ResizeToContents)
