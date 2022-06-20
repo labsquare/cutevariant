@@ -426,7 +426,11 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view.setIconSize(QSize(16, 16))
         self.view.horizontalHeader().setHighlightSections(False)
         self.view.setModel(self.model)
+
         self.view.setVerticalHeader(GenotypeVerticalHeader())
+        self.view.verticalHeader().setSectionsClickable(True)
+        self.view.verticalHeader().sectionDoubleClicked.connect(self._on_double_clicked_vertical_header)
+
         self.view.setItemDelegate(self.delegate)
 
         self.add_sample_button = QPushButton(self.tr("Add samples ..."))
@@ -604,6 +608,9 @@ class GenotypesWidget(plugin.PluginWidget):
     def _on_double_clicked(self):
         self._show_sample_variant_dialog()
 
+    def _on_double_clicked_vertical_header(self):
+        self._show_sample_variant_dialog()
+
     def contextMenuEvent(self, event: QContextMenuEvent):
 
         row = self.view.selectionModel().currentIndex().row()
@@ -711,13 +718,24 @@ class GenotypesWidget(plugin.PluginWidget):
 
         row = self.view.selectionModel().currentIndex().row()
         sample = self.model.get_genotype(row)
-        if sample:
+
+        sample_name = sample.get("name", "unknown")
+        sample_id = sample.get("sample_id", None)
+        variant_id = sample.get("variant_id", None)
+
+        if sample and sample_id is not None and variant_id is not None:
 
             dialog = SampleVariantDialog(self.conn, sample["sample_id"], self.current_variant["id"])
 
             if dialog.exec_() == QDialog.Accepted:
                 # self.load_all_filters()
                 self.on_refresh()
+
+        else:
+            QMessageBox.information(
+                self, "No genotype", self.tr(f"Sample '{sample_name}' does not have genotype for this variant")
+            )
+
 
     def _toggle_column(self, col: int, show: bool):
         """hide/show columns"""
