@@ -10,6 +10,7 @@ from cutevariant.config import Config
 from cutevariant.gui import style as Style
 from cutevariant.core import sql
 from cutevariant import constants as cst
+from cutevariant import commons as cm
 
 
 NO_TAG_TEXT = "<i>no tags</i>"
@@ -30,10 +31,6 @@ def genotype_tooltip(data: dict, conn: sqlite3.Connection):
         return "No genotype"
     else:
         genotype = next(sql.get_genotypes(conn, variant_id, fields, [sample]))
-
-        # Get variant_name_pattern
-        config = Config("variables") or {}
-        variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
 
         # get fields description
         fields_description = {}
@@ -86,13 +83,9 @@ def genotype_tooltip(data: dict, conn: sqlite3.Connection):
         genotype["classification_text"] = classification_text
         genotype["classification_color"] = classification_color
 
-        # extract info from variant
-        variant = sql.get_variant(conn, variant_id, with_annotations=True)
-        if len(variant.get("annotations", [{}])):
-            for ann in variant.get("annotations", [{}])[0]:
-                variant["annotations___" + str(ann)] = variant.get("annotations", [{}])[0][ann]
-        variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-        variant_name = variant_name_pattern.format(**variant)
+        # Get variant name
+        variant_name = cm.find_variant_name(conn=conn, variant_id=variant_id, troncate=False)
+
         genotype["variant_name"] = variant_name
 
         # tag genotype
@@ -289,10 +282,6 @@ def variant_tooltip(
             )
         )
 
-    # Get variant_name_pattern
-    config = Config("variables") or {}
-    variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-
     # get fields description
     fields_description = {}
     for f in sql.get_fields(conn):
@@ -309,15 +298,8 @@ def variant_tooltip(
     config = Config("classifications")
     variant_classifications = config.get("variants", [])
 
-    # extract info from variant
-    variant_for_pattern = variant
-    if len(variant_for_pattern.get("annotations", [{}])):
-        for ann in variant_for_pattern.get("annotations", [{}])[0]:
-            variant_for_pattern["annotations___" + str(ann)] = variant_for_pattern.get(
-                "annotations", [{}]
-            )[0][ann]
-    variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-    variant_name = variant_name_pattern.format(**variant_for_pattern)
+    # Get variant name
+    variant_name = cm.find_variant_name(conn=conn, variant_id=variant.get("id", 0), troncate=False)
 
     # variant name
     if variant_name:

@@ -4,6 +4,7 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 from cutevariant.config import Config
+from cutevariant import commons as cm
 from cutevariant.core import sql
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.widgets import DictWidget, MarkdownEditor, TagEdit
@@ -120,18 +121,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
             self.sample_label.setText(str(sample["name"]))
 
         # Load variant
-        # Get variant_name_pattern
-        config = Config("variables") or {}
-        variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
-
-        # Get fields
-        variant = sql.get_variant(self.conn, genotype.get("variant_id", 0), with_annotations=True)
-        if len(variant["annotations"]):
-            for ann in variant["annotations"][0]:
-                variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-        variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-        variant_text = variant_name_pattern.format(**variant)
-        self.variant_label.setText(variant_text)
+        variant_id = genotype.get("variant_id", 0)
+        variant_name = cm.find_variant_name(conn=self.conn, variant_id=variant_id, troncate=False)
+        self.variant_label.setText(variant_name)
 
         # Load tags
         tags = []
@@ -395,8 +387,10 @@ class SampleVariantWidget(QWidget):
         """
         genotype = self.get_genotype(sample_id, variant_id)
         self.last_genotype_hash = self.get_genotype_hash(genotype)
-
-        self.setWindowTitle("Genotype edition")
+        sample = sql.get_sample(self.conn, genotype.get("sample_id", 0))
+        sample_name = sample.get("name", "unknown")
+        variant_name = cm.find_variant_name(conn=self.conn, variant_id=variant_id, troncate=True)
+        self.setWindowTitle(f"Genotype edition - {sample_name} - {variant_name}")
 
         for widget in self._section_widgets:
             widget.set_genotype(genotype)

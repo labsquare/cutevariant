@@ -21,6 +21,7 @@ from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon, style
 from cutevariant.constants import DEFAULT_SELECTION_NAME
 from cutevariant.config import Config
+import cutevariant.commons as cm
 
 
 from cutevariant.gui.widgets import (
@@ -615,7 +616,8 @@ class GenotypesWidget(plugin.PluginWidget):
         sample_name = genotype.get("name", "unknown")
 
         # Add section Variant
-        variant_name = self.find_variant_name(troncate=True)
+        variant_id = genotype.get("variant_id", 0)
+        variant_name = cm.find_variant_name(conn=self.conn, variant_id=variant_id, troncate=True)
 
         # Validation
         if genotype["sample_id"] and genotype["variant_id"]:
@@ -880,52 +882,22 @@ class GenotypesWidget(plugin.PluginWidget):
                 data=field["name"],
             )
 
-    def find_variant_name(self, troncate=False):
-
-        if not self.conn:
-            return  # TODO ..
-
-        # Get variant_name_pattern
-        variant_name_pattern = "{chr}:{pos} - {ref}>{alt}"
-        config = Config("variables") or {}
-        if "variant_name_pattern" in config:
-            variant_name_pattern = config["variant_name_pattern"]
-        else:
-            config["variant_name_pattern"] = variant_name_pattern
-            config.save()
-
-        # Get fields
-        self.current_variant = self.mainwindow.get_state_data("current_variant")
-        if self.current_variant and "id" in self.current_variant:
-            variant_id = self.current_variant["id"]
-            variant = sql.get_variant(self.conn, variant_id, with_annotations=True)
-            if len(variant["annotations"]):
-                for ann in variant["annotations"][0]:
-                    variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
-            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
-            variant_name = variant_name_pattern.format(**variant)
-
-            # Troncate variant name
-            if troncate and len(variant_name) > 25:
-                variant_name = variant_name[0:15] + " ... " + variant_name[-10:]
-        else:
-            variant_name = "unknown"
-
-        return variant_name
-
     def on_refresh(self):
-
-        # variant name
-        variant_name = self.find_variant_name(troncate=True)
 
         # variant id
         self.current_variant = self.mainwindow.get_state_data("current_variant")
-
         if self.current_variant and "id" in self.current_variant:
             variant_id = self.current_variant["id"]
         else:
             variant_id = None
+
+        # variant name
+        variant_name = cm.find_variant_name(conn=self.conn, variant_id=variant_id, troncate=True)
+
+        # fields
         fields = self.fields_button.get_checked()
+
+        # samples
         samples = self.mainwindow.get_state_data("samples")
 
         # Change variant name
