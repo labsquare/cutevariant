@@ -62,8 +62,12 @@ class VqlEditorWidget(plugin.PluginWidget):
         # Error handling
         self.log_edit = QLabel()
         self.log_edit.setMinimumHeight(40)
+        self._log_bg_color = "#FFC107"
+        self._log_fg_color = "#343A40"
         self.log_edit.setStyleSheet(
-            "QWidget{{background-color:'{}'; color:'{}'}}".format("orange", "black")
+            "QWidget{{background-color:'{}'; color:'{}'}}".format(
+                self._log_bg_color, self._log_fg_color
+            )
         )
         self.log_edit.hide()
         self.log_edit.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
@@ -281,7 +285,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         if self.log_edit.isHidden():
             self.log_edit.show()
 
-        icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
+        icon_64 = FIcon(0xF0027, self._log_fg_color).to_base64(18, 18)
 
         self.log_edit.setText(
             """<div height=100%>
