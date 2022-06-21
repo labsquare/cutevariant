@@ -25,13 +25,13 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QKeySequence
 
 # Custom imports
+from cutevariant import constants as cst
 from cutevariant.core import vql, sql
-from cutevariant.gui import style, plugin, FIcon
 from cutevariant.core.vql import VQLSyntaxError
 from cutevariant.core import command
 from cutevariant.core.querybuilder import build_vql_query
+from cutevariant.gui import style, plugin, FIcon
 from cutevariant.gui.widgets import CodeEdit
-
 
 from cutevariant import LOGGER
 
@@ -148,12 +148,10 @@ class VqlEditorWidget(plugin.PluginWidget):
                 field["name"], field["type"], field["category"], field["description"]
             )
 
-            # ===> TODO
-            # color = style.FIELD_TYPE.get(field["type"], "str")["color"]
-            # icon = FIcon(style.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
-
-            color = "red"
-            icon = FIcon(0xF04EB)
+            field_style = cst.FIELD_TYPE.get(field["type"])
+            col_name = field_style.get("color")
+            color = QApplication.style().colors().get(col_name, "red")
+            icon = FIcon(field_style.get("icon"), QColor("white"))
 
             if field["category"] == "variants":
                 self.text_edit.completer.model.add_item(name, description, icon, color)

@@ -174,7 +174,7 @@ class FieldsWidget(QWidget):
     def __init__(self, conn: sqlite3.Connection = None, parent=None):
         super().__init__()
         self.view = QListView()
-        self.view.setIconSize(QSize(24, 24))
+        self.view.setIconSize(QSize(20, 20))
         self.view.setDragEnabled(True)
         self._model = FieldsModel()
         self._model.fields_changed.connect(self.fields_changed)

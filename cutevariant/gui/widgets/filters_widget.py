@@ -877,7 +877,19 @@ class FiltersModel(QAbstractItemModel):
         super().__init__(parent)
         self.__root_item = FilterItem("$and")
         self.conn = conn
+        self._fields_types = {}
         self.clear()
+
+    @property
+    def conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, value: sqlite3.Connection):
+        self._conn = value
+
+        if self._conn:
+            self._fields_types = prepare_fields(self._conn)
 
     def get_filters(self) -> dict:
         """Return filters
@@ -936,19 +948,17 @@ class FiltersModel(QAbstractItemModel):
 
             if index.column() == COLUMN_FIELD and item.type == FilterItem.CONDITION_TYPE:
 
-                return QIcon(FIcon(0xF044A, QApplication.style().colors().get("blue", "white")))
+                field_type = self._fields_types.get(item.get_field(), "str")
+                field_style = cst.FIELD_TYPE.get(field_type)
+                col_name = field_style.get("color", "white")
+                color = QApplication.style().colors().get(col_name)
+                icon = field_style["icon"]
+                return QIcon(FIcon(icon, color))
 
             if index.column() == COLUMN_REMOVE:
                 if index.parent() != QModelIndex():
                     col = QApplication.style().colors().get("red", "red")
                     return QIcon(FIcon(0xF0156, col))
-
-        # FONT ROLE
-        if role == Qt.FontRole:
-            if index.column() == COLUMN_FIELD:
-                font = QFont()
-                font.setBold(True)
-                return font
 
             if index.column() == COLUMN_VALUE and val is None:
                 font = QFont()
@@ -1671,7 +1681,6 @@ class FiltersDelegate(QStyledItemDelegate):
         self.eye_off = FIcon(0xF0209)
 
         s = QApplication.style().pixelMetric(QStyle.PM_ListViewIconSize)
-        self.icon_size = QSize(s, s)
         self.row_height = QApplication.style().pixelMetric(QStyle.PM_ListViewIconSize) * 1.2
 
     def createEditor(self, parent, option, index: QModelIndex) -> QWidget:
@@ -2053,6 +2062,7 @@ class FiltersWidget(QTreeView):
         self.setAlternatingRowColors(True)
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
+
         self.setDragDropMode(QAbstractItemView.DragDrop)
 
         self.header().setStretchLastSection(False)
@@ -2063,6 +2073,7 @@ class FiltersWidget(QTreeView):
         self.header().setSectionResizeMode(COLUMN_REMOVE, QHeaderView.ResizeToContents)
         self.setEditTriggers(QAbstractItemView.DoubleClicked)
 
+        self.setIconSize(QSize(20, 20))
         # self.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
     def set_filters(self, filters: dict):
