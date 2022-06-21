@@ -786,6 +786,5 @@ def build_vql_query(
             order_by_clause.append(f"{field} {direction}")
 
         order_by_clause = " ORDER BY " + ",".join(order_by_clause)
-        print("YOUPU,", order_by_clause)
 
     return f"SELECT {select_clause} FROM {source}{where_clause}{order_by_clause}"
