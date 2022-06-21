@@ -26,6 +26,7 @@ def test_plugin(qtbot, conn):
 
     plugin = widgets.VariantViewWidget()
     plugin.mainwindow = utils.create_mainwindow()
+    plugin.on_open_project(conn)
     plugin.on_refresh()
     qtbot.addWidget(plugin)
 

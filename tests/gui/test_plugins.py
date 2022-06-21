@@ -32,7 +32,7 @@ def test_find_plugins(qtbot, conn):
                 qtbot.addWidget(instance)
                 instance.mainwindow = mainwindow  # TODO .. .refactor
                 instance.on_register(mainwindow)
-                print(instance)
+                # instance.on_open_project(conn)
                 instance.on_refresh()
 
         #     # check mandatory method

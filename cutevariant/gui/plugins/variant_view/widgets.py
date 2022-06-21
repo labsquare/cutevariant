@@ -1059,10 +1059,11 @@ class VariantView(QWidget):
         self.fields_menu.parent().setText(f"Fields: {current_name}")
 
         # Load source preset
-        self.source_menu.clear()
-        for rec in sql.get_selections(self.conn):
-            action = self.source_menu.addAction(QIcon(), rec["name"])
-            action.setData(rec["name"])
+        if self.conn:
+            self.source_menu.clear()
+            for rec in sql.get_selections(self.conn):
+                action = self.source_menu.addAction(QIcon(), rec["name"])
+                action.setData(rec["name"])
 
         self.source_menu.parent().setText(f"Source: {self.model.source}")
 
@@ -2048,7 +2049,7 @@ class VariantViewWidget(plugin.PluginWidget):
 
         self.mainwindow.set_state_data("executed_query_data", executed_query_data)
         self.mainwindow.set_state_data("order_by", self.view.model.order_by)
-        self.mainwindow.refresh_plugins()
+        self.mainwindow.refresh_plugins(sender=self)
 
     def on_field_removed(self, field: str):
 
