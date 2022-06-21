@@ -1171,7 +1171,7 @@ class MainWindow(QMainWindow):
 
         vql = "Filters: " + vql
 
-        self.filter_info_label.setText(vql)
+        # self.filter_info_label.setText(vql)
 
         count = len(samples)
         self.samples_info_label.setText(f"Samples: {count}")
