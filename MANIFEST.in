@@ -8,8 +8,6 @@ exclude *.ico
 exclude *.png
 exclude *.gif
 exclude *.properties
-exclude *.yml
-exclude *.yaml
 exclude *.md
 exclude Makefile
 exclude pytest.ini
