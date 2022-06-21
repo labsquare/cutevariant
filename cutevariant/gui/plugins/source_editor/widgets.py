@@ -365,6 +365,8 @@ class SourceEditorWidget(plugin.PluginWidget):
             self.model.current_source = source
             self.mainwindow.set_state_data("source", source)
             self.mainwindow.refresh_plugins(sender=self)
+            if "samples" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("samples")
 
     def create_selection_from_current(self):
         name = self.ask_and_check_selection_name()
@@ -437,6 +439,9 @@ class SourceEditorWidget(plugin.PluginWidget):
         # model_index = self.model.find_record(self.source)
         # self.view.setCurrentIndex(model_index)
         # self.view.selectionModel().blockSignals(False)
+        if "plugins" in dir(self.mainwindow): # For FakeMainWindow
+            if "samples" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("samples")
 
     def on_selection_changed(
         self,
