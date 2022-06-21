@@ -66,10 +66,3 @@ def create_conn(file_name=None, annotation_parser=None):
     conn = sql.get_sql_connection(":memory:")
     sql.import_reader(conn, VcfReader(file_name, annotation_parser))
     return conn
-
-
-def create_qt_application():
-    QApplication()
-    qApp.setOrganizationName("labsquare")
-    qApp.setApplicationName("cutevariantTest")
-    return qApp

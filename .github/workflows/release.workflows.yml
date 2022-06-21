@@ -2,10 +2,10 @@ name: Release
 
   
 # # when it active ? 
-# on: 
-#   push:
-#     branches:
-#       - master 
+on: 
+  push:
+    branches:
+      - master 
 #   #push:
 #     # tags:
 #     #   - '*'
