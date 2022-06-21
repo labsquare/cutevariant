@@ -50,6 +50,8 @@ from cutevariant.core.querybuilder import filters_to_flat
 
 from cutevariant.gui import tooltip as toolTip
 
+from cutevariant.gui.widgets import ChoiceButton
+
 
 class VariantVerticalHeader(QHeaderView):
     def __init__(self, parent=None):
@@ -797,9 +799,9 @@ class VariantView(QWidget):
     field_remove = Signal(str)
 
     # Shortcut plugin action
-    fields_btn_clicked = Signal()
-    source_btn_clicked = Signal()
-    filters_btn_clicked = Signal()
+    fields_menu_changed = Signal(list)
+    source_menu_changed = Signal(str)
+    filters_menu_changed = Signal(dict)
 
     def __init__(self, parent=None):
         """
@@ -835,7 +837,9 @@ class VariantView(QWidget):
 
         self.view.setVerticalHeader(VariantVerticalHeader())
         self.view.verticalHeader().setSectionsClickable(True)
-        self.view.verticalHeader().sectionDoubleClicked.connect(self.on_double_clicked_vertical_header)
+        self.view.verticalHeader().sectionDoubleClicked.connect(
+            self.on_double_clicked_vertical_header
+        )
 
         self.view.setSortingEnabled(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -930,22 +934,40 @@ class VariantView(QWidget):
         )
         self.addAction(self.comment_action)
 
-        self.fields_button = self.top_bar.addAction(FIcon(0xF08DF), "Fields")
-        self.fields_button.triggered.connect(self.fields_btn_clicked)
-        self.fields_button.setToolTip("Edit Fields ")
-        self.source_button = self.top_bar.addAction(FIcon(0xF04EB), "Source")
-        self.source_button.triggered.connect(self.source_btn_clicked)
-        self.source_button.setToolTip("Edit Source ")
-        self.filters_button = self.top_bar.addAction(FIcon(0xF0232), "Filters")
-        self.filters_button.triggered.connect(self.filters_btn_clicked)
-        self.filters_button.setToolTip("Edit Filters ")
+        self.fields_button = QPushButton()
+        self.fields_menu = QMenu(self.fields_button)
+        self.fields_menu.triggered.connect(self.on_filter_menu_changed)
+        self.fields_button.setFlat(True)
+        self.fields_button.setText("Fields: boby")
+        self.fields_button.setMenu(self.fields_menu)
+        self.top_bar.addWidget(self.fields_button)
+
+        self.source_button = QPushButton()
+        self.source_menu = QMenu(self.source_button)
+        self.source_menu.triggered.connect(self.on_filter_menu_changed)
+        self.source_button.setFlat(True)
+        self.source_button.setText("Source: boby")
+        self.source_button.setMenu(self.source_menu)
+        self.top_bar.addWidget(self.source_button)
+
+        self.filters_button = QPushButton()
+        self.filters_menu = QMenu(self.filters_button)
+        self.filters_menu.triggered.connect(self.on_filter_menu_changed)
+        self.filters_button.setFlat(True)
+        self.filters_button.setText("Filters: boby")
+        self.filters_button.setMenu(self.filters_menu)
+        self.top_bar.addWidget(self.filters_button)
+
+        # self.source_button = ChoiceButton()
+        # self.source_button.triggered.connect(self.source_btn_clicked)
+        # self.source_button.setToolTip("Edit Source ")
+        # self.filters_button = ChoiceButton()
+        # self.filters_button.triggered.connect(self.filters_btn_clicked)
+        # self.filters_button.setToolTip("Edit Filters ")
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.top_bar.addWidget(spacer)
-
-        self.source_label = QLabel("source")
-        self.top_bar.addWidget(self.source_label)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -1006,6 +1028,59 @@ class VariantView(QWidget):
         action.setToolTip(self.tr("Last page (%s)" % action.shortcut().toString()))
         self.pagging_actions.addAction(action)
 
+    def on_filter_menu_changed(self, action: QAction):
+        """Executed when filter button (fields,source,filters) changed
+
+        Args:
+            action (QAction): the action in the menu
+        """
+        if self.sender() == self.fields_menu:
+            self.fields_menu_changed.emit(action.data())
+
+        if self.sender() == self.source_menu:
+            self.source_menu_changed.emit(action.data())
+
+        if self.sender() == self.filters_menu:
+            self.filters_menu_changed.emit(action.data())
+
+    def load_button_menu(self):
+        # Load fields preset
+        config = Config("fields_editor")
+        presets = config["presets"] or {}
+        self.fields_menu.clear()
+        current_fields = self.model.fields
+        current_name = "<not set>"
+        for key, value in presets.items():
+            action = self.fields_menu.addAction(QIcon(), key)
+            action.setData(value)
+            if current_fields == value:
+                current_name = key
+
+        self.fields_menu.parent().setText(f"Fields: {current_name}")
+
+        # Load source preset
+        self.source_menu.clear()
+        for rec in sql.get_selections(self.conn):
+            action = self.source_menu.addAction(QIcon(), rec["name"])
+            action.setData(rec["name"])
+
+        self.source_menu.parent().setText(f"Source: {self.model.source}")
+
+        # Load filters preset
+        config = Config("filters_editor")
+        presets = config["presets"] or {}
+        self.filters_menu.clear()
+        current_filters = self.model.filters
+        current_name = "<not set>"
+        for key, value in presets.items():
+            action = self.filters_menu.addAction(key)
+            action.setData(value)
+
+            if str(current_filters) == str(value):
+                current_name = key
+
+        self.filters_menu.parent().setText(f"Filters: {current_name}")
+
     def auto_resize(self):
         """Resize columns to content"""
         self.view.resizeColumnsToContents()
@@ -1049,8 +1124,6 @@ class VariantView(QWidget):
         self.model.interrupt()
         self.model.load()
 
-        self.source_label.setText(self.model.source)
-
         # display sort indicator
         order_by = self.model.order_by
         if order_by:
@@ -1059,6 +1132,8 @@ class VariantView(QWidget):
             if ordered_field in self.model.fields:
                 index = self.model.fields.index(ordered_field)
                 self.view.horizontalHeader().setSortIndicator(index, order)
+
+        self.load_button_menu()
 
     def on_variant_loaded(self):
         """Slot called when async queries from the model are finished
@@ -1329,7 +1404,9 @@ class VariantView(QWidget):
         current_variant = self.model.variant(index.row())
 
         # Get variant name
-        variant_name = cm.find_variant_name(conn=self.conn, variant_id=current_variant["id"], troncate=True)
+        variant_name = cm.find_variant_name(
+            conn=self.conn, variant_id=current_variant["id"], troncate=True
+        )
 
         menu.addAction(
             FIcon(0xF064F),
@@ -1783,11 +1860,15 @@ class VariantView(QWidget):
         if header_name_match_sample:
             if validation_menu_lock:
                 QMessageBox.information(
-                    self, "Sample locked", self.tr(f"Sample '{sample_name}' is locked, genotype can not be changed")
+                    self,
+                    "Sample locked",
+                    self.tr(f"Sample '{sample_name}' is locked, genotype can not be changed"),
                 )
             elif no_genotype:
                 QMessageBox.information(
-                    self, "No genotype", self.tr(f"Sample '{sample_name}' does not have genotype for this variant")
+                    self,
+                    "No genotype",
+                    self.tr(f"Sample '{sample_name}' does not have genotype for this variant"),
                 )
             else:
                 self._show_sample_variant_dialog()
@@ -1922,9 +2003,9 @@ class VariantViewWidget(plugin.PluginWidget):
         self.view.filter_remove.connect(self.on_filter_removed)
         self.view.field_remove.connect(self.on_field_removed)
 
-        self.view.fields_btn_clicked.connect(lambda: self.show_plugin("fields_editor"))
-        self.view.source_btn_clicked.connect(lambda: self.show_plugin("source_editor"))
-        self.view.filters_btn_clicked.connect(lambda: self.show_plugin("filters_editor"))
+        self.view.fields_menu_changed.connect(self.on_fields_changed)
+        self.view.source_menu_changed.connect(self.on_source_changed)
+        self.view.filters_menu_changed.connect(self.on_filters_changed)
 
     def show_plugin(self, name: str):
 
@@ -1932,6 +2013,27 @@ class VariantViewWidget(plugin.PluginWidget):
             print("YOO ", name)
             dock = self.mainwindow.plugins[name].parent()
             dock.setVisible(not dock.isVisible())
+
+    def on_fields_changed(self, fields: list):
+        if fields:
+            self.view.model.fields = fields
+            self.view.load()
+            self.mainwindow.set_state_data("fields", fields)
+            self.mainwindow.refresh_plugins(sender=self)
+
+    def on_source_changed(self, source: str):
+        if source:
+            self.view.model.source = source
+            self.view.load()
+            self.mainwindow.set_state_data("source", source)
+            self.mainwindow.refresh_plugins(sender=self)
+
+    def on_filters_changed(self, filters: dict):
+        if filters:
+            self.view.model.filters = filters
+            self.view.load()
+            self.mainwindow.set_state_data("filters", filters)
+            self.mainwindow.refresh_plugins(sender=self)
 
     def on_load_finished(self):
         """Triggered when variant load is finished
