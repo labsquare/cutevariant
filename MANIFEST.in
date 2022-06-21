@@ -31,7 +31,7 @@ recursive-include cutevariant *.qss
 recursive-include cutevariant *.yaml
 recursive-include cutevariant/gui/plugins *.json
 include cutevariant/assets/i18n/*.qm
-unclude cutevariant/assets/styles/*.yaml
+include cutevariant/assets/styles/*.yaml
 
 exclude cutevariant/assets/i18n/*.ts
 include cutevariant/assets/LICENSE
