@@ -1367,7 +1367,7 @@ class VariantView(QWidget):
                 sample_valid = sample_info["classification"]
 
         # Menu Validation for sample
-        if sample_id and sample_name and variant_id:
+        if sample_id and sample_name and variant_id and current_variant[header_name]:
 
             # find genotype
             genotype = sql.get_sample_annotations(self.conn, variant_id, sample_id)
@@ -1716,6 +1716,10 @@ class VariantView(QWidget):
             variant = dict(self.model.variant(index.row()))
             if "id" in variant:
                 del variant["id"]
+            if "classification" in variant:
+                del variant["classification"]
+            if "favorite" in variant:
+                del variant["favorite"]
             writer.writerow(variant)
 
         QApplication.instance().clipboard().setText(output.getvalue())
