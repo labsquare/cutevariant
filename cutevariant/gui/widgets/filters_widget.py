@@ -940,7 +940,8 @@ class FiltersModel(QAbstractItemModel):
 
             if index.column() == COLUMN_REMOVE:
                 if index.parent() != QModelIndex():
-                    return QIcon(FIcon(0xF0156, "red"))
+                    col = QApplication.style().colors().get("red", "red")
+                    return QIcon(FIcon(0xF0156, col))
 
         # FONT ROLE
         if role == Qt.FontRole:

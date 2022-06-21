@@ -94,19 +94,19 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
             {
                 # Strings simple quotes '...'
                 "pattern": r"\'(\\.|[^\'])*\'",
-                "color": Qt.red,
+                "color": QColor(QApplication.style().colors().get("red", "red")),
                 "minimal": True,  # Need to stop match as soon as possible
             },
             {
                 # Strings double quotes: "..."
                 "pattern": r"\"(\\.|[^\"])*\"",
-                "color": Qt.red,
+                "color": QColor(QApplication.style().colors().get("red", "red")),
                 "minimal": True,  # Need to stop match as soon as possible
             },
             {
                 # Numbers
                 "pattern": r"\\b[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?\\b",
-                "color": Qt.darkGreen,
+                "color": QColor(QApplication.style().colors().get("green", "green")),
             },
             {
                 # Comments
