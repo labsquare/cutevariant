@@ -938,7 +938,8 @@ class VariantView(QWidget):
         self.fields_menu = QMenu(self.fields_button)
         self.fields_menu.triggered.connect(self.on_filter_menu_changed)
         self.fields_button.setFlat(True)
-        self.fields_button.setText("Fields: boby")
+        self.fields_button.setToolTip(self.tr("Select a Field Preset"))
+        self.fields_button.setIcon(FIcon(0xF08DF))
         self.fields_button.setMenu(self.fields_menu)
         self.top_bar.addWidget(self.fields_button)
 
@@ -946,7 +947,8 @@ class VariantView(QWidget):
         self.source_menu = QMenu(self.source_button)
         self.source_menu.triggered.connect(self.on_filter_menu_changed)
         self.source_button.setFlat(True)
-        self.source_button.setText("Source: boby")
+        self.source_button.setToolTip("Select a data source")
+        self.source_button.setIcon(FIcon(0xF04EB))
         self.source_button.setMenu(self.source_menu)
         self.top_bar.addWidget(self.source_button)
 
@@ -954,7 +956,8 @@ class VariantView(QWidget):
         self.filters_menu = QMenu(self.filters_button)
         self.filters_menu.triggered.connect(self.on_filter_menu_changed)
         self.filters_button.setFlat(True)
-        self.filters_button.setText("Filters: boby")
+        self.filters_button.setIcon(FIcon(0xF0232))
+        self.filters_button.setText(self.tr("Select a filter preset"))
         self.filters_button.setMenu(self.filters_menu)
         self.top_bar.addWidget(self.filters_button)
 
