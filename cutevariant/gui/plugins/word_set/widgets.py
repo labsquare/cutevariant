@@ -267,7 +267,7 @@ class WordsetCollectionModel(QAbstractTableModel):
         if len(wordset_names) != 1:
             # Currently, we don't support dragging more than one wordset
             return None
-        res = QMimeData()
+        res = super().mimeData(indexes)
         ser_wordset = wordset_names[0]
         res.setText(json.dumps({"ann.gene": {"$in": {"$wordset": ser_wordset}}}))
         res.setData(
