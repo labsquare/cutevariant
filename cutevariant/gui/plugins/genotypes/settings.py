@@ -1,9 +1,8 @@
 ## ================= Settings widgets ===================
 # Qt imports
 from typing import List
-from PySide6.QtCore import *
 from PySide6.QtGui import QColor, QFont, QIcon, QPixmap
-from PySide6.QtWidgets import *
+from PySide6.QtWidgets import QFormLayout, QComboBox
 
 # Custom imports
 from cutevariant.gui.plugin import PluginSettingsWidget
@@ -40,7 +39,6 @@ class GeneralSettings(AbstractSettingsWidget):
         self.classifications_genotypes_list = list(self.classifications_genotypes_dict)
  
         self.classifications_combobox = QComboBox()
-        f_layout = QFormLayout()
 
         f_layout = QFormLayout(self)
         f_layout.addRow(self.tr("Default Classification"), self.classifications_combobox)
