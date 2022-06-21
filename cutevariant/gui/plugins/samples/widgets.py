@@ -220,7 +220,6 @@ class SampleVerticalHeader(QHeaderView):
     def __init__(self, parent=None):
         super().__init__(Qt.Vertical, parent)
         self.parent = parent
-        #self.conn = conn
 
     def sizeHint(self) -> QSize:
         """override"""
