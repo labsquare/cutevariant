@@ -47,9 +47,9 @@ def create_db(args):
         # The output file will be based on the name of the VCF one
         args.db = args.input + ".db"
 
-    if os.path.exists(args.db):
-        # Remove existing file
-        os.remove(args.db)
+    # if os.path.exists(args.db):
+    #     # Remove existing file
+    #     os.remove(args.db)
 
     conn = sql.get_sql_connection(args.db)
     # if args.pedfile
@@ -57,7 +57,7 @@ def create_db(args):
         # TODO: bug ... max is not 100...
 
         with create_reader(args.input) as reader:
-            sql.import_reader(conn, reader)
+            sql.import_reader(conn, reader, import_id = args.import_id)
 
         print("Successfully created database!")
 
@@ -191,6 +191,9 @@ the arguments.""",
     createdb_parser.add_argument(
         "-p", "--pedfile", help="A ped file describing the family relations between the samples."
     )
+    createdb_parser.add_argument(
+        "-m", "--import_id", help="Import ID to create a tag for each samples (optional, default <DATE>)."
+    )
     createdb_parser.set_defaults(func=create_db)
 
     # Show parser ##############################################################
@@ -263,13 +266,15 @@ the arguments.""",
     args = parser.parse_args()
 
     LOGGER.setLevel(args.verbose.upper())
-
+    
     # Prepare SQL connection on DB file
     if "CUTEVARIANT_DB" in os.environ:
         args.db = os.environ["CUTEVARIANT_DB"]
 
-    elif not args.db and args.subparser != "createdb":
+    #elif not args.db and args.subparser != "createdb":
+    elif "db" not in dir(args) and args.subparser != "createdb":
         print("You must specify a database file via $CUTEVARIANT_DB or --db argument")
+        print("Use --help for more information")
         return 1
 
     # Init SQL connection
