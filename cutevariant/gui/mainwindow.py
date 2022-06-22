@@ -633,6 +633,8 @@ class MainWindow(QMainWindow):
 
         # self.state = self.app_settings.value(f"{file_path}/last_state", State())
 
+        self._state_data.reset()
+
         self._project_is_opening = True
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
