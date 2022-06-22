@@ -259,6 +259,7 @@ class ExportDialogFactory:
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
+        selected_samples=None,
     ):
         DialogClass = cls.FORMATS.get(format_name)
         dialog = DialogClass(
@@ -267,6 +268,7 @@ class ExportDialogFactory:
             fields,
             source,
             filters,
+            selected_samples,
         )
 
         return dialog
