@@ -22,9 +22,9 @@ from cutevariant.core import sql
 
 # SQL functions
 def get_variant_count(conn: sqlite3.Connection):
-    return conn.execute(
-        "SELECT `count` FROM selections WHERE name = 'variants'"
-    ).fetchone()["count"]
+    return conn.execute("SELECT `count` FROM selections WHERE name = 'variants'").fetchone()[
+        "count"
+    ]
 
 
 def get_variant_transition(conn: sqlite3.Connection):
@@ -61,9 +61,9 @@ def get_snp_count(conn: sqlite3.Connection):
     Notes:
         This query is currently not covered by an index.
     """
-    return conn.execute(
-        "SELECT COUNT(*) AS `count` FROM variants WHERE is_snp = 1"
-    ).fetchone()["count"]
+    return conn.execute("SELECT COUNT(*) AS `count` FROM variants WHERE is_snp = 1").fetchone()[
+        "count"
+    ]
 
 
 def get_indel_count(conn: sqlite3.Connection):
@@ -72,13 +72,13 @@ def get_indel_count(conn: sqlite3.Connection):
     Notes:
         This query is currently not covered by an index.
     """
-    return conn.execute(
-        "SELECT COUNT(*) AS `count` FROM variants WHERE is_indel = 1"
-    ).fetchone()["count"]
+    return conn.execute("SELECT COUNT(*) AS `count` FROM variants WHERE is_indel = 1").fetchone()[
+        "count"
+    ]
 
 
 def get_gene_counts(conn: sqlite3.Connection):
-    """ Get the number of variant per genes """
+    """Get the number of variant per genes"""
     results = {}
     for record in conn.execute(
         "SELECT gene, COUNT(*) as 'count' FROM annotations GROUP BY gene ORDER by count DESC LIMIT 1,100"

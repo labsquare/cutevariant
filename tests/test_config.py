@@ -35,7 +35,7 @@ def test_config():
 
     assert config["memory"] == 10
     # Test if default config exist
-    assert os.path.exists(config.default_config_path)
+    assert os.path.exists(config.default_config_path())
 
     # Test reset path
     config.reset()

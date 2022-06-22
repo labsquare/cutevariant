@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QTabWidget,
     QTableView,
+    QApplication,
     QPlainTextEdit,
     QDialog,
     QHeaderView,
@@ -41,6 +42,7 @@ from PySide6.QtWidgets import (
 import sqlite3
 import time
 import tempfile
+import os
 from cutevariant.gui.ficon import FIcon
 from cutevariant.core.reader.vcfreader import VcfReader
 from cutevariant.core.reader import PedReader
@@ -118,13 +120,13 @@ class FieldsModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole and index.column() == self.INDEX_COL:
             if item["index"] is True:
-                return qApp.style().standardIcon(QStyle.SP_DialogApplyButton)
+                return QApplication.style().standardIcon(QStyle.SP_DialogApplyButton)
             else:
-                return qApp.style().standardIcon(QStyle.SP_DialogCancelButton)
+                return QApplication.style().standardIcon(QStyle.SP_DialogCancelButton)
 
         if role == Qt.CheckStateRole:
             if index.column() == self.NAME_COL:
-                return Qt.Checked if item["enabled"] else Qt.Unchecked
+                return int(Qt.Checked) if item["enabled"] else int(Qt.Unchecked)
 
         if role == Qt.ToolTipRole:
             return item["description"]
@@ -306,6 +308,7 @@ class VcfImportWidget(QWidget):
         self.file_path_edit.setToolTip(
             self.tr("Path to a supported input file. (e.g: VCF  file ) ")
         )
+        self.import_id = QLineEdit()
         self.lock_button = QPushButton(self.tr("Edit"))
         self.lock_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
         self.lock_button.setCheckable(True)
@@ -327,6 +330,8 @@ class VcfImportWidget(QWidget):
         # top formular
         h_layout = QHBoxLayout()
         h_layout.addWidget(self.file_path_edit)
+        h3_layout = QHBoxLayout()
+        h3_layout.addWidget(self.import_id)
         h_layout.addWidget(self.button)
         h2_layout = QHBoxLayout()
         h2_layout.addWidget(self.annotation_box)
@@ -336,6 +341,7 @@ class VcfImportWidget(QWidget):
         self.v_layout = QFormLayout(self.file_group)
         self.v_layout.addRow("Input File", h_layout)
         self.v_layout.addRow("Annotation", h2_layout)
+        self.v_layout.addRow("Import ID", h3_layout)
 
         # Create content
         self.tabwidget.addTab(self.fields_widget, "Fields")
@@ -346,9 +352,7 @@ class VcfImportWidget(QWidget):
         self.setLayout(main_layout)
 
         # Fill available parser
-        self.annotation_box.addItem(
-            FIcon(0xF13CF), "No Annotation detected", userData=None
-        )
+        self.annotation_box.addItem(FIcon(0xF13CF), "No Annotation detected", userData=None)
 
         for parser in VcfReader.ANNOTATION_PARSERS:
             self.annotation_box.addItem(FIcon(0xF08BB), parser, userData=parser)
@@ -377,6 +381,7 @@ class VcfImportWidget(QWidget):
         if filepath:
             # Display and save directory
             self.file_path_edit.setText(filepath)
+            self.import_id.setText(os.path.basename(filepath))
 
             if "vcf" in filepath:
                 # TODO: detect annotations on other tyes of files...
@@ -391,6 +396,9 @@ class VcfImportWidget(QWidget):
 
     def filename(self):
         return self.file_path_edit.text()
+
+    def get_import_id(self):
+        return self.import_id.text()
 
     def pedfile(self):
         _, filename = tempfile.mkstemp()
@@ -492,6 +500,8 @@ class ImportThread(QThread):
         self.db_filename = None
         # File top open
         self.filename = None
+        # Import ID
+        self.import_id = None
         # pedfile
         self.pedfile = None
         # Ignored fields
@@ -536,24 +546,18 @@ class ImportThread(QThread):
             # Import VARIANT FILE
             self.finished_status.emit(False)
             self.emit_progress("**Import Variants**")
+            import_id = self.import_id
             with create_reader(self.filename, self.annotation_parser) as reader:
                 self._reader = reader
                 sql.import_reader(
                     self.conn,
                     reader,
                     pedfile=self.pedfile,
+                    import_id=import_id,
                     ignored_fields=self.ignored_fields,
                     indexed_fields=self.indexed_fields,
                     progress_callback=self.emit_progress,
                 )
-
-            # Update Index
-            # sql.create_indexes(
-            #     self.conn,
-            #     self.indexed_variant_fields,
-            #     self.indexed_annotation_fields,
-            #     self.indexed_sample_fields,
-            # )
 
             self.conn.close()
 
@@ -610,6 +614,7 @@ class VcfImportDialog(QDialog):
 
         self.progress_dialog.reset()
         self.thread.filename = self.widget.filename()
+        self.thread.import_id = self.widget.get_import_id()
 
         # create pedfile
         self.thread.pedfile = self.widget.pedfile()

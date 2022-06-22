@@ -22,6 +22,7 @@ from PySide6.QtGui import (
     QFontMetrics,
     QSyntaxHighlighter,
     QTextCharFormat,
+    QWheelEvent,
 )
 from PySide6.QtCore import (
     Qt,
@@ -64,6 +65,8 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
         "NULL",
         "COUNT",
         "IMPORT",
+        "ASC",
+        "DESC",
         "WORDSET",
         "ORDER BY",
         "INTERSECT",
@@ -82,10 +85,7 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
                 # Keywords
                 # \b allows to perform a "whole words only"
                 "pattern": "|".join(
-                    (
-                        "\\b%s\\b" % keyword
-                        for keyword in VqlSyntaxHighlighter.sql_keywords
-                    )
+                    ("\\b%s\\b" % keyword for keyword in VqlSyntaxHighlighter.sql_keywords)
                 ),
                 "font": QFont.Bold,
                 "color": palette.color(QPalette.Highlight),  # default: Qt.darkBlue
@@ -93,20 +93,20 @@ class VqlSyntaxHighlighter(QSyntaxHighlighter):
             },
             {
                 # Strings simple quotes '...'
-                "pattern": r"\'.*\'",
-                "color": Qt.red,
+                "pattern": r"\'(\\.|[^\'])*\'",
+                "color": QColor(QApplication.style().colors().get("red", "red")),
                 "minimal": True,  # Need to stop match as soon as possible
             },
             {
                 # Strings double quotes: "..."
-                "pattern": r"\".*\"",
-                "color": Qt.red,
+                "pattern": r"\"(\\.|[^\"])*\"",
+                "color": QColor(QApplication.style().colors().get("red", "red")),
                 "minimal": True,  # Need to stop match as soon as possible
             },
             {
                 # Numbers
                 "pattern": r"\\b[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?\\b",
-                "color": Qt.darkGreen,
+                "color": QColor(QApplication.style().colors().get("green", "green")),
             },
             {
                 # Comments
@@ -191,9 +191,7 @@ class CompleterModel(QAbstractListModel):
             icon (TYPE, optional): the icon
             color (None, optional): the background color icon
         """
-        self._items.append(
-            {"name": name, "description": description, "icon": icon, "color": color}
-        )
+        self._items.append({"name": name, "description": description, "icon": icon, "color": color})
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Override from QAbstractListModel
@@ -240,9 +238,7 @@ class CompleterDelegate(QStyledItemDelegate):
 
     """CompleterDelegate is use by the completer to draw nicely icon and elements of the completer"""
 
-    def paint(
-        self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
-    ):
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         """Paint a cell according index and option
 
         Args:
@@ -265,9 +261,7 @@ class CompleterDelegate(QStyledItemDelegate):
         icon_color = index.data(Qt.BackgroundRole)
 
         # draw icon background
-        area = QRect(
-            option.rect.x(), option.rect.y(), option.rect.height(), option.rect.height()
-        )
+        area = QRect(option.rect.x(), option.rect.y(), option.rect.height(), option.rect.height())
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(icon_color))
         painter.drawRect(area)
@@ -410,14 +404,10 @@ class Completer(QWidget):
                 # use tab to move down/up in the list
                 if event.key() == Qt.Key_Tab:
                     if current.row() < self.proxy_model.rowCount() - 1:
-                        self.view.setCurrentIndex(
-                            self.proxy_model.index(current.row() + 1, 0)
-                        )
+                        self.view.setCurrentIndex(self.proxy_model.index(current.row() + 1, 0))
                 if event.key() == Qt.Key_Backtab:
                     if current.row() > 0:
-                        self.view.setCurrentIndex(
-                            self.proxy_model.index(current.row() - 1, 0)
-                        )
+                        self.view.setCurrentIndex(self.proxy_model.index(current.row() - 1, 0))
 
                 # Route other key event to the target ! This make possible to write text when completer is visible
                 self._target.event(event)
@@ -548,6 +538,17 @@ class CodeEdit(QTextEdit):
             Qt.Key_Down,
         ]
 
+    def wheelEvent(self, e: QWheelEvent) -> None:
+        fontPS = self.fontPointSize()
+        if (e.modifiers() == Qt.ControlModifier) and e.angleDelta().y() > 0:
+            self.setFontPointSize(fontPS + 2)
+        elif e.modifiers() == Qt.ControlModifier and e.angleDelta().y() < 0 and fontPS > 8:
+            self.setFontPointSize(fontPS - 2)
+
+        self.setPlainText(self.toPlainText())
+
+        super().wheelEvent(e)
+
     def keyPressEvent(self, event):
 
         if event.key() in self._ignore_keys and self.completer.isVisible():
@@ -597,9 +598,7 @@ class CodeEdit(QTextEdit):
         tc = self.textCursor()
         extra = len(self.completer.completion_prefix())
         text_under_cursor = self.text_under_cursor()
-        tc.movePosition(
-            QTextCursor.Left, QTextCursor.KeepAnchor, len(text_under_cursor)
-        )
+        tc.movePosition(QTextCursor.Left, QTextCursor.KeepAnchor, len(text_under_cursor))
 
         tc.removeSelectedText()
         # tc.movePosition(QTextCursor.Left)

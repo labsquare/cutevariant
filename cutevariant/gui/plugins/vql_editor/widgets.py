@@ -25,13 +25,13 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QKeySequence
 
 # Custom imports
+from cutevariant import constants as cst
 from cutevariant.core import vql, sql
-from cutevariant.gui import style, plugin, FIcon
 from cutevariant.core.vql import VQLSyntaxError
 from cutevariant.core import command
 from cutevariant.core.querybuilder import build_vql_query
+from cutevariant.gui import style, plugin, FIcon
 from cutevariant.gui.widgets import CodeEdit
-
 
 from cutevariant import LOGGER
 
@@ -50,9 +50,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         # Top toolbar
         self.top_bar = QToolBar()
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.run_action = self.top_bar.addAction(
-            FIcon(0xF040A), self.tr("Run"), self.run_vql
-        )
+        self.run_action = self.top_bar.addAction(FIcon(0xF040A), self.tr("Run"), self.run_vql)
         self.top_bar.setIconSize(QSize(16, 16))
         self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
         self.run_action.setToolTip(
@@ -64,9 +62,11 @@ class VqlEditorWidget(plugin.PluginWidget):
         # Error handling
         self.log_edit = QLabel()
         self.log_edit.setMinimumHeight(40)
+        self._log_bg_color = "#FFC107"
+        self._log_fg_color = "#343A40"
         self.log_edit.setStyleSheet(
             "QWidget{{background-color:'{}'; color:'{}'}}".format(
-                style.WARNING_BACKGROUND_COLOR, style.WARNING_TEXT_COLOR
+                self._log_bg_color, self._log_fg_color
             )
         )
         self.log_edit.hide()
@@ -151,16 +151,17 @@ class VqlEditorWidget(plugin.PluginWidget):
             description = "<b>{}</b> ({}) from {} <br/><br/> {}".format(
                 field["name"], field["type"], field["category"], field["description"]
             )
-            color = style.FIELD_TYPE.get(field["type"], "str")["color"]
-            icon = FIcon(style.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
+
+            field_style = cst.FIELD_TYPE.get(field["type"])
+            col_name = field_style.get("color")
+            color = QApplication.style().colors().get(col_name, "red")
+            icon = FIcon(field_style.get("icon"), QColor("white"))
 
             if field["category"] == "variants":
                 self.text_edit.completer.model.add_item(name, description, icon, color)
 
             if field["category"] == "annotations":
-                self.text_edit.completer.model.add_item(
-                    f"ann.{name}", description, icon, color
-                )
+                self.text_edit.completer.model.add_item(f"ann.{name}", description, icon, color)
 
             if field["category"] == "samples":
 
@@ -182,9 +183,7 @@ class VqlEditorWidget(plugin.PluginWidget):
                         sample,
                         field["description"],
                     )
-                    self.text_edit.completer.model.add_item(
-                        name, description, icon, color
-                    )
+                    self.text_edit.completer.model.add_item(name, description, icon, color)
 
         self.text_edit.completer.model.endResetModel()
 
@@ -209,9 +208,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         except (TextXSyntaxError, VQLSyntaxError) as e:
             # Show the error message on the ui
             # Available attributes: e.message, e.line, e.col
-            self.set_message(
-                "%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col)
-            )
+            self.set_message("%s: %s, col: %d" % (e.__class__.__name__, e.message, e.col))
             return False
         return True
 
@@ -288,7 +285,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         if self.log_edit.isHidden():
             self.log_edit.show()
 
-        icon_64 = FIcon(0xF0027, style.WARNING_TEXT_COLOR).to_base64(18, 18)
+        icon_64 = FIcon(0xF0027, self._log_fg_color).to_base64(18, 18)
 
         self.log_edit.setText(
             """<div height=100%>

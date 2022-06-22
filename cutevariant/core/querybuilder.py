@@ -24,10 +24,11 @@ Fields contains columns to select according sql table that they belong to.
 import sqlite3
 import re
 from functools import lru_cache
-from ast import literal_eval
 
 # Custom imports
 from cutevariant.core import sql
+
+import cutevariant.constants as cst
 
 
 from cutevariant import LOGGER
@@ -106,7 +107,7 @@ def filters_to_flat(filters: dict):
     return flatten
 
 
-def is_annotation_join_required(fields, filters) -> bool:
+def is_annotation_join_required(fields, filters, order_by=None) -> bool:
     """Return True if SQL join annotation is required
 
     Args:
@@ -121,6 +122,12 @@ def is_annotation_join_required(fields, filters) -> bool:
         if field.startswith("ann."):
             return True
 
+    if order_by:
+        for by in order_by:
+            field, direction = by
+            if field.startswith("ann."):
+                return True
+
     for condition in filters_to_flat(filters):
 
         condition = list(condition.keys())[0]
@@ -130,7 +137,7 @@ def is_annotation_join_required(fields, filters) -> bool:
     return False
 
 
-def samples_join_required(fields, filters) -> list:
+def samples_join_required(fields, filters, order_by=None) -> list:
     """Return sample list of sql join is required
 
     Args:
@@ -147,6 +154,14 @@ def samples_join_required(fields, filters) -> list:
             _, *sample, _ = field.split(".")
             sample = ".".join(sample)
             samples.add(sample)
+
+    if order_by:
+        for by in order_by:
+            field, direction = by
+            if field.startswith("samples"):
+                _, *sample, _ = field.split(".")
+                sample = ".".join(sample)
+                samples.add(sample)
 
     for condition in filters_to_flat(filters):
         key = list(condition.keys())[0]
@@ -323,6 +338,9 @@ def condition_to_sql(item: dict, samples=None) -> str:
         operator = "$eq"
         value = v
 
+    if isinstance(value, str):
+        value = value.replace("'", "''")
+
     # MAP operator
     sql_operator = PY_TO_SQL_OPERATORS[operator]
 
@@ -335,11 +353,9 @@ def condition_to_sql(item: dict, samples=None) -> str:
             value = f"%{value}%"
 
     if "HAS" in sql_operator:
-        field = f"'&' || {field} || '&'"
+        field = f"'{cst.HAS_OPERATOR}' || {field} || '{cst.HAS_OPERATOR}'"
         sql_operator = "LIKE" if sql_operator == "HAS" else "NOT LIKE"
-        value = f"%&{value}&%"
-
-        # WHERE '&' || consequence || '&' LIKE "%&missense_variant&%"
+        value = f"%{cst.HAS_OPERATOR}{value}{cst.HAS_OPERATOR}%"
 
     # Cast value
     if isinstance(value, str):
@@ -366,11 +382,7 @@ def condition_to_sql(item: dict, samples=None) -> str:
 
     # Convert [1,2,3] =>  "(1,2,3)"
     if isinstance(value, list) or isinstance(value, tuple):
-        value = (
-            "("
-            + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value])
-            + ")"
-        )
+        value = "(" + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value]) + ")"
 
     operator = None
     condition = ""
@@ -388,10 +400,7 @@ def condition_to_sql(item: dict, samples=None) -> str:
             condition = (
                 "("
                 + f" {operator} ".join(
-                    [
-                        f"`sample_{sample}`.`{k}` {sql_operator} {value}"
-                        for sample in samples
-                    ]
+                    [f"`sample_{sample}`.`{k}` {sql_operator} {value}" for sample in samples]
                 )
                 + ")"
             )
@@ -442,6 +451,7 @@ def condition_to_vql(item: dict) -> str:
 
     # Cast value
     if isinstance(value, str):
+        value = value.replace("'", "\\'")
         value = f"'{value}'"
 
     if isinstance(value, bool):
@@ -465,11 +475,7 @@ def condition_to_vql(item: dict) -> str:
 
     # Convert [1,2,3] =>  "(1,2,3)"
     if isinstance(value, list) or isinstance(value, tuple):
-        value = (
-            "("
-            + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value])
-            + ")"
-        )
+        value = "(" + ",".join([f"'{i}'" if isinstance(i, str) else f"{i}" for i in value]) + ")"
 
     if k.startswith("samples."):
         _, *name, k = k.split(".")
@@ -489,6 +495,51 @@ def condition_to_vql(item: dict) -> str:
     condition = f"{k} {sql_operator} {value}"
 
     return condition
+
+
+def remove_field_in_filter(filters: dict, field: str = None) -> dict:
+    """Remove field from filter
+
+    Examples:
+
+        filters = {
+            "$and": [
+                {"chr": "chr1"},
+                {"pos": {"$gt": 111}},
+                {"$or":[
+                    {"chr": "chr7"},
+                    {"chr": "chr6"}
+                    ]
+                 }
+            ]}
+    Args:
+        filters (dict): A nested set of conditions
+        field (str): A field to remove from filter
+
+    Returns:
+        dict: New filters dict with field removed
+    """
+    # ---------------------------------
+    def recursive(obj):
+
+        output = {}
+        for k, v in obj.items():
+            if k in ["$and", "$or"]:
+                temp = []
+                for item in v:
+                    rec = recursive(item)
+                    if field not in item and rec:
+                        temp.append(rec)
+                if temp:
+                    output[k] = temp
+                    return output
+                # if not output[k]:
+                #     del output[k]
+            else:
+                output[k] = v
+                return output
+
+    return recursive(filters) or {}
 
 
 def filters_to_sql(filters: dict, samples=None) -> str:
@@ -524,11 +575,7 @@ def filters_to_sql(filters: dict, samples=None) -> str:
         for k, v in obj.items():
             if k in ["$and", "$or"]:
                 conditions += (
-                    "("
-                    + f" {PY_TO_SQL_OPERATORS[k]} ".join(
-                        [recursive(item) for item in v]
-                    )
-                    + ")"
+                    "(" + f" {PY_TO_SQL_OPERATORS[k]} ".join([recursive(item) for item in v]) + ")"
                 )
 
             else:
@@ -577,11 +624,7 @@ def filters_to_vql(filters: dict) -> str:
         for k, v in obj.items():
             if k in ["$and", "$or"]:
                 conditions += (
-                    "("
-                    + f" {PY_TO_VQL_OPERATORS[k]} ".join(
-                        [recursive(item) for item in v]
-                    )
-                    + ")"
+                    "(" + f" {PY_TO_VQL_OPERATORS[k]} ".join([recursive(item) for item in v]) + ")"
                 )
 
             else:
@@ -632,6 +675,7 @@ def build_sql_query(
     order_by=[],
     limit=50,
     offset=0,
+    selected_samples=[],
     **kwargs,
 ):
     """Build SQL SELECT query
@@ -655,19 +699,12 @@ def build_sql_query(
     # Create fields
     sql_fields = ["`variants`.`id`"] + fields_to_sql(fields, use_as=True)
 
-    # if group_by:
-    #     sql_fields.insert(1, "COUNT() as 'count'")
-
     sql_query = f"SELECT DISTINCT {','.join(sql_fields)} "
-
-    # #Add child count if grouped
-    # if grouped:
-    #     sql_query += ", COUNT(*) as `children`"
 
     # Add source table
     sql_query += "FROM variants"
 
-    if is_annotation_join_required(fields, filters):
+    if is_annotation_join_required(fields, filters, order_by):
         sql_query += " LEFT JOIN annotations ON annotations.variant_id = variants.id"
 
     # Add Join Selection
@@ -686,12 +723,12 @@ def build_sql_query(
         join_samples = list(samples_ids.keys())
 
     else:
-        join_samples = samples_join_required(fields, filters)
+        join_samples = samples_join_required(fields, filters, order_by)
 
     for sample_name in join_samples:
         if sample_name in samples_ids:
             sample_id = samples_ids[sample_name]
-            sql_query += f""" INNER JOIN sample_has_variant `sample_{sample_name}` ON `sample_{sample_name}`.variant_id = variants.id AND `sample_{sample_name}`.sample_id = {sample_id}"""
+            sql_query += f""" LEFT JOIN genotypes `sample_{sample_name}` ON `sample_{sample_name}`.variant_id = variants.id AND `sample_{sample_name}`.sample_id = {sample_id}"""
 
     # Add Where Clause
     if filters:
@@ -702,6 +739,7 @@ def build_sql_query(
     # Add Order By
     if order_by:
         # TODO : sqlite escape field with quote
+
         order_by_clause = []
         for item in order_by:
             field, direction = item
@@ -748,6 +786,5 @@ def build_vql_query(
             order_by_clause.append(f"{field} {direction}")
 
         order_by_clause = " ORDER BY " + ",".join(order_by_clause)
-        print("YOUPU,", order_by_clause)
 
     return f"SELECT {select_clause} FROM {source}{where_clause}{order_by_clause}"

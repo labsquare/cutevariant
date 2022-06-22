@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 from functools import partial
 
 
@@ -160,7 +160,7 @@ class TagEdit(QWidget):
         self.flow_layout = FlowLayout()
 
         pal = self.palette()
-        pal.setBrush(QPalette.Background, Qt.white)
+        pal.setBrush(QPalette.WindowText, Qt.white)
         self.setPalette(pal)
 
         self.items = []

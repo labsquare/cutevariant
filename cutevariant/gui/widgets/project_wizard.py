@@ -52,7 +52,10 @@ class ProjectPage(QWizardPage):
             reply = QMessageBox.warning(
                 self,
                 self.tr("Overwrite ?"),
-                self.tr(f"a <b>{name}.db</b> project already exists in this directory. <br>" "Would you like to overwrite it ? All data will be lost."),
+                self.tr(
+                    f"a <b>{name}.db</b> project already exists in this directory. <br>"
+                    "Would you like to overwrite it ? All data will be lost."
+                ),
                 QMessageBox.Yes | QMessageBox.No,
             )
 
@@ -73,7 +76,15 @@ class ProjectPage(QWizardPage):
     def isComplete(self):
         """Conditions to unlock next button"""
 
-        return True if (QDir(self.path_edit.text()).exists() and self.path_edit.text() and self.name_edit.text()) else False
+        return (
+            True
+            if (
+                QDir(self.path_edit.text()).exists()
+                and self.path_edit.text()
+                and self.name_edit.text()
+            )
+            else False
+        )
 
 
 class FilePage(QWizardPage):
@@ -93,6 +104,9 @@ class FilePage(QWizardPage):
 
 
 class ImportPage(QWizardPage):
+
+    completeChanged = Signal()
+
     def __init__(self, parent=None):
         super().__init__()
 
@@ -146,6 +160,7 @@ class ImportPage(QWizardPage):
         self.thread.db_filename = self.wizard().page(0).db_filename()
         self.thread.filename = self.wizard().page(1).filename()
         self.thread.pedfile = self.wizard().page(1).pedfile()
+        self.thread.import_id = self.wizard().page(1).widget.get_import_id()
         self.thread.ignored_fields = self.wizard().page(1).widget.get_ignored_fields()
         self.thread.indexed_fields = self.wizard().page(1).widget.get_indexed_fields()
         self.thread.start()
@@ -155,11 +170,9 @@ class ImportPage(QWizardPage):
         # try:
 
         self.thread_finished = self.thread.isFinished()
-        self.completeChanged.emit()
-        # except RuntimeError:
-        #     # When closing the wizard, the thread is stopped via cleanupPage()
-        #     # and finished signal is emitted after the deletion of the wizard.
-        #     pass
+
+        if status:
+            self.completeChanged.emit()
 
     def show_log(self, message: str):
 

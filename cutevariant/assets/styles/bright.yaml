@@ -1,0 +1,37 @@
+
+
+palette:
+  normal:
+    window_text : "#FF1E1E1E"
+    button : "#E9EBEF"
+    light : "#F5F5F5"
+    midlight : "#CCCEDB"
+    dark : "#A2A4A5"
+    text : "#434343"
+    bright_text : "#55000000"
+    button_text : "#434343"
+    base : "#F7F9F9"
+    window : "#E9EBEF"
+    shadow : "#FFFFFF"
+    highlight : "#007ACC"
+    highlighted_text : "#F5F5F5"
+    link : "#007ACC"
+    alternate_base : "#F0F1F5"
+    placeholder_text : "#A2A4A5"
+    tool_tip_base : "#FDF4BF"
+    tool_tip_text : "#252526"
+  disabled:
+    window_text: "#A2A4A5"
+    text: "#A2A4A5"
+    button_text: "#A2A4A5"
+    highlight: "#A2A4A5"
+    highlighted_text: "#A2A4A5"
+
+  colors:
+    red: "#F15F74"
+    green: "#98CB4A"
+    blue: "#5481E6"
+    orange: "#F76D3C"
+    yellow: "#F7D842"
+    purple: "#913CCD"
+

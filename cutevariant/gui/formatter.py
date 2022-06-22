@@ -88,24 +88,36 @@ class FormatterDelegate(QItemDelegate):
         if option.state & QStyle.State_Enabled:
             bg = (
                 QPalette.Normal
-                if option.state & QStyle.State_Active
-                or option.state & QStyle.State_Selected
+                if option.state & QStyle.State_Active or option.state & QStyle.State_Selected
                 else QPalette.Inactive
             )
         else:
             bg = QPalette.Disabled
 
+        # classification = index.model().variant(index.row())["classification"]
+
         if option.state & QStyle.State_Selected:
             painter.fillRect(option.rect, option.palette.color(bg, QPalette.Highlight))
+
+        bg_color = index.data(Qt.BackgroundRole)
+        if bg_color:
+            painter.fillRect(option.rect, bg_color)
+
+            # elif classification > 0:
+
+            # Get color from config .. shortcut
+            # item = next(i for i in index.model().classifications if i["number"] == classification)
+        # else:
+        # color: QColor = QColor(item.get("color", "black"))
+        # color.setAlpha(50)
+        # painter.fillRect(option.rect, color)
 
         # Draw formatters
         option.rect = option.rect.adjusted(
             3, 0, 0, 0
         )  # Don't know why I need to adjust the left margin ..
 
-        field_name = index.model().headerData(
-            index.column(), Qt.Horizontal, Qt.DisplayRole
-        )
+        field_name = index.model().headerData(index.column(), Qt.Horizontal, Qt.DisplayRole)
         field_value = index.data(Qt.DisplayRole)
         is_selected = option.state & QStyle.State_Selected
         style = self._formatter.format(field_name, field_value, option, is_selected)
@@ -116,9 +128,7 @@ class FormatterDelegate(QItemDelegate):
         color = style.get("color")
 
         if color is None:
-            color = option.palette.color(
-                QPalette.BrightText if is_selected else QPalette.Text
-            )
+            color = option.palette.color(QPalette.BrightText if is_selected else QPalette.Text)
 
         text_align = style.get("text-align", Qt.AlignVCenter | Qt.AlignLeft)
         icon_align = style.get("icon-align", Qt.AlignCenter)
@@ -147,9 +157,7 @@ class FormatterDelegate(QItemDelegate):
         painter.setPen(QPen(color))
         painter.drawText(option.rect, text_align, text)
 
-    def draw_icon(
-        self, painter: QPainter, rect: QRect, icon: QIcon, alignement=Qt.AlignCenter
-    ):
+    def draw_icon(self, painter: QPainter, rect: QRect, icon: QIcon, alignement=Qt.AlignCenter):
         r = QRect(0, 0, rect.height(), rect.height())
         r.moveCenter(rect.center())
 
@@ -192,9 +200,7 @@ def find_formatters(path=None):
 
     for package in pkgutil.iter_modules([formatter_path]):
         package_path = os.path.join(formatter_path, package.name)
-        spec = importlib.util.spec_from_file_location(
-            package.name, package_path + ".py"
-        )
+        spec = importlib.util.spec_from_file_location(package.name, package_path + ".py")
         module = spec.loader.load_module()
 
         for name, obj in inspect.getmembers(module):

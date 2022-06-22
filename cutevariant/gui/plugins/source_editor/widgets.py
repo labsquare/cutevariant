@@ -23,9 +23,19 @@ from cutevariant.core.sql import (
 from cutevariant.core.reader import BedReader
 from cutevariant.gui import plugin, FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
-from cutevariant.commons import DEFAULT_SELECTION_NAME
+from cutevariant.constants import DEFAULT_SELECTION_NAME
 
+import cutevariant.constants as cst
 
+# TODO: to constants.py
+DEFAULT_SELECTION_NAME = "variants"  # cst.getDEFAULT_SELECTION_NAME
+SAMPLES_SELECTION_NAME = "samples"  # cst.SAMPLES_SELECTION_NAME
+CURRENT_SAMPLE_SELECTION_NAME = "current_sample"  # cst.SAMPLES_SELECTION_NAME
+LOCKED_SELECTIONS = [
+    DEFAULT_SELECTION_NAME,
+]
+
+import re
 from cutevariant import LOGGER
 
 # =================== SELECTION MODEL ===========================
@@ -41,12 +51,16 @@ class SourceModel(QAbstractTableModel):
         model.load()
     """
 
+    NAME_COLUMN = 0
+    DESC_COLUMN = 1
+    COUNT_COLUMN = 2
+
     def __init__(self, conn=None):
         super().__init__()
         self.conn = conn
         self.records = []
-
         self._current_source = "variants"
+        self._headers = ["Name", "description", "count"]
 
     @property
     def current_source(self) -> str:
@@ -67,7 +81,7 @@ class SourceModel(QAbstractTableModel):
 
     def columnCount(self, parent=QModelIndex()) -> int:
         """Overrided from QAbstractTableModel"""
-        return 2  # value and count
+        return 3  # value and count
 
     def data(self, index: QModelIndex, role=Qt.DisplayRole) -> typing.Any:
         """Override from QAbstractTableModel
@@ -86,10 +100,13 @@ class SourceModel(QAbstractTableModel):
         table_name = self.records[index.row()]["name"]
 
         if role == Qt.DisplayRole:
-            if index.column() == 0:
-                return self.records[index.row()]["name"]
+            if index.column() == SourceModel.NAME_COLUMN:
+                return self.records[index.row()].get("name", "unknown")
 
-            if index.column() == 1:
+            if index.column() == SourceModel.DESC_COLUMN:
+                return self.records[index.row()].get("description", None)
+
+            if index.column() == SourceModel.COUNT_COLUMN:
                 return self.records[index.row()]["count"]
 
         if role == Qt.ToolTipRole:
@@ -101,15 +118,17 @@ class SourceModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
-                if table_name == DEFAULT_SELECTION_NAME:
+                # if table_name == DEFAULT_SELECTION_NAME:
+                if table_name in LOCKED_SELECTIONS:
                     return QIcon(FIcon(0xF13C6))
                 else:
                     return QIcon(FIcon(0xF04EB))
 
         if role == Qt.FontRole:
             font = QFont()
-            if table_name == self.current_source:
+            if table_name == self.current_source and index.column() == self.NAME_COLUMN:
                 font.setBold(True)
+                font.setUnderline(True)
             return font
 
         if role == Qt.UserRole:
@@ -120,9 +139,7 @@ class SourceModel(QAbstractTableModel):
 
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role=Qt.DisplayRole
-    ) -> str:
+    def headerData(self, section: int, orientation: Qt.Orientation, role=Qt.DisplayRole) -> str:
         """Override from QAbstractTableModel
 
         Args:
@@ -137,10 +154,7 @@ class SourceModel(QAbstractTableModel):
             return
 
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            if section == 0:
-                return "selection"
-            if section == 1:
-                return "count"
+            return self._headers[section]
 
         if orientation == Qt.Vertical and role == Qt.DisplayRole and section > 0:
             return self.records[section].get(
@@ -198,6 +212,7 @@ class SourceModel(QAbstractTableModel):
                 # No, it didn't. But below line does
                 del self.records[row]
                 self.endRemoveRows()
+
             else:
                 return False
         return True
@@ -247,7 +262,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         """
         super().__init__(parent)
 
-        self.setWindowIcon(FIcon(0xF10E4))
+        self.setWindowIcon(FIcon(0xF04EB))
         # conn is always None here but initialized in on_open_project()
         self.model = SourceModel(conn)
         self.proxy_model = QSortFilterProxyModel()
@@ -258,9 +273,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.horizontalHeader().setStretchLastSection(False)
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.setSortingEnabled(True)
         self.view.setShowGrid(False)
         self.view.setAlternatingRowColors(False)
@@ -288,7 +302,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.view.doubleClicked.connect(self.on_double_click)
 
         self.create_selection_action = self.toolbar.addAction(
-            FIcon(0xF0F87),
+            FIcon(0xF0A75),
             self.tr("New source..."),
             self.create_selection_from_current,
         )
@@ -357,6 +371,9 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         if name:
 
+            if name.strip():
+                name = re.sub(r"\s+", "_", name.strip())
+
             executed_query_data = self.mainwindow.get_state_data("executed_query_data")
 
             result = command.create_cmd(
@@ -408,7 +425,6 @@ class SourceEditorWidget(plugin.PluginWidget):
         self.conn = conn
         self.on_refresh()
 
-
     def on_close_project(self):
         self.model.clear()
 
@@ -431,8 +447,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         For this widget, it allows us to check whether the number of selected sources is exactly two, so we can enable/disable the set operations
         """
         selected_sources = [
-            index.data(Qt.DisplayRole)
-            for index in self.view.selectionModel().selectedRows(0)
+            index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)
         ]
 
         if not selected_sources:
@@ -457,7 +472,8 @@ class SourceEditorWidget(plugin.PluginWidget):
             current.data(Qt.DisplayRole) == DEFAULT_SELECTION_NAME
         )
 
-        if any(source == DEFAULT_SELECTION_NAME for source in selected_sources):
+        # if any(source == DEFAULT_SELECTION_NAME for source in selected_sources):
+        if any(source in LOCKED_SELECTIONS for source in selected_sources):
             self.edit_action.setEnabled(False)
             self.del_action.setEnabled(False)
         else:
@@ -493,7 +509,8 @@ class SourceEditorWidget(plugin.PluginWidget):
         if not success:
             return
 
-        if name == DEFAULT_SELECTION_NAME:
+        # if name == DEFAULT_SELECTION_NAME:
+        if name in LOCKED_SELECTIONS:
             LOGGER.error(
                 "SourceEditorWidget:save_current_query:: '%s' is a reserved name for a selection.",
                 name,
@@ -507,9 +524,7 @@ class SourceEditorWidget(plugin.PluginWidget):
                 self.tr("'%s' is a reserved name for a selection!") % name,
             )
         elif name in self.model.get_source_names():
-            LOGGER.error(
-                "SourceEditorWidget:save_current_query:: '%s' is already used!", name
-            )
+            LOGGER.error("SourceEditorWidget:save_current_query:: '%s' is already used!", name)
             self.mainwindow.status_bar.showMessage(
                 self.tr("'%s' is already used for a selection!") % name
             )
@@ -525,15 +540,13 @@ class SourceEditorWidget(plugin.PluginWidget):
         """Remove a selection from the database"""
 
         if not self.view.selectionModel().selectedRows(0):
-            QMessageBox.information(
-                self, self.tr("Info"), self.tr("No source to remove!")
-            )
+            QMessageBox.information(self, self.tr("Info"), self.tr("No source to remove!"))
             return
 
         # This should not even be called, since remove/edit actions are supposed to be disabled by the widget
         if any(
-            self.model.record(self.proxy_model.mapToSource(index))
-            == DEFAULT_SELECTION_NAME
+            # self.model.record(self.proxy_model.mapToSource(index)) == DEFAULT_SELECTION_NAME
+            self.model.record(self.proxy_model.mapToSource(index)) in LOCKED_SELECTIONS
             for index in self.view.selectionModel().selectedRows(0)
         ):
             QMessageBox.warning(
@@ -549,12 +562,15 @@ class SourceEditorWidget(plugin.PluginWidget):
 
         if msg.exec_() == QMessageBox.Yes:
             indexes = [
-                self.proxy_model.mapToSource(i)
-                for i in self.view.selectionModel().selectedRows(0)
+                self.proxy_model.mapToSource(i) for i in self.view.selectionModel().selectedRows(0)
             ]
             self.model.remove_records(indexes)
 
-            self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
+            current_source = self.mainwindow.get_state_data("source")
+            if current_source in indexes:
+                current_source = DEFAULT_SELECTION_NAME
+
+            self.mainwindow.set_state_data("source", current_source)
             self.mainwindow.refresh_plugins(sender=None)
 
     def edit_selection(self):
@@ -565,14 +581,10 @@ class SourceEditorWidget(plugin.PluginWidget):
         current_index = self.proxy_model.mapToSource(current_index)
 
         if not current_index.isValid():
-            QMessageBox.information(
-                self, self.tr("Info"), self.tr("No source to edit!")
-            )
+            QMessageBox.information(self, self.tr("Info"), self.tr("No source to edit!"))
         old_record = self.model.record(current_index)
 
-        selection_name = self.ask_and_check_selection_name(
-            placeholder=old_record["name"]
-        )
+        selection_name = self.ask_and_check_selection_name(placeholder=old_record["name"])
         if current_index and selection_name:
             old_record["name"] = selection_name
             self.model.edit_record(current_index, old_record)
@@ -586,27 +598,20 @@ class SourceEditorWidget(plugin.PluginWidget):
         operators = {"intersect": "AND", "union": "OR", "subtract": "MINUS"}
         operations = {
             "intersect": (
-                lambda name, first, last: command.set_cmd(
-                    self.conn, name, first, last, "&"
-                ),
+                lambda name, first, last: command.set_cmd(self.conn, name, first, last, "&"),
                 self.tr("intersection"),
             ),
             "union": (
-                lambda name, first, last: command.set_cmd(
-                    self.conn, name, first, last, "|"
-                ),
+                lambda name, first, last: command.set_cmd(self.conn, name, first, last, "|"),
                 self.tr("union"),
             ),
             "subtract": (
-                lambda name, first, last: command.set_cmd(
-                    self.conn, name, first, last, "-"
-                ),
+                lambda name, first, last: command.set_cmd(self.conn, name, first, last, "-"),
                 self.tr("difference"),
             ),
         }
         selected_sources = [
-            index.data(Qt.DisplayRole)
-            for index in self.view.selectionModel().selectedRows(0)
+            index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)
         ]
         if not selected_sources:
             return
@@ -616,9 +621,7 @@ class SourceEditorWidget(plugin.PluginWidget):
                 QMessageBox.question(
                     self,
                     self.tr(f"Set operation on sources"),
-                    self.tr(
-                        'This will perform "{first}" {operator} "{last}". Continue?'
-                    ).format(
+                    self.tr('This will perform "{first}" {operator} "{last}". Continue?').format(
                         first=selected_sources[0],
                         operator=operators[operation],
                         last=selected_sources[1],

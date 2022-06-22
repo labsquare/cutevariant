@@ -88,7 +88,6 @@ from PySide6.QtWidgets import QWidget, QDialog
 from cutevariant.config import Config
 from cutevariant.gui import settings
 import cutevariant.commons as cm
-
 from cutevariant import LOGGER
 
 DOCK_LOCATION = 1
@@ -162,10 +161,9 @@ class PluginWidget(QWidget):
         pass
 
     def on_close_project(self):
-        """ This method is callen when a project is closed """
+        """This method is callen when a project is closed"""
 
         pass
-
 
     def on_close(self):
         """Called when the mainwindow is closed **or** when the plugin is reset.
@@ -370,9 +368,7 @@ def find_plugins(path=None):
             sub_module_path = os.path.join(
                 sub_module_info.module_finder.path, sub_module_type + ".py"
             )
-            spec = importlib.util.spec_from_file_location(
-                sub_module_type, sub_module_path
-            )
+            spec = importlib.util.spec_from_file_location(sub_module_type, sub_module_path)
             sub_module = spec.loader.load_module()
 
             # Filter not wanted classes (search main classes of the module)

@@ -6,11 +6,11 @@ from .codeedit import CodeEdit, VqlSyntaxHighlighter
 
 from .file_edit import FileEdit
 
-from .field_editor_widget import FieldsEditorWidget
+from .tagedit import TagEdit
 
 from .searchable_table_widget import LoadingTableView, SearchableTableWidget
 
-from .choice_widget import ChoiceWidget, create_widget_action
+from .choice_button import ChoiceButton
 
 from .sample_widget import SampleWidget, SampleDialog
 
@@ -18,9 +18,34 @@ from .sample_variant_widget import SampleVariantWidget, SampleVariantDialog
 
 from .variant_widget import VariantWidget, VariantDialog
 
+from .fields_widget import FieldsModel, FieldsWidget
+
 from .preset_action import PresetAction
 
-from .tag_editor import TagDialog, TagEditor
-from .classification_editor import ClassificationEditor
+from .classification_editor import (
+    ClassificationEditor,
+    ClassificationDialog,
+    ClassificationModel,
+)
 
-from .samples_selection_widget import SampleSelectionWidget, SampleSelectionDialog
+from .tag_editor import (
+    TagEditor,
+    TagDialog,
+    TagModel,
+)
+
+from .samples_editor import (
+    SamplesEditor,
+    SamplesEditorModel,
+)
+
+from .filters_widget import (
+    FiltersWidget,
+    FilterItem,
+    FiltersModel,
+    FilterWidget,
+    FilterDialog,
+)
+
+from .groupby_widget import GroupbyTable, GroupbyDialog
+from .multi_combobox import MultiComboBox

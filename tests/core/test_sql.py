@@ -1,3 +1,4 @@
+from itertools import groupby
 import sqlite3
 import pytest
 import tempfile
@@ -181,7 +182,7 @@ def test_create_database_schema():
     assert sql.table_exists(conn, "fields")
     assert sql.table_exists(conn, "annotations")
     assert sql.table_exists(conn, "samples")
-    assert sql.table_exists(conn, "sample_has_variant")
+    assert sql.table_exists(conn, "genotypes")
     assert sql.table_exists(conn, "selections")
     assert sql.table_exists(conn, "wordsets")
 
@@ -295,7 +296,7 @@ def conn():
     )
     sql.alter_table(
         conn,
-        "sample_has_variant",
+        "genotypes",
         [field for field in FIELDS if field["category"] == "samples"],
     )
 
@@ -383,14 +384,14 @@ def print_table_for_debug(conn, table):
 
 # def test_update(conn):
 #     #TODO: automate table update verification
-#     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
+#     for table in ("variants", "annotations", "samples", "genotypes", "selections"):
 #         print_table_for_debug(conn, table)
 #     for x, y in sql.update_variants_async(conn,
 #                             VARIANTS_FOR_UPDATE,
 #                             total_variant_count=len(VARIANTS_FOR_UPDATE),
 #                             yield_every=1):
 #         print(x,y)
-#     for table in ("variants", "annotations", "samples", "sample_has_variant", "selections"):
+#     for table in ("variants", "annotations", "samples", "genotypes", "selections"):
 #         print_table_for_debug(conn, table)
 
 
@@ -401,18 +402,73 @@ def test_update_variants_counts(conn):
     samples = VARIANTS[0]["samples"]
 
     expected = {}
-    expected["count_var"] = sum(sample["gt"] for sample in samples if sample["gt"] > 1)
+    expected["count_var"] = sum(sample["gt"] for sample in samples if sample["gt"] >= 1)
     expected["count_het"] = sum(sample["gt"] for sample in samples if sample["gt"] == 1)
     expected["count_hom"] = sum(sample["gt"] for sample in samples if sample["gt"] == 2)
     expected["count_ref"] = sum(sample["gt"] for sample in samples if sample["gt"] == 0)
+    expected["count_tot"] = len(samples)
+    expected["freq_var"] = (expected["count_hom"] * 2 + expected["count_het"]) / (
+        expected["count_tot"] * 2
+    )
 
     observed = dict(
         conn.execute(
-            "SELECT count_var, count_het, count_hom, count_ref FROM variants WHERE id = 1"
+            "SELECT count_var, count_het, count_hom, count_ref, count_tot, freq_var FROM variants WHERE id = 1"
         ).fetchone()
     )
 
     assert expected == observed
+
+
+def test_get_samples_from_query(conn):
+
+    # Update database with complete sample information to test
+    # TODO: Have richer conn fixture to have more testability
+    sql.update_sample(conn, {"id": 1, "classification": 4, "sex": 0, "phenotype": 1})
+    sql.update_sample(conn, {"id": 2, "classification": 2, "sex": 0, "phenotype": 0})
+
+    assert len(list(sql.get_samples_from_query(conn, "boby"))) == 1
+
+    assert len(list(sql.get_samples_from_query(conn, ""))) == len(list(sql.get_samples(conn)))
+    assert len(list(sql.get_samples_from_query(conn, "id:1"))) == 1
+
+    query = "classification:3,4 sex:0 phenotype:1"
+
+    samples = [dict(row) for row in sql.get_samples_from_query(conn, query)]
+    # remove tags field due to changing date value (not tracable)
+    for sample in samples:
+        sample.pop("tags")
+    print("Found samples:", samples)
+
+    expected_first_sample = {
+        "id": 1,
+        "name": "sacha",
+        "family_id": "fam",
+        "father_id": 0,
+        "mother_id": 0,
+        "sex": 0,
+        "phenotype": 1,
+        "classification": 4,
+        "comment": "",
+        "count_validation_negative_variant": 0,
+        "count_validation_positive_variant": 0,
+    }
+    expected_second_sample = {
+        "id": 2,
+        "name": "boby",
+        "family_id": "fam",
+        "father_id": 0,
+        "mother_id": 0,
+        "sex": 0,
+        "phenotype": 0,
+        "classification": 2,
+        "comment": "",
+        "count_validation_negative_variant": 0,
+        "count_validation_positive_variant": 0,
+    }
+
+    assert expected_first_sample in samples
+    assert expected_second_sample in samples
 
 
 def test_create_indexes(conn):
@@ -543,7 +599,7 @@ def test_columns(conn):
     q = conn.execute("PRAGMA table_info(annotations)")
     annotation_fields = [record[1] for record in q]
 
-    q = conn.execute("PRAGMA table_info(sample_has_variant)")
+    q = conn.execute("PRAGMA table_info(genotypes)")
     sample_fields = [record[1] for record in q]
 
     for field in FIELDS:
@@ -562,9 +618,7 @@ def test_get_columns(conn):
     """Test getting columns of variants and annotations"""
     variant_cols = set(sql.get_table_columns(conn, "variants"))
     expected_cols = {i["name"] for i in FIELDS if i["category"] == "variants"}
-    extra_cols = {
-        i["name"] for i in sql.MANDATORY_FIELDS if i["category"] == "variants"
-    }
+    extra_cols = {i["name"] for i in sql.MANDATORY_FIELDS if i["category"] == "variants"}
     assert variant_cols == expected_cols.union(extra_cols)
 
     annot_cols = set(sql.get_table_columns(conn, "annotations"))
@@ -588,24 +642,43 @@ def test_get_annotations(conn):
         assert read_tx == expected_tx
 
 
-def test_get_sample_annotations_by_variant(conn):
+def test_get_genotypes(conn):
 
     expected = [
-        dict(i, valid=0, variant_id=1, sample_id=index + 1)
-        for index, i in enumerate(VARIANTS[0]["samples"])
+        dict(i, variant_id=1, sample_id=index + 1) for index, i in enumerate(VARIANTS[0]["samples"])
     ]
     observed = []
-    for i in sql.get_sample_annotations_by_variant(conn, 1, fields=["gt", "dp"]):
+    for i in sql.get_genotypes(conn, 1, fields=["gt", "dp"]):
         observed.append(i)
 
-    print("OBS", observed)
-    assert expected == observed
+    assert len(expected) == len(observed)
+
+    observed.clear()
+    for i in sql.get_genotypes(conn, 1, fields=["gt", "dp"], samples=["sacha"]):
+        observed.append(i)
+
+    print(observed)
+    assert len(observed) == 1
+
+
+def test_get_histories(conn):
+
+    new_classification = 10
+    sql.update_variant(conn, {"id": 1, "classification": new_classification})
+    sql.update_sample(conn, {"id": 1, "classification": new_classification})
+
+    for table in ("variants", "samples"):
+        record = next(sql.get_histories(conn, table, 1))
+        # test only classification due to tags history
+        if record["field"] == "classification":
+            assert record["before"] == "0"
+            assert record["after"] == str(new_classification)
 
 
 def test_get_sample_annotations(conn, variants_data):
     """Compare sample annotations from DB with expected samples annotations
 
-    Interrogation of `sample_has_variant` table
+    Interrogation of `genotypes` table
     """
     for variant_id, variant in enumerate(variants_data, 1):
         if "samples" in variant:
@@ -663,13 +736,22 @@ def test_get_variant_as_group(conn):
     observed_genes = dict(
         [
             (i["ann." + group_by], i["count"])
-            for i in sql.get_variant_as_group(
-                conn, "ann." + group_by, fields, "variants", {}
-            )
+            for i in sql.get_variant_as_group(conn, "ann." + group_by, fields, "variants", {})
         ]
     )
 
     assert observed_genes == expected_genes
+
+
+def test_get_variant_groupby_for_samples(conn):
+    groupby = "genotypes.gt"
+    samples = [1]
+    r = tuple(sql.get_variant_groupby_for_samples(conn, groupby, samples))
+    assert r == ({'count': 1, 'gt': 0}, {'count': 1, 'gt': 1})
+
+    groupby = "variants.classification"
+    r = tuple(sql.get_variant_groupby_for_samples(conn, groupby, samples))
+    assert r == ({'classification': 0, 'count': 2},)
 
 
 def test_get_samples(conn):
@@ -755,9 +837,7 @@ def test_insert_set_from_list(conn):
 
     expected = set(["CFTR", "GJB2"])
     sql.insert_wordset_from_list(conn, "name", expected)
-    observed = set(
-        [i["value"] for i in conn.execute("SELECT * FROM wordsets").fetchall()]
-    )
+    observed = set([i["value"] for i in conn.execute("SELECT * FROM wordsets").fetchall()])
 
     assert expected == observed
 
@@ -972,9 +1052,7 @@ def test_advanced_get_one_variant(conn):
     .. note:: annotations and samples which are optional ARE tested here
     """
     for variant_id, expected_variant in enumerate(VARIANTS, 1):
-        found_variant = sql.get_variant(
-            conn, variant_id, with_annotations=True, with_samples=True
-        )
+        found_variant = sql.get_variant(conn, variant_id, with_annotations=True, with_samples=True)
 
         for extra_field in ("annotations", "samples"):
 
@@ -999,6 +1077,38 @@ def test_advanced_get_one_variant(conn):
 
             if extra_field in found_variant and extra_field in expected_variant:
                 assert found_variant[extra_field] == expected_variant[extra_field]
+
+
+def test_insert_selection_from_sql(conn):
+
+    sql.insert_selection_from_sql(conn, "SELECT variants.id FROM variants LIMIT 2", "subset")
+    selection = next(i for i in sql.get_selections(conn) if i["name"] == "subset")
+
+    assert selection["name"] == "subset"
+    assert selection["count"] == 2
+
+
+def test_insert_selection_from_source(conn):
+    source = "variants"
+    filters = {"$and": [{"ref": "G"}]}
+
+    observed = list(sql.get_variants(conn, ["chr"], source, filters))
+    sql.insert_selection_from_source(conn, "test", source, filters)
+
+    selection = next(i for i in sql.get_selections(conn) if i["name"] == "test")
+
+    assert selection["name"] == "test"
+    assert selection["count"] == len(observed)
+
+
+def test_insert_selection_from_samples(conn):
+
+    sql.insert_selection_from_samples(conn, ["sacha"], "samples")
+
+    selection = next(i for i in sql.get_selections(conn) if i["name"] == "samples")
+
+    assert selection["name"] == "samples"
+    assert selection["count"] == 1
 
 
 def test_selection_from_bedfile(conn):
@@ -1027,9 +1137,7 @@ def test_selection_from_bedfile(conn):
     assert ret == 2
 
     # Query the association table (variant_id, selection_id)
-    data = conn.execute(
-        "SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,)
-    )
+    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
     # 2 variants (see above)
     # format: [(id variant, id selection),]
     expected = ((1, ret), (2, ret))
@@ -1039,9 +1147,7 @@ def test_selection_from_bedfile(conn):
     print("record:", record)
     assert record == expected
 
-    bed_selection = [
-        s for s in sql.get_selections(conn) if s["name"] == selection_name
-    ][0]
+    bed_selection = [s for s in sql.get_selections(conn) if s["name"] == selection_name][0]
     print("selection content", bed_selection)
     assert bed_selection["name"] == selection_name
     assert bed_selection["count"] == 2  # 2 variants retrieved
@@ -1077,9 +1183,7 @@ def test_selection_from_bedfile_and_subselection(conn):
     # id of selection
     assert ret == 3
 
-    data = conn.execute(
-        "SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,)
-    )
+    data = conn.execute("SELECT * FROM selection_has_variant WHERE selection_id = ?", (ret,))
     expected = ((1, ret),)
     record = tuple([tuple(i) for i in data])
     assert record == expected
@@ -1132,9 +1236,7 @@ def test_sql_selection_operation(conn):
     selection_id = sql.insert_selection_from_sql(conn, union_query, "union_GT")
     print("union_GT selection id: ", selection_id)
     assert selection_id is not None
-    record = cursor.execute(
-        f"SELECT id, name FROM selections WHERE name = 'union_GT'"
-    ).fetchone()
+    record = cursor.execute(f"SELECT id, name FROM selections WHERE name = 'union_GT'").fetchone()
     print("Found record:", dict(record))
     selection_id = record[0]
     selection_name = record[1]
@@ -1176,8 +1278,6 @@ def test_sql_selection_operation(conn):
 def test_get_sample_variant_classification_count(conn):
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 0
-    sql.update_sample_has_variant(
-        conn, {"variant_id": 1, "sample_id": 1, "classification": 2}
-    )
+    sql.update_genotypes(conn, {"variant_id": 1, "sample_id": 1, "classification": 2})
     value = sql.get_sample_variant_classification_count(conn, 1, 2)
     assert value == 1

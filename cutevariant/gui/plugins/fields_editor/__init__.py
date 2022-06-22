@@ -1,16 +1,16 @@
-__title__ = "Fields editor"
-__description__ = "A plugin to display fields "
+__title__ = "Fields"
+__description__ = "Add or remove fields"
 __long_description__ = """
-<p>This plugin is used to manage the fields visible from the main "variant view"
+<p>This plugin is used to manage the fields annotations visible from the main "variant view"
 window.</p>
 
 The fields are divided into 3 main categories:
 <ul>
-<li><b>variants:</b> fields concerning the variants in their globality
+<li><b>variants:</b> fields annotations concerning only the variant
 (chromosome, position, reference base, alternative base, etc.).</li>
-<li><b>annotations:</b> fields added by annotation tools such as snpeff (gene,
+<li><b>annotations:</b> fields annotations relative to a transcript. They are added by annotation tools such as snpeff (gene,
 consequence of the variant, impact rating, etc.).</li>
-<li><b>samples:</b> fields concerning the individuals sequenced in the project.</li>
+<li><b>samples:</b> fields annotations relative to the samples (genotype)</li>
 </ul>
 
 <p>As the number of fields is large, it may be interesting to <em>use the 

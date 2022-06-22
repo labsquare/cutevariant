@@ -9,9 +9,7 @@ class FileEdit(QLineEdit):
 
         self.path_type = "file"  #  or directory
 
-        self._open_action = QAction(
-            self.style().standardIcon(QStyle.SP_DialogOpenButton), "open"
-        )
+        self._open_action = QAction(self.style().standardIcon(QStyle.SP_DialogOpenButton), "open")
 
         self._error_action = QAction(
             self.style().standardIcon(QStyle.SP_MessageBoxCritical), "error"

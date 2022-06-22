@@ -2,6 +2,8 @@ import pytest
 from cutevariant.core import querybuilder, sql
 from tests.utils import create_conn
 
+import cutevariant.constants as cst
+
 
 def test_order_by():
     conn = create_conn()
@@ -26,6 +28,58 @@ def test_filter_to_flat():
         {"alt": "C"},
         {"ann.gene": "CFTR"},
     ]
+
+
+def test_remove_field_in_filter():
+    filter = {
+        "$and": [
+            {"chr": "chr1"},
+            {"pos": {"$gt": 111}},
+            {"$or": [{"chr": "chr7"}, {"chr": "chr6"}, {"pos": 10}]},
+        ]
+    }
+    field = "chr"
+    expected = {
+        "$and": [
+            {"pos": {"$gt": 111}},
+            {"$or": [{"pos": 10}]},
+        ]
+    }
+    observed = querybuilder.remove_field_in_filter(filter, field)
+    assert observed == expected
+
+    # ----------------------
+    filter = {
+        "$and": [
+            {"chr": "chr1"},
+            {"pos": {"$gt": 111}},
+            {"$or": [{"chr": "chr7"}, {"chr": "chr6"}]},
+        ]
+    }
+
+    field = "chr"
+    expected = {"$and": [{"pos": {"$gt": 111}}]}
+    observed = querybuilder.remove_field_in_filter(filter, field)
+    assert observed == expected
+
+    # ----------------------
+    filter = {
+        "$and": [
+            {"chr": "chr1"},
+            {"pos": {"$gt": 111}},
+            {"$or": [{"$and": [{"pos": 10}, {"chr": "40"}]}]},
+        ]
+    }
+
+    field = "chr"
+    expected = {
+        "$and": [
+            {"pos": {"$gt": 111}},
+            {"$or": [{"$and": [{"pos": 10}]}]},
+        ]
+    }
+    observed = querybuilder.remove_field_in_filter(filter, field)
+    assert observed == expected
 
 
 def test_is_annotation_join_required():
@@ -62,9 +116,7 @@ def test_samples_join_required():
 def test_condition_to_sql():
 
     assert querybuilder.condition_to_sql({"chr": "chr3"}) == "`variants`.`chr` = 'chr3'"
-    assert (
-        querybuilder.condition_to_sql({"qual": {"$gte": 4}}) == "`variants`.`qual` >= 4"
-    )
+    assert querybuilder.condition_to_sql({"qual": {"$gte": 4}}) == "`variants`.`qual` >= 4"
     assert (
         querybuilder.condition_to_sql({"qual": {"$in": [1, 2, 3]}})
         == "`variants`.`qual` IN (1,2,3)"
@@ -79,15 +131,9 @@ def test_condition_to_sql():
         == "`annotations`.`gene` NOT IN ('CFTR','GJB2')"
     )
 
-    assert (
-        querybuilder.condition_to_sql({"ann.gene": "CFTR"})
-        == "`annotations`.`gene` = 'CFTR'"
-    )
+    assert querybuilder.condition_to_sql({"ann.gene": "CFTR"}) == "`annotations`.`gene` = 'CFTR'"
 
-    assert (
-        querybuilder.condition_to_sql({"samples.boby.dp": 42})
-        == "`sample_boby`.`dp` = 42"
-    )
+    assert querybuilder.condition_to_sql({"samples.boby.dp": 42}) == "`sample_boby`.`dp` = 42"
 
     # Test LIKE optimisation with REGEXP
     assert (
@@ -100,16 +146,20 @@ def test_condition_to_sql():
         == "`variants`.`gene` REGEXP 'CFTR.+'"
     )
 
+    assert (
+        querybuilder.condition_to_sql({"comment": "C'est cool"})
+        == "`variants`.`comment` = 'C''est cool'"
+    )
 
-assert (
-    querybuilder.condition_to_sql({"samples.$all.gt": 1}, ["boby", "charles"])
-    == "(`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1)"
-)
+    assert (
+        querybuilder.condition_to_sql({"samples.$all.gt": 1}, ["boby", "charles"])
+        == "(`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1)"
+    )
 
-assert (
-    querybuilder.condition_to_sql({"samples.$any.gt": 1}, ["boby", "charles"])
-    == "(`sample_boby`.`gt` = 1 OR `sample_charles`.`gt` = 1)"
-)
+    assert (
+        querybuilder.condition_to_sql({"samples.$any.gt": 1}, ["boby", "charles"])
+        == "(`sample_boby`.`gt` = 1 OR `sample_charles`.`gt` = 1)"
+    )
 
 
 def test_fields_to_vql():
@@ -193,12 +243,7 @@ def test_filters_to_sql():
     # assert observed == expected
     # Test with Any sample special fields
 
-    filters = {
-        "$and": [
-            {"pos": 10},
-            {"samples.$all.gt": 1},
-        ]
-    }
+    filters = {"$and": [{"pos": 10}, {"samples.$all.gt": 1}]}
 
     observed = querybuilder.filters_to_sql(filters, ["boby", "charles"])
     expected = "(`variants`.`pos` = 10 AND (`sample_boby`.`gt` = 1 AND `sample_charles`.`gt` = 1))"
@@ -425,7 +470,7 @@ QUERY_TESTS = [
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `samples.TUMOR.gt` FROM variants"
-            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LEFT JOIN genotypes `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " LIMIT 50 OFFSET 0"
         ),
         "SELECT chr,pos,samples['TUMOR'].gt FROM variants",
@@ -439,7 +484,7 @@ QUERY_TESTS = [
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants"
-            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LEFT JOIN genotypes `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1) LIMIT 50 OFFSET 0"
         ),
         "SELECT chr,pos FROM variants WHERE samples['TUMOR'].gt = 1",
@@ -458,7 +503,7 @@ QUERY_TESTS = [
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants"
-            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LEFT JOIN genotypes `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1 AND `sample_TUMOR`.`dp` > 10)"
             " LIMIT 50 OFFSET 0"
         ),
@@ -477,7 +522,7 @@ QUERY_TESTS = [
         },
         (
             "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`sample_TUMOR`.`gt` AS `samples.TUMOR.gt` FROM variants"
-            " INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
+            " LEFT JOIN genotypes `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1"
             " WHERE (`sample_TUMOR`.`gt` = 1)"
             " LIMIT 50 OFFSET 0"
         ),
@@ -500,9 +545,7 @@ QUERY_TESTS = [
         {
             "fields": ["chr", "pos", "ref", "alt"],
             "source": "variants",
-            "filters": {
-                "$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]
-            },
+            "filters": {"$and": [{"ref": {"$regex": "^[AG]$"}}, {"alt": {"$regex": "^[CT]$"}}]},
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (`variants`.`ref` REGEXP '^[AG]$' AND `variants`.`alt` REGEXP '^[CT]$') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref =~ '^[AG]$' AND alt =~ '^[CT]$'",
@@ -512,9 +555,7 @@ QUERY_TESTS = [
         {
             "fields": ["chr", "pos", "ref", "alt"],
             "source": "variants",
-            "filters": {
-                "$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]
-            },
+            "filters": {"$and": [{"ref": {"$nregex": "^[AG]$"}}, {"alt": {"$nregex": "^[CT]$"}}]},
         },
         "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE (`variants`.`ref` NOT REGEXP '^[AG]$' AND `variants`.`alt` NOT REGEXP '^[CT]$') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref !~ '^[AG]$' AND alt !~ '^[CT]$'",
@@ -527,7 +568,7 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {"$and": [{"ref": {"$has": "variant"}}]},
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' LIKE '%&variant&%') LIMIT 50 OFFSET 0",
+        f"SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('{cst.HAS_OPERATOR}' || `variants`.`ref` || '{cst.HAS_OPERATOR}' LIKE '%{cst.HAS_OPERATOR}variant{cst.HAS_OPERATOR}%') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref HAS 'variant'",
     ),
     # TEST NOT HAS
@@ -537,7 +578,7 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {"$and": [{"ref": {"$nhas": "variant"}}]},
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('&' || `variants`.`ref` || '&' NOT LIKE '%&variant&%') LIMIT 50 OFFSET 0",
+        f"SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos`,`variants`.`ref`,`variants`.`alt` FROM variants WHERE ('{cst.HAS_OPERATOR}' || `variants`.`ref` || '{cst.HAS_OPERATOR}' NOT LIKE '%{cst.HAS_OPERATOR}variant{cst.HAS_OPERATOR}%') LIMIT 50 OFFSET 0",
         "SELECT chr,pos,ref,alt FROM variants WHERE ref !HAS 'variant'",
     ),
     (
@@ -546,7 +587,7 @@ QUERY_TESTS = [
             "source": "variants",
             "filters": {"$and": [{"samples.$any.gt": 1}]},
         },
-        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants INNER JOIN sample_has_variant `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1 INNER JOIN sample_has_variant `sample_NORMAL` ON `sample_NORMAL`.variant_id = variants.id AND `sample_NORMAL`.sample_id = 2 WHERE ((`sample_TUMOR`.`gt` = 1 OR `sample_NORMAL`.`gt` = 1)) LIMIT 50 OFFSET 0",
+        "SELECT DISTINCT `variants`.`id`,`variants`.`chr`,`variants`.`pos` FROM variants LEFT JOIN genotypes `sample_TUMOR` ON `sample_TUMOR`.variant_id = variants.id AND `sample_TUMOR`.sample_id = 1 LEFT JOIN genotypes `sample_NORMAL` ON `sample_NORMAL`.variant_id = variants.id AND `sample_NORMAL`.sample_id = 2 WHERE ((`sample_TUMOR`.`gt` = 1 OR `sample_NORMAL`.`gt` = 1)) LIMIT 50 OFFSET 0",
         "SELECT chr,pos FROM variants WHERE samples[ANY].gt = 1",
     ),
     # ORDER BY

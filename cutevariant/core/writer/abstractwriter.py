@@ -1,7 +1,6 @@
 # Custom imports
 from cutevariant.core import command as cmd
 from cutevariant.core.querybuilder import build_sql_query
-import cutevariant.commons as cm
 
 from cutevariant import LOGGER
 
@@ -22,7 +21,8 @@ class AbstractWriter:
             writer.save(conn)
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         conn,
         filename,
         fields=["chr", "pos", "ref", "alt"],

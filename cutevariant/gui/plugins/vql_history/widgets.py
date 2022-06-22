@@ -14,6 +14,7 @@ from PySide6.QtCore import (
     QUrl,
     QModelIndex,
     QSortFilterProxyModel,
+    QSize,
 )
 from PySide6.QtWidgets import (
     QToolBar,
@@ -76,7 +77,10 @@ class HistoryModel(QAbstractTableModel):
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """override :  Return Row Count"""
-        return len(self.records)
+        if parent == QModelIndex():
+            return len(self.records)
+        else:
+            return 0
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """override : Return Column Count"""
@@ -313,9 +317,7 @@ class HistoryDelegate(QStyledItemDelegate):
             syntax = VqlSyntaxHighlighter(doc)
             vql = index.data()
 
-            elided_vql = painter.fontMetrics().elidedText(
-                vql, Qt.ElideRight, area.width()
-            )
+            elided_vql = painter.fontMetrics().elidedText(vql, Qt.ElideRight, area.width())
             doc.setPlainText(elided_vql)
             # highlighter_->setDocument(&doc);
             # context.palette.setColor(QPalette.Text, painter.pen().color())
@@ -363,15 +365,9 @@ class VqlHistoryWidget(plugin.PluginWidget):
         # Hide name column (too ugly for now)
         self.view.hideColumn(0)
 
-        self.view.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
-        self.view.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
 
         self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
 
@@ -380,9 +376,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
         self.toolbar = QToolBar()
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.addAction(
-            FIcon(0xF0413), self.tr("Clear"), self.on_clear_logs_pressed
-        )
+        self.toolbar.addAction(FIcon(0xF0413), self.tr("Clear"), self.on_clear_logs_pressed)
 
         self.toolbar.addAction(
             FIcon(0xF0DAE),
@@ -390,9 +384,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.on_import_history_pressed,
         )
 
-        self.toolbar.addAction(
-            FIcon(0xF0DAD), self.tr("Export..."), self.on_export_history_pressed
-        )
+        self.toolbar.addAction(FIcon(0xF0DAD), self.tr("Export..."), self.on_export_history_pressed)
 
         delete_row = self.toolbar.addAction(
             FIcon(0xF04F5),
@@ -414,9 +406,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
 
         self.search_edit.setVisible(False)
         self.search_edit.setPlaceholderText(self.tr("Search query... "))
-        self.search_edit.textChanged.connect(
-            self.proxy_model.setFilterRegularExpression
-        )
+        self.search_edit.textChanged.connect(self.proxy_model.setFilterRegularExpression)
         self.search_edit.setContentsMargins(10, 10, 10, 10)
 
         # Create layout
@@ -447,6 +437,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
             self.mainwindow.get_state_data("fields"),
             self.mainwindow.get_state_data("source"),
             self.mainwindow.get_state_data("filters"),
+            self.mainwindow.get_state_data("order_by"),
         )
 
         #  Do not store same query consecutively
@@ -482,11 +473,11 @@ class VqlHistoryWidget(plugin.PluginWidget):
         """
         query = self.model.get_query(index)
         parsed_query = next(vql.parse_vql(query))
-        print(parsed_query)
 
         self.mainwindow.set_state_data("fields", parsed_query["fields"])
         self.mainwindow.set_state_data("source", parsed_query["source"])
         self.mainwindow.set_state_data("filters", parsed_query["filters"])
+        self.mainwindow.set_state_data("order_by", parsed_query["order_by"])
 
         self.mainwindow.refresh_plugins(sender=self)
 
@@ -568,9 +559,7 @@ class VqlHistoryWidget(plugin.PluginWidget):
             confirmation = QMessageBox.question(
                 self,
                 self.tr("Please confirm"),
-                self.tr(
-                    f"Do you really want to remove this row ?\nYou cannot undo this !"
-                ),
+                self.tr(f"Do you really want to remove this row ?\nYou cannot undo this !"),
             )
             if confirmation == QMessageBox.No:
                 return

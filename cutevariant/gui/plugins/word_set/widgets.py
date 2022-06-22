@@ -53,7 +53,7 @@ from cutevariant.core.sql import (
     insert_wordset_from_subtract,
 )
 from cutevariant.core.command import import_cmd, drop_cmd
-from cutevariant import commons as cm
+from cutevariant import constants as cst
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.widgets import SearchableTableWidget
 
@@ -67,7 +67,7 @@ class WordListDialog(QDialog):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Edit Word set"))
-        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
+        self.setWindowIcon(QIcon(cst.DIR_ICONS + "app.png"))
 
         self.add_button = QPushButton(FIcon(0xF0415), self.tr("Add"))
         self.add_button.pressed.connect(self.on_add)
@@ -220,11 +220,7 @@ class WordsetCollectionModel(QAbstractTableModel):
 
     def data(self, index: QModelIndex, role: int) -> typing.Any:
 
-        if (
-            index.row() < 0
-            or index.row() >= self.rowCount()
-            or index.column() not in (0, 1)
-        ):
+        if index.row() < 0 or index.row() >= self.rowCount() or index.column() not in (0, 1):
             return
 
         if role == Qt.DecorationRole and index.column() == 0:
@@ -236,14 +232,8 @@ class WordsetCollectionModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return self._raw_data[index.row()][index.column()]
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
-        if (
-            orientation != Qt.Horizontal
-            or section not in (0, 1)
-            or role != Qt.DisplayRole
-        ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int) -> typing.Any:
+        if orientation != Qt.Horizontal or section not in (0, 1) or role != Qt.DisplayRole:
             return
 
         if section == 0:
@@ -253,9 +243,7 @@ class WordsetCollectionModel(QAbstractTableModel):
 
     def load(self):
         if self.conn:
-            self._set_dict(
-                {data["name"]: data["count"] for data in get_wordsets(self.conn)}
-            )
+            self._set_dict({data["name"]: data["count"] for data in get_wordsets(self.conn)})
 
     def _set_dict(self, data: dict):
         self.beginResetModel()
@@ -275,13 +263,11 @@ class WordsetCollectionModel(QAbstractTableModel):
         return list(dict(self._raw_data).keys())
 
     def mimeData(self, indexes: typing.List) -> QMimeData:
-        wordset_names = [
-            idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0
-        ]
+        wordset_names = [idx.data(Qt.DisplayRole) for idx in indexes if idx.column() == 0]
         if len(wordset_names) != 1:
             # Currently, we don't support dragging more than one wordset
             return None
-        res = QMimeData()
+        res = super().mimeData(indexes)
         ser_wordset = wordset_names[0]
         res.setText(json.dumps({"ann.gene": {"$in": {"$wordset": ser_wordset}}}))
         res.setData(
@@ -377,7 +363,7 @@ class WordSetWidget(PluginWidget):
         super().__init__(parent)
         self.conn = None
         self.model = WordsetCollectionModel(parent=self)
-        self.setWindowIcon(FIcon(0xF10E3))
+        self.setWindowIcon(FIcon(0xF0C2E))
         self.toolbar = QToolBar(self)
         self.view = QTableView(self)
         self.view.setSortingEnabled(True)
@@ -394,9 +380,7 @@ class WordSetWidget(PluginWidget):
 
         # setup tool bar
         self.toolbar.setIconSize(QSize(16, 16))
-        self.toolbar.addAction(
-            FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset
-        )
+        self.toolbar.addAction(FIcon(0xF0415), self.tr("Add Word set"), self.add_wordset)
         self.edit_action = self.toolbar.addAction(
             FIcon(0xF0DC9), self.tr("Edit Word set"), self.open_wordset
         )
@@ -512,8 +496,7 @@ class WordSetWidget(PluginWidget):
                 QMessageBox.critical(
                     self,
                     self.tr("Error while creating set"),
-                    self.tr("Error while creating set '%s'; Name is already used")
-                    % wordset_name,
+                    self.tr("Error while creating set '%s'; Name is already used") % wordset_name,
                 )
                 wordset_name = None
 
@@ -538,17 +521,14 @@ class WordSetWidget(PluginWidget):
 
         # Delete all selected sets
         for selected_index in self.view.selectionModel().selectedRows(0):
-            result = drop_cmd(
-                self.conn, "wordsets", selected_index.data(Qt.DisplayRole)
-            )
+            result = drop_cmd(self.conn, "wordsets", selected_index.data(Qt.DisplayRole))
 
             if not result["success"]:
                 LOGGER.error(result)
                 QMessageBox.critical(
                     self,
                     self.tr("Error while deleting set"),
-                    self.tr("Error while deleting set '%s'")
-                    % selected_index.data(Qt.DisplayRole),
+                    self.tr("Error while deleting set '%s'") % selected_index.data(Qt.DisplayRole),
                 )
 
         self.populate()
@@ -595,9 +575,7 @@ class WordSetWidget(PluginWidget):
         self.model.load()
         self.view.horizontalHeader().setStretchLastSection(False)
         self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.view.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeToContents
-        )
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.update_action_availabilty()
 
     def on_apply_set_operation(self, operation="intersect"):
@@ -610,8 +588,7 @@ class WordSetWidget(PluginWidget):
             "subtract": (insert_wordset_from_subtract, self.tr("Subtract")),
         }
         selected_wordsets = [
-            index.data(Qt.DisplayRole)
-            for index in self.view.selectionModel().selectedRows(0)
+            index.data(Qt.DisplayRole) for index in self.view.selectionModel().selectedRows(0)
         ]
         if not selected_wordsets:
             return

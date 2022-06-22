@@ -59,20 +59,27 @@ import os
 import glob
 from abc import abstractmethod
 from logging import DEBUG
+import shutil
 from PySide6.QtNetwork import QNetworkProxy
 
 # Qt imports
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *  # QApplication.instance()
-from PySide6.QtGui import *  # QIcon, QPalette
+from PySide6.QtGui import *
+import cutevariant  # QIcon, QPalette
 
 # Custom imports
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 from cutevariant.config import Config
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui import network, style, widgets
+from cutevariant.gui.widgets import ClassificationEditor
+from cutevariant.gui.widgets import TagEditor
+import cutevariant.gui.mainwindow as mw
+
 
 from cutevariant import LOGGER
+from cutevariant.gui.widgets.file_edit import FileEdit
 
 
 class AbstractSettingsWidget(QWidget):
@@ -151,7 +158,7 @@ class SectionWidget(QTabWidget):
 #         locale_name = self.locales_combobox.currentText()
 
 #         app_translator = QTranslator(QApplication.instance())
-#         if app_translator.load(locale_name, cm.DIR_TRANSLATIONS):
+#         if app_translator.load(locale_name, cst.DIR_TRANSLATIONS):
 #             QApplication.instance().installTranslator(app_translator)
 
 #     def load(self):
@@ -160,7 +167,7 @@ class SectionWidget(QTabWidget):
 #         # Get names of locales based on available files
 #         available_translations = {
 #             os.path.basename(os.path.splitext(file)[0]): file
-#             for file in glob.glob(cm.DIR_TRANSLATIONS + "*.qm")
+#             for file in glob.glob(cst.DIR_TRANSLATIONS + "*.qm")
 #         }
 #         # English is the default language
 #         available_locales = list(available_translations.keys()) + ["en"]
@@ -171,6 +178,62 @@ class SectionWidget(QTabWidget):
 #         locale_name = settings.value("ui/locale", "en")
 
 #         self.locales_combobox.setCurrentIndex(available_locales.index(locale_name))
+
+
+class ClassificationSettingsWidget(AbstractSettingsWidget):
+    """Allow to configure proxy settings for widgets that require internet connection
+    These settings will apply application-wide (i.e. every QNetworkAccessManager will have these as defaults)
+    """
+
+    def __init__(self, section: str):
+        super().__init__()
+        self.setWindowIcon(FIcon(0xF0133))
+
+        self.widget = ClassificationEditor(section=section)
+        self.v_layout = QVBoxLayout(self)
+        self.v_layout.addWidget(self.widget)
+        self.section = section
+        self.setWindowTitle(self.section)
+
+    def save(self):
+        """Save settings under "proxy" group"""
+        config = Config("classifications")
+        config[self.section] = self.widget.get_classifications()
+        config.save()
+
+    def load(self):
+        """Load "proxy" group settings"""
+        config = Config("classifications")
+        classifications = config.get(self.section, [])
+        self.widget.set_classifications(classifications)
+
+
+class TagSettingsWidget(AbstractSettingsWidget):
+    """Allow to configure proxy settings for widgets that require internet connection
+    These settings will apply application-wide (i.e. every QNetworkAccessManager will have these as defaults)
+    """
+
+    def __init__(self, section: str):
+        super().__init__()
+        self.setWindowIcon(FIcon(0xF04F9))
+
+        self.widget = TagEditor(section=section)
+        self.v_layout = QVBoxLayout(self)
+        self.v_layout.addWidget(self.widget)
+        self.section = section
+        self.setWindowTitle(self.section)
+
+    def save(self):
+        """Save settings under "proxy" group"""
+        config = Config("tags")
+        config[self.section] = self.widget.get_tags()
+        config.save()
+
+    def load(self):
+        """Load "proxy" group settings"""
+        config = Config("tags")
+        tags = config.get(self.section, [])
+        self.widget.set_tags(tags)
 
 
 class ProxySettingsWidget(AbstractSettingsWidget):
@@ -223,9 +286,7 @@ class ProxySettingsWidget(AbstractSettingsWidget):
 
         try:
             proxy = QNetworkProxy(
-                network.PROXY_TYPES.get(
-                    self.combo_box.currentText(), QNetworkProxy.NoProxy
-                ),
+                network.PROXY_TYPES.get(self.combo_box.currentText(), QNetworkProxy.NoProxy),
                 self.host_edit.text(),
                 self.port_edit.value(),
                 self.user_edit.text(),
@@ -305,7 +366,7 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         config = Config("app")
         style = config.get("style", {})
 
-        old_style_name = style.get("theme", cm.BASIC_STYLE)
+        old_style_name = style.get("theme", cst.BASIC_STYLE)
 
         # Save style setting
         style_name = self.styles_combobox.currentText()
@@ -331,20 +392,20 @@ class StyleSettingsWidget(AbstractSettingsWidget):
         # Get names of styles based on available files
         available_styles = {
             os.path.basename(os.path.splitext(file)[0]).title(): file
-            for file in glob.glob(cm.DIR_STYLES + "*.qss")
+            for file in glob.glob(cst.DIR_STYLES + "*.qss")
             if "frameless" not in file
         }
         # Display available styles
-        available_styles = list(available_styles.keys()) + [cm.BASIC_STYLE]
+        available_styles = list(available_styles.keys()) + [cst.BASIC_STYLE]
         self.styles_combobox.addItems(available_styles)
 
-        #print(available_styles)
+        # print(available_styles)
 
         # Display current style
         # Dark is the default style
         config = Config("app")
         style = config.get("style", {})
-        style_name = style.get("theme", cm.BASIC_STYLE)
+        style_name = style.get("theme", cst.BASIC_STYLE)
         self.styles_combobox.setCurrentIndex(available_styles.index(style_name))
 
 
@@ -413,7 +474,7 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
 
     def save(self):
         """Save the selected variables in config"""
-        
+
         # Config
         config = Config("variables") or {}
 
@@ -437,7 +498,7 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
 
         # Config
         config = Config("variables") or {}
-        
+
         # Set variables
         variant_name_pattern = config.get("variant_name_pattern", "{chr}:{pos} - {ref}>{alt}")
         gene_field = config.get("gene_field", "ann.gene")
@@ -445,6 +506,53 @@ class VariablesSettingsWidget(AbstractSettingsWidget):
         self.variant_name_pattern_edit.setText(variant_name_pattern)
         self.gene_field_edit.setText(gene_field)
         self.transcript_field_edit.setText(transcript_field)
+
+
+class ReportSettingsWidget(AbstractSettingsWidget):
+    """Allow to choose variables for the interface"""
+
+    def __init__(self):
+        """Init VariablesSettingsWidget
+
+        Args:
+            mainwindow (QMainWindow): Current main ui of cutevariant;
+                Used to refresh the plugins
+        """
+        super().__init__()
+        self.setWindowTitle(self.tr("Report"))
+        self.setWindowIcon(FIcon(0xF1518))
+
+        self.html_template = FileEdit()
+
+        main_layout = QFormLayout()
+        main_layout.addRow(self.tr("HTML template:"), self.html_template)
+
+        self.setLayout(main_layout)
+
+    def save(self):
+        """Save the selected variables in config"""
+
+        # Config
+        config = Config("report") or {}
+
+        # Save variables setting
+        config["html_template"] = self.html_template.text()
+        config.save()
+
+        # Clear pixmap cache
+        QPixmapCache.clear()
+
+    def load(self):
+        """Setup widgets in ReportSettingsWidget"""
+        self.html_template.clear()
+
+        # Config
+        config = Config("report") or {}
+
+        # Set variables
+        html = config.get("html_template", "")
+        self.html_template.setText(html)
+
 
 class SettingsDialog(QDialog):
     """Main widget for settings window
@@ -462,15 +570,35 @@ class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Cutevariant - Settings"))
-        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
+        self.setWindowIcon(QIcon(cst.DIR_ICONS + "app.png"))
+
+        self.mainwindow: mw.MainWindow = parent
 
         self.widgets = []
 
         self.list_widget = QListWidget()
         self.stack_widget = QStackedWidget()
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.SaveAll | QDialogButtonBox.Cancel | QDialogButtonBox.Reset
+        self.button_box_laytout = QHBoxLayout()
+
+        self.reset_button = QPushButton(self.tr("Reset"))
+        self.import_config_button = QPushButton(self.tr("Import ..."))
+        self.import_config_button.setToolTip(self.tr("Import settings from a yaml file"))
+        self.export_config_button = QPushButton(self.tr("Export ..."))
+        self.export_config_button.setToolTip(self.tr("Export settings to a yaml file"))
+
+        self.save_all_button = QPushButton(self.tr("Save All"))
+        self.cancel_button = QPushButton(self.tr("Cancel"))
+
+        self.button_box_laytout.addWidget(self.reset_button)
+        self.button_box_laytout.addWidget(self.import_config_button)
+        self.button_box_laytout.addWidget(self.export_config_button)
+
+        self.button_box_laytout.addSpacerItem(
+            QSpacerItem(30, 5, QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
         )
+
+        self.button_box_laytout.addWidget(self.save_all_button)
+        self.button_box_laytout.addWidget(self.cancel_button)
 
         self.list_widget.setFixedWidth(200)
         self.list_widget.setIconSize(QSize(32, 32))
@@ -479,10 +607,9 @@ class SettingsDialog(QDialog):
         h_layout.addWidget(self.list_widget)
         h_layout.addWidget(self.stack_widget)
 
-        v_layout = QVBoxLayout()
+        v_layout = QVBoxLayout(self)
         v_layout.addLayout(h_layout)
-        v_layout.addWidget(self.button_box)
-        self.setLayout(v_layout)
+        v_layout.addLayout(self.button_box_laytout)
 
         # Instantiate subwidgets on panels
         # Similar widgets for general configuration
@@ -498,16 +625,40 @@ class SettingsDialog(QDialog):
         general_settings.add_page(ProxySettingsWidget())
         general_settings.add_page(StyleSettingsWidget())
         general_settings.add_page(VariablesSettingsWidget())
+        general_settings.add_page(ReportSettingsWidget())
+
+        # Classification
+        classification_settings = SectionWidget()
+        classification_settings.setWindowTitle(self.tr("Classification"))
+        classification_settings.setWindowIcon(FIcon(0xF063D))
+
+        classification_settings.add_page(ClassificationSettingsWidget("variants"))
+        classification_settings.add_page(ClassificationSettingsWidget("samples"))
+        classification_settings.add_page(ClassificationSettingsWidget("genotypes"))
+
+        # Tags
+        tags_settings = SectionWidget()
+        tags_settings.setWindowTitle(self.tr("Tags"))
+        tags_settings.setWindowIcon(FIcon(0xF04FB))
+
+        tags_settings.add_page(TagSettingsWidget("variants"))
+        tags_settings.add_page(TagSettingsWidget("samples"))
+        tags_settings.add_page(TagSettingsWidget("genotypes"))
 
         # Specialized widgets on panels
         self.add_section(general_settings)
+        self.add_section(classification_settings)
+        self.add_section(tags_settings)
         self.load_plugins()
 
         self.resize(800, 400)
 
-        self.button_box.button(QDialogButtonBox.SaveAll).clicked.connect(self.save_all)
-        self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.load_all)
-        self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.close)
+        self.import_config_button.clicked.connect(self.import_config)
+        self.export_config_button.clicked.connect(self.export_config)
+
+        self.save_all_button.clicked.connect(self.save_all)
+        self.reset_button.clicked.connect(self.reset_config)
+        self.cancel_button.clicked.connect(self.close)
 
         # Connection events
         self.list_widget.currentRowChanged.connect(self.stack_widget.setCurrentIndex)
@@ -523,9 +674,7 @@ class SettingsDialog(QDialog):
         # Used to load/save all widgets on demand
         self.widgets.append(widget)
         # Used for ui positionning and connection events
-        self.list_widget.addItem(
-            QListWidgetItem(widget.windowIcon(), widget.windowTitle())
-        )
+        self.list_widget.addItem(QListWidgetItem(widget.windowIcon(), widget.windowTitle()))
         self.stack_widget.addWidget(widget)
 
     def save_all(self):
@@ -536,6 +685,24 @@ class SettingsDialog(QDialog):
     def load_all(self):
         """Call load() method of all widgets"""
         [widget.load() for widget in self.widgets]
+
+    def reset_config(self):
+        if (
+            QMessageBox.question(
+                self,
+                self.tr("Reset config"),
+                self.tr(
+                    "Are you sure you want to reset cutevariant to factory settings ?\nThis cannot be undone!"
+                ),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            == QMessageBox.Yes
+        ):
+            config = Config()
+            # Resets back to github's cutevariant config file
+            config.reset()
+            self.load_all()
 
     def load_plugins(self):
         """Add plugins settings"""
@@ -562,6 +729,42 @@ class SettingsDialog(QDialog):
                     widget.setWindowIcon(FIcon(0xF0431))
 
                 self.add_section(widget)
+
+    def import_config(self):
+        """Slot to open an existing config from a QFileDialog"""
+
+        config_path, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Open config"),
+            QDir.homePath(),
+            self.tr("Cutevariant config (*.yml)"),
+        )
+
+        if os.path.isfile(config_path):
+            # Config.DEFAULT_CONFIG_PATH = config_path ----> Surtout pas
+
+            # Load config with new config path
+            config = Config()
+            config.load_from_path(config_path)
+            config.save()
+            self.load_all()
+
+            self.mainwindow.refresh_plugins()
+
+        else:
+            LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
+
+    def export_config(self):
+        """Slot to save current config to a new file"""
+
+        save_config_path, _ = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Save config"),
+            QDir.homePath(),
+            self.tr("Cutevariant config (*.yml)"),
+        )
+        if save_config_path:
+            shutil.copy(Config.user_config_path(), save_config_path)
 
 
 if __name__ == "__main__":

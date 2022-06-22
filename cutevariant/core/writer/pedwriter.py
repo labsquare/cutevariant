@@ -5,7 +5,6 @@ import csv
 from .abstractwriter import AbstractWriter
 from cutevariant.core import command as cmd
 from cutevariant.core import sql
-import cutevariant.commons as cm
 
 
 from cutevariant import LOGGER

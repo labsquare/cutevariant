@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 from cutevariant.core.writer import AbstractWriter
 
@@ -8,9 +8,10 @@ import sys
 
 import time
 import sqlite3
+import cutevariant.constants as cst
 import cutevariant.commons as cm
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class AbstractWriterDialog(QDialog):
@@ -29,9 +30,7 @@ class AbstractWriterDialog(QDialog):
 
         # Just the OK-Cancel buttons, make sure to connect them to the accept and reject slots
         self.buttons_dialog = QDialogButtonBox(self)
-        self.buttons_dialog.setStandardButtons(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
+        self.buttons_dialog.setStandardButtons(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.buttons_dialog.accepted.connect(self.accept)
         self.buttons_dialog.rejected.connect(self.reject)
         self.buttons_dialog.show()

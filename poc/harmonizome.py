@@ -1,9 +1,9 @@
-from cutevariant.commons import GENOTYPE_DESC
+from cutevariant.constants import GENOTYPE_DESC
 import sqlite3
-from PySide2.QtWidgets import *
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtNetwork import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtNetwork import *
 import sys
 import json
 import re
@@ -62,9 +62,7 @@ class HZDataSetModel(QAbstractListModel):
 
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int) -> typing.Any:
         if section > 0 or orientation == Qt.Vertical or role != Qt.DisplayRole:
             return
 
@@ -137,9 +135,7 @@ class HZGeneSetModel(QAbstractListModel):
         if role == Qt.UserRole:
             return self.genesets[index.row()]["href"]
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int) -> typing.Any:
         if (
             section > 0
             or orientation == Qt.Vertical
@@ -228,9 +224,7 @@ class HZGeneModel(QAbstractListModel):
         if role == Qt.DisplayRole:
             return self.genes[index.row()]["gene"]["symbol"]
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int
-    ) -> typing.Any:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int) -> typing.Any:
         if (
             section > 0
             or orientation == Qt.Vertical
@@ -301,9 +295,7 @@ class LoadingTableView(QTableView):
         if self._is_loading:
             painter = QPainter(self.viewport())
 
-            painter.drawText(
-                self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ...")
-            )
+            painter.drawText(self.viewport().rect(), Qt.AlignCenter, self.tr("Loading ..."))
 
         else:
             super().paintEvent(event)
@@ -345,9 +337,7 @@ class FilteredListWidget(QWidget):
 
         self.tableview.verticalHeader().hide()
 
-        self.tableview.selectionModel().currentChanged.connect(
-            self.on_current_index_changed
-        )
+        self.tableview.selectionModel().currentChanged.connect(self.on_current_index_changed)
 
     def set_model(self, model: QAbstractItemModel):
         self.proxy.setSourceModel(model)
@@ -367,9 +357,7 @@ class FilteredListWidget(QWidget):
 
 
 class GeneSelectionDialog(QDialog):
-    def __init__(
-        self, initial_selection: typing.List[str] = None, parent: QWidget = None
-    ):
+    def __init__(self, initial_selection: typing.List[str] = None, parent: QWidget = None):
         super().__init__(parent)
 
         self.view = FilteredListWidget(self)
@@ -379,9 +367,7 @@ class GeneSelectionDialog(QDialog):
         self.view.set_model(self.model)
 
         self.clear_selection_btn = QPushButton(self.tr("Clear list"), self)
-        self.remove_selection_item_btn = QPushButton(
-            self.tr("Remove selected gene(s)"), self
-        )
+        self.remove_selection_item_btn = QPushButton(self.tr("Remove selected gene(s)"), self)
         self.view.tableview.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         self.buttons_layout = QHBoxLayout()
@@ -389,9 +375,7 @@ class GeneSelectionDialog(QDialog):
         self.buttons_layout.addWidget(self.remove_selection_item_btn)
 
         self.exit_btn_box = QDialogButtonBox(self)
-        self.exit_btn_box.setStandardButtons(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
+        self.exit_btn_box.setStandardButtons(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.exit_btn_box.rejected.connect(self.reject)
         self.exit_btn_box.accepted.connect(self.accept)
 
@@ -404,9 +388,7 @@ class GeneSelectionDialog(QDialog):
         self.gene_selection = initial_selection
 
         self.clear_selection_btn.clicked.connect(self.on_clear_selectiion_clicked)
-        self.remove_selection_item_btn.clicked.connect(
-            self.on_remove_selection_items_clicked
-        )
+        self.remove_selection_item_btn.clicked.connect(self.on_remove_selection_items_clicked)
 
     def on_remove_selection_items_clicked(self):
         selected_genes = [
@@ -571,9 +553,7 @@ class HarmonizomeWordsetDialog(PluginDialog):
 
         self.buttons_layout = QHBoxLayout()
         self.buttons_layout.addWidget(self.cancel_btn)
-        self.buttons_layout.addItem(
-            QSpacerItem(30, 0, QSizePolicy.Expanding, QSizePolicy.Fixed)
-        )
+        self.buttons_layout.addItem(QSpacerItem(30, 0, QSizePolicy.Expanding, QSizePolicy.Fixed))
         self.buttons_layout.addWidget(self.selection_add_button)
         self.buttons_layout.addWidget(self.selection_info_button)
         self.buttons_layout.addWidget(self.add_wordset_btn)
@@ -655,15 +635,12 @@ class HarmonizomeWordsetDialog(PluginDialog):
                 QMessageBox.critical(
                     self,
                     self.tr("Error while creating set"),
-                    self.tr("Error while creating set '%s'; Name is already used")
-                    % wordset_name,
+                    self.tr("Error while creating set '%s'; Name is already used") % wordset_name,
                 )
                 wordset_name = None
 
         # Import and close dialog
-        if self.import_wordset(
-            self.harmonizome_widget.get_selected_genes(), wordset_name
-        ):
+        if self.import_wordset(self.harmonizome_widget.get_selected_genes(), wordset_name):
             QMessageBox.information(
                 self,
                 self.tr("Success!"),
@@ -677,9 +654,7 @@ class HarmonizomeWordsetDialog(PluginDialog):
     @Slot()
     def update_selection_info_button(self):
         self.selection_info_button.setText(
-            self.tr(
-                f"My selection ({len(self.harmonizome_widget.selected_genes)}) genes"
-            )
+            self.tr(f"My selection ({len(self.harmonizome_widget.selected_genes)}) genes")
         )
 
 

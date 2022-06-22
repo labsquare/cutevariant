@@ -3,8 +3,6 @@ import csv
 
 # Custom imports
 from .abstractwriter import AbstractWriter
-from cutevariant.core import command as cmd
-import cutevariant.commons as cm
 
 
 from cutevariant import LOGGER
@@ -23,9 +21,7 @@ class BedWriter(AbstractWriter):
                 writer.save(conn)
     """
 
-    def __init__(
-        self, conn, filename, fields=["chr", "pos"], source="variants", filters={}
-    ):
+    def __init__(self, conn, filename, fields=["chr", "pos"], source="variants", filters={}):
         super().__init__(conn, filename, fields, source, filters)
 
     def async_save(self, *args, **kwargs):

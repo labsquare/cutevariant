@@ -271,13 +271,9 @@ def make_virtual_offset(block_start_offset, within_block_offset):
 
     """
     if within_block_offset < 0 or within_block_offset >= 65536:
-        raise ValueError(
-            "Require 0 <= within_block_offset < 2**16, got %i" % within_block_offset
-        )
+        raise ValueError("Require 0 <= within_block_offset < 2**16, got %i" % within_block_offset)
     if block_start_offset < 0 or block_start_offset >= 281474976710656:
-        raise ValueError(
-            "Require 0 <= block_start_offset < 2**48, got %i" % block_start_offset
-        )
+        raise ValueError("Require 0 <= block_start_offset < 2**48, got %i" % block_start_offset)
     return (block_start_offset << 16) | within_block_offset
 
 
@@ -380,12 +376,9 @@ def _load_bgzf_block(handle, text_mode=False):
     if magic != _bgzf_magic:
         raise ValueError(
             r"A BGZF (e.g. a BAM file) block should start with "
-            r"%r, not %r; handle.tell() now says %r"
-            % (_bgzf_magic, magic, handle.tell())
+            r"%r, not %r; handle.tell() now says %r" % (_bgzf_magic, magic, handle.tell())
         )
-    gzip_mod_time, gzip_extra_flags, gzip_os, extra_len = struct.unpack(
-        "<LBBH", handle.read(8)
-    )
+    gzip_mod_time, gzip_extra_flags, gzip_os, extra_len = struct.unpack("<LBBH", handle.read(8))
 
     block_size = None
     x_len = 0
@@ -488,9 +481,7 @@ class BgzfReader:
             assert "b" in handle.mode.lower()
         else:
             if "w" in mode.lower() or "a" in mode.lower():
-                raise ValueError(
-                    "Must use read mode (default), not write or append mode"
-                )
+                raise ValueError("Must use read mode (default), not write or append mode")
             handle = _open(filename, "rb")
         self._text = "b" not in mode.lower()
         if self._text:
@@ -544,9 +535,7 @@ class BgzfReader:
 
     def tell(self):
         """Return a 64-bit unsigned BGZF virtual offset."""
-        if 0 < self._within_block_offset and self._within_block_offset == len(
-            self._buffer
-        ):
+        if 0 < self._within_block_offset and self._within_block_offset == len(self._buffer):
             # Special case where we're right at the end of a (non empty) block.
             # For non-maximal blocks could give two possible virtual offsets,
             # but for a maximal block can't use 65536 as the within block
@@ -573,8 +562,7 @@ class BgzfReader:
         if within_block > len(self._buffer):
             if not (within_block == 0 and len(self._buffer) == 0):
                 raise ValueError(
-                    "Within offset %i but block size only %i"
-                    % (within_block, len(self._buffer))
+                    "Within offset %i but block size only %i" % (within_block, len(self._buffer))
                 )
         self._within_block_offset = within_block
         # assert virtual_offset == self.tell(), \
@@ -594,9 +582,7 @@ class BgzfReader:
             if self._within_block_offset + size <= len(self._buffer):
                 # This may leave us right at the end of a block
                 # (lazy loading, don't load the next block unless we have too)
-                data = self._buffer[
-                    self._within_block_offset : self._within_block_offset + size
-                ]
+                data = self._buffer[self._within_block_offset : self._within_block_offset + size]
                 self._within_block_offset += size
                 assert data  # Must be at least 1 byte
                 result += data
@@ -707,15 +693,11 @@ class BgzfWriter:
         assert len(block) <= 65536
         # Giving a negative window bits means no gzip/zlib headers,
         # -15 used in samtools
-        c = zlib.compressobj(
-            self.compresslevel, zlib.DEFLATED, -15, zlib.DEF_MEM_LEVEL, 0
-        )
+        c = zlib.compressobj(self.compresslevel, zlib.DEFLATED, -15, zlib.DEF_MEM_LEVEL, 0)
         compressed = c.compress(block) + c.flush()
         del c
         if len(compressed) > 65536:
-            raise RuntimeError(
-                "TODO - Didn't compress enough, try less data in this block"
-            )
+            raise RuntimeError("TODO - Didn't compress enough, try less data in this block")
         crc = zlib.crc32(block)
         # Should cope with a mix of Python platforms...
         if crc < 0:

@@ -11,7 +11,18 @@ from functools import partial
 from logging import DEBUG
 
 # Qt imports
-from PySide6.QtCore import Qt, QSettings, QByteArray, QDir, QUrl, Signal, QSize
+from PySide6.QtCore import (
+    QEventLoop,
+    QStandardPaths,
+    Qt,
+    QSettings,
+    QByteArray,
+    QDir,
+    QUrl,
+    Signal,
+    QSize,
+    QPoint,
+)
 from PySide6.QtWidgets import *
 from PySide6.QtGui import QIcon, QKeySequence, QDesktopServices
 
@@ -27,9 +38,10 @@ from cutevariant.gui import FIcon
 from cutevariant.gui.widgets.project_wizard import ProjectWizard
 from cutevariant.gui.widgets.import_widget import VcfImportDialog
 from cutevariant.gui.settings import SettingsDialog
+from cutevariant.gui.widgets import SamplesEditor
 from cutevariant.gui.widgets.aboutcutevariant import AboutCutevariant
-from cutevariant import commons as cm
-from cutevariant.commons import (
+from cutevariant import constants as cst
+from cutevariant.constants import (
     MAX_RECENT_PROJECTS,
     DIR_ICONS,
     MIN_AUTHORIZED_DB_VERSION,
@@ -80,10 +92,11 @@ class StateData:
 
     def reset(self):
         self._data = {
-            "fields": ["favorite", "classification", "chr", "pos", "ref", "alt"],
+            "fields": ["chr", "pos", "ref", "alt"],
             "source": "variants",
             "filters": {},
             "order_by": [],
+            "samples": [],
         }
 
 
@@ -129,6 +142,9 @@ class MainWindow(QMainWindow):
         self.toolbar.setIconSize(QSize(20, 20))
         self.plugin_toolbar = QToolBar("plugins")
         self.plugin_toolbar.setObjectName("plugins_toolbar")
+        self.plugin_toolbar.setFloatable(False)
+        self.plugin_toolbar.setMovable(False)
+
         self.addToolBar(Qt.LeftToolBarArea, self.plugin_toolbar)
 
         # Setup menu bar
@@ -153,6 +169,14 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
+        self.samples_info_label = QLabel()
+        self.filter_info_label = QLabel()
+        self.source_info_label = QLabel()
+        self.status_bar.addPermanentWidget(self.filter_info_label)
+
+        self.status_bar.addPermanentWidget(self.samples_info_label)
+        self.status_bar.addPermanentWidget(self.source_info_label)
+
         # setup omnibar
         self.quick_search_edit = QLineEdit()
         self.quick_search_edit.setPlaceholderText("Type a gene or coordinate ...")
@@ -165,11 +189,8 @@ class MainWindow(QMainWindow):
             lambda: self.quick_search(self.quick_search_edit.text())
         )
 
-        self.toolbar.addSeparator()
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.toolbar.addWidget(spacer)
-        self.toolbar.addWidget(self.quick_search_edit)
+        search_bar = self.addToolBar("Search")
+        search_bar.addWidget(self.quick_search_edit)
 
         # Window geometry
         self.resize(600, 400)
@@ -182,13 +203,9 @@ class MainWindow(QMainWindow):
         # Restores the state of this mainwindow's toolbars and dockwidgets
         self.read_settings()
 
-        # Auto open recent projects
-        recent = self.get_recent_projects()
-        if recent and os.path.isfile(recent[0]):
-            self.open_database_from_file(recent[0])
-
         # To avoid refreshing side effects upon project opening
         self._project_is_opening = False
+        self._is_initialize = True
 
     def set_state_data(self, key: str, value: typing.Any):
         """set state data value from key
@@ -231,9 +248,7 @@ class MainWindow(QMainWindow):
         """
         dock = QDockWidget()
         dock.setWindowTitle(widget.windowTitle().upper())
-        dock.setStyleSheet(
-            "QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}"
-        )
+        dock.setStyleSheet("QDockWidget::title {text-align:center;} QDockWidget{font-weight:bold;}")
         # frame = QLabel()
         # frame.setAlignment(Qt.AlignCenter)
         # frame.setText("<b>" + dock.windowTitle() + "</b>")
@@ -245,11 +260,14 @@ class MainWindow(QMainWindow):
         # Set the objectName for a correct restoration after saveState
         dock.setObjectName(str(widget.__class__))
         self.plugin_toolbar.addAction(dock.toggleViewAction())
-
         self.addDockWidget(area, dock)
         action = dock.toggleViewAction()
         action.setIcon(widget.windowIcon())
         action.setText(widget.windowTitle())
+        action.setToolTip(widget.toolTip())
+        action.setWhatsThis(widget.whatsThis())
+
+        action.triggered.connect(widget.on_refresh)
         self.view_menu.addAction(action)
 
         return dock
@@ -293,8 +311,7 @@ class MainWindow(QMainWindow):
 
             if not widget.objectName():
                 LOGGER.debug(
-                    "widget '%s' has no objectName attribute; "
-                    "=> fallback to extension name",
+                    "widget '%s' has no objectName attribute; " "=> fallback to extension name",
                     displayed_title,
                 )
                 widget.setObjectName(name)
@@ -303,10 +320,10 @@ class MainWindow(QMainWindow):
             widget.setWindowTitle(displayed_title)
 
             # WhatsThis content
-            long_description = extension.get("long_description")
-            if not long_description:
-                long_description = extension.get("description")
+            long_description = extension.get("long_description", "")
+            short_description = extension.get("description", "")
             widget.setWhatsThis(long_description)
+            # widget.setToolTip(short_description)
             # Register (launch first init on some of them)
             widget.mainwindow = self
             widget.on_register(self)
@@ -341,7 +358,7 @@ class MainWindow(QMainWindow):
             self.dialog_plugins[dialog_action] = plugin_dialog_class
             dialog_action.triggered.connect(self.show_dialog)
 
-    def refresh_plugins(self, sender: plugin.PluginWidget = None):
+    def refresh_plugins(self, sender: plugin.PluginWidget = None, force_refresh=False):
         """Refresh all widget plugins
 
         It doesn't refresh a plugin if :
@@ -358,7 +375,7 @@ class MainWindow(QMainWindow):
         for plugin_obj in self.plugins.values():
             need_refresh = (
                 plugin_obj is not sender
-                and (plugin_obj.isVisible() or not plugin_obj.REFRESH_ONLY_VISIBLE)
+                and (plugin_obj.isVisible() or force_refresh or not plugin_obj.REFRESH_ONLY_VISIBLE)
                 and (set(plugin_obj.REFRESH_STATE_DATA) & self._state_data.changed)
                 and not self._project_is_opening
             )
@@ -376,6 +393,8 @@ class MainWindow(QMainWindow):
         self._state_data.clear_changed()
         for plugin in plugin_to_refresh:
             plugin.on_refresh()
+
+        self.update_status_bar()
 
     def refresh_plugin(self, plugin_name: str):
         """Refresh a widget plugin identified by plugin_name
@@ -398,28 +417,34 @@ class MainWindow(QMainWindow):
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(
-            FIcon(0xF0415), self.tr("&New project"), self.new_project, QKeySequence.New
+            FIcon(0xF0415), self.tr("&New Project"), self.new_project, QKeySequence.New
         )
+        self.new_project_action.setToolTip(self.tr("Create a new database and import data"))
         self.open_project_action = self.file_menu.addAction(
             FIcon(0xF0DCF),
-            self.tr("&Open project..."),
+            self.tr("&Open a Project"),
             self.open_project,
             QKeySequence.Open,
         )
+        self.open_project_action.setToolTip(self.tr("Open a database"))
         self.import_file_action = self.file_menu.addAction(
-            FIcon(0xF102F),
-            self.tr("&Import file"),
+            FIcon(0xF02FA),
+            self.tr("&Import a file"),
             self.import_file,
             QKeySequence.AddTab,
         )
+        self.import_file_action.setToolTip(self.tr("Import a file into the current database"))
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
         self.toolbar.addAction(self.import_file_action)
-        #self.toolbar.addAction(self.open_config_action)
-        self.toolbar.addAction(
-            FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode
-        )
+        # sample_action = self.toolbar.addAction(
+        #     FIcon(0xF0010), self.tr("Add Sample(s)"), self.on_select_samples
+        # )
+        # sample_action.setToolTip(self.tr("Add samples to the current selection"))
+
+        # self.toolbar.addAction(self.open_config_action)
+        # self.toolbar.addAction(FIcon(0xF0625), self.tr("Help"), QWhatsThis.enterWhatsThisMode)
         self.toolbar.addSeparator()
 
         ### Recent projects
@@ -446,28 +471,28 @@ class MainWindow(QMainWindow):
         #     self.tr("Export pedigree PED/PLINK"), self.export_ped
         # )
 
-        # self.file_menu.addSeparator()
+        self.file_menu.addSeparator()
 
-        # self.file_menu.addAction(
-        #     FIcon(0xF0193), self.tr("Save session ..."), self.save_session
-        # )
-        # self.file_menu.addAction(
-        #     FIcon(0xF0770), self.tr("Restore session ..."), self.load_session
-        # )
+        save_session_action = self.file_menu.addAction(
+            FIcon(0xF0818), self.tr("Save session ..."), self.on_save_session
+        )
+        save_session_action.setToolTip(self.tr("Save current session into a file"))
+        load_session_action = self.file_menu.addAction(
+            FIcon(0xF0DCF), self.tr("Restore session ..."), self.on_load_session
+        )
+        load_session_action.setToolTip(self.tr("Load a session from a file "))
+
+        self.toolbar.addAction(save_session_action)
+        self.toolbar.addAction(load_session_action)
 
         self.file_menu.addSeparator()
         ### Misc
 
-        ## TODO ==> Ca devrait allé dans les settings ça. 
-        self.open_config_action = self.file_menu.addAction(
-            FIcon(0xF102F), self.tr("&Set config..."), self.open_config
-        )
-        self.file_menu.addAction(
-            FIcon(0xF0493), self.tr("Settings..."), self.show_settings
-        )
+        self.file_menu.addAction(FIcon(0xF0493), self.tr("Settings..."), self.show_settings)
         self.file_menu.addSeparator()
         self.close_project_action = self.file_menu.addAction(
-            FIcon(0xF0156), self.tr("&Close project"), self.close_database)
+            FIcon(0xF0156), self.tr("&Close project"), self.close_database
+        )
         self.file_menu.addAction(self.tr("&Quit"), self.close, QKeySequence.Quit)
 
         ## Edit
@@ -491,13 +516,6 @@ class MainWindow(QMainWindow):
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         # Set toggle footer visibility action
-        show_action = self.view_menu.addAction(
-            FIcon(0xF018D), self.tr("Show VQL editor")
-        )
-        show_action.setCheckable(True)
-        self.toolbar.addAction(show_action)
-        show_action.setChecked(True)
-        show_action.toggled.connect(self.toggle_footer_visibility)
 
         fullscreen_action = self.view_menu.addAction(
             self.tr("Enter Full Screen"),
@@ -526,14 +544,12 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(
             FIcon(0xF059F),
             self.tr("Documentation..."),
-            partial(QDesktopServices.openUrl, QUrl(cm.WIKI_URL, QUrl.TolerantMode)),
+            partial(QDesktopServices.openUrl, QUrl(cst.WIKI_URL, QUrl.TolerantMode)),
         )
         self.help_menu.addAction(
             FIcon(0xF0A30),
             self.tr("Report a bug..."),
-            partial(
-                QDesktopServices.openUrl, QUrl(cm.REPORT_BUG_URL, QUrl.TolerantMode)
-            ),
+            partial(QDesktopServices.openUrl, QUrl(cst.REPORT_BUG_URL, QUrl.TolerantMode)),
         )
 
         self.help_menu.addSeparator()
@@ -542,9 +558,7 @@ class MainWindow(QMainWindow):
         self.setup_developers_menu()
         self.help_menu.addMenu(self.developers_menu)
 
-        self.help_menu.addAction(
-            self.tr("About Qt..."), QApplication.instance().aboutQt
-        )
+        self.help_menu.addAction(self.tr("About Qt..."), QApplication.instance().aboutQt)
         self.help_menu.addAction(
             QIcon(DIR_ICONS + "app.png"),
             self.tr("About Cutevariant..."),
@@ -572,17 +586,13 @@ class MainWindow(QMainWindow):
         try:
             # DB version filter
             db_version = get_metadatas(self.conn).get("cutevariant_version")
-            if db_version and parse_version(db_version) < parse_version(
-                MIN_AUTHORIZED_DB_VERSION
-            ):
+            if db_version and parse_version(db_version) < parse_version(MIN_AUTHORIZED_DB_VERSION):
                 # Refuse to open blacklisted DB versions
                 # Unversioned files are still accepted
                 QMessageBox.critical(
                     self,
                     self.tr("Error while opening project"),
-                    self.tr("File: {} is too old; please create a new project.").format(
-                        filepath
-                    ),
+                    self.tr("File: {} is too old; please create a new project.").format(filepath),
                 )
                 return
 
@@ -594,9 +604,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 self.tr("Error while opening project"),
-                self.tr("File: {}\nThe following exception occurred:\n{}").format(
-                    filepath, e
-                ),
+                self.tr("File: {}\nThe following exception occurred:\n{}").format(filepath, e),
             )
             return
 
@@ -611,10 +619,9 @@ class MainWindow(QMainWindow):
             conn (sqlite3.Connection): Sqlite3 Connection
         """
 
-
         self.conn = conn
 
-        self._state_data.reset()
+        # self._state_data.reset()
 
         # Clear memoization cache for count_cmd
         sql.clear_lru_cache()
@@ -641,6 +648,9 @@ class MainWindow(QMainWindow):
             for plugin_obj in self.plugins.values():
                 plugin_obj.on_close_project()
                 plugin_obj.setEnabled(False)
+
+        self.samples_info_label.clear()
+        self.filter_info_label.clear()
 
     def save_recent_project(self, path):
         """Save current project into QSettings
@@ -704,6 +714,26 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
             raise
 
+    def on_select_samples(self):
+
+        w = SamplesEditor(self.conn)
+        w.setAttribute(Qt.WA_DeleteOnClose)
+        w.setWindowModality(Qt.ApplicationModal)
+        loop = QEventLoop()
+        w.destroyed.connect(loop.quit)
+        w.sample_selected.connect(self.add_samples)
+        w.move(
+            self.geometry().center() - QPoint(w.geometry().width() / 2, w.geometry().height() / 2)
+        )
+        w.show()
+        loop.exec()
+
+    def add_samples(self, samples: list):
+
+        samples = set(self.get_state_data("samples")).union(set(samples))
+        self.set_state_data("samples", list(samples))
+        self.refresh_plugins()
+
     def open_project(self):
         """Slot to open an already existing project from a QFileDialog"""
         # Reload last directory used
@@ -737,28 +767,6 @@ class MainWindow(QMainWindow):
                 self.open_database_from_file(db_filename)
             except Exception as e:
                 self.status_bar.showMessage(e.__class__.__name__ + ": " + str(e))
-
-    def open_config(self):
-        """Slot to open an existing config from a QFileDialog"""
-        # Reload last directory used
-        last_directory = self.app_settings.value("last_directory", QDir.homePath())
-
-        config_path, _ = QFileDialog.getOpenFileName(
-            self,
-            self.tr("Open config"),
-            last_directory,
-            self.tr("Cutevariant config (*.yml)"),
-        )
-
-        if os.path.isfile(config_path):
-            Config.DEFAULT_CONFIG_PATH = config_path
-            self.reload_ui()
-
-        else:
-            LOGGER.error(f"{config_path} doesn't exists. Ignoring config")
-
-        # Save directory
-        self.app_settings.setValue("last_directory", os.path.dirname(config_path))
 
     def export_as_csv(self):
         """Export variants into CSV file"""
@@ -906,6 +914,13 @@ class MainWindow(QMainWindow):
         if "variant_view" in self.plugins:
             self.plugins["variant_view"].view.select_all()
 
+    def get_last_session_path(self):
+        return QDir(
+            QStandardPaths.writableLocation(QStandardPaths.ConfigLocation)
+            + QDir.separator()
+            + "cutevariant"
+        ).absoluteFilePath("last.session.json")
+
     def closeEvent(self, event):
         """Save the current state of this mainwindow's toolbars and dockwidgets
 
@@ -916,13 +931,15 @@ class MainWindow(QMainWindow):
         """
         self.write_settings()
 
+        # Save session
+        self.save_session(self.get_last_session_path())
+
         # Don't forget to tell all the plugins that the window is being closed
         for plugin_obj in self.plugins.values():
             plugin_obj.on_close()
         super().closeEvent(event)
 
-    def save_session(self):
-        """save plugin state into a json file"""
+    def on_save_session(self):
 
         filename, _ = QFileDialog.getSaveFileName(
             self,
@@ -930,6 +947,9 @@ class MainWindow(QMainWindow):
             QDir.home().path(),
             "Session file (*.session.json)",
         )
+
+        if not filename.endswith(".session.json"):
+            filename = filename + ".session.json"
 
         if os.path.exists(filename):
             ret = QMessageBox.warning(
@@ -942,22 +962,12 @@ class MainWindow(QMainWindow):
             if ret == QMessageBox.No:
                 return
 
-        if not filename.endswith(".session.json"):
-            filename = filename + ".session.json"
+        self.save_session(filename)
 
-        #  write sessions
-        session = {}
-        for name, plugin in self.plugins.items():
-            session[name] = plugin.to_json()
-
-        #  write file
-        with open(filename, "w") as file:
-            json.dump(session, file)
-
-    def load_session(self):
+    def on_load_session(self):
         filename, _ = QFileDialog.getOpenFileName(
             self,
-            self.tr("Save the session"),
+            self.tr("Load the session"),
             QDir.home().path(),
             "Session file (*.session.json)",
         )
@@ -965,14 +975,59 @@ class MainWindow(QMainWindow):
         if not os.path.exists(filename):
             return
 
+        self.load_session(filename)
+
+    def save_session(self, filename: str):
+        """save plugin state into a json file"""
+
+        session = {
+            "db_path": sql.get_database_file_name(self.conn),
+            "fields": self.get_state_data("fields"),
+            "source": self.get_state_data("source"),
+            "filters": self.get_state_data("filters"),
+            "order_by": self.get_state_data("order_by"),
+            "samples": self.get_state_data("samples"),
+        }
+
+        # save plugins
+        session["plugins"] = {}
+        for name, plugin in self.plugins.items():
+            session["plugins"][name] = plugin.to_json()
+
+        with open(filename, "w") as file:
+            json.dump(session, file)
+
+    def showEvent(self, event):
+
+        # Execute first run
+        if self._is_initialize:
+            path = self.get_last_session_path()
+            if os.path.isfile(path):
+                self.load_session(path)
+
+        self._is_initialize = False
+        return super().showEvent(event)
+
+    def load_session(self, filename: str):
+
         # read sessions
         with open(filename) as file:
             state = json.load(file)
 
-        #  set plugins
-        for name, plugin in self.plugins.items():
-            if name in state:
-                plugin.from_json(state[name])
+        if "db_path" in state:
+
+            self.set_state_data("fields", state.get("fields", []))
+            self.set_state_data("source", state.get("source", "variants"))
+            self.set_state_data("filters", state.get("filters", {}))
+            self.set_state_data("order_by", state.get("order_by", []))
+            self.set_state_data("samples", state.get("samples", []))
+
+            if "plugins" in state:
+                for name, plugin in self.plugins.items():
+                    if name in state["plugins"]:
+                        plugin.from_json(state["plugins"][name])
+
+            self.open_database_from_file(state["db_path"])
 
     def write_settings(self):
         """Store the state of this mainwindow.
@@ -1005,13 +1060,17 @@ class MainWindow(QMainWindow):
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             self.app_settings.setValue("windowState", self.saveState())
 
-    def toggle_footer_visibility(self, visibility):
+    def toggle_footer_visibility(self, visibility=None):
         """Toggle visibility of the bottom toolbar and all its plugins"""
-        # self.footer_tab.setVisible(visibility)
-        if not visibility:
-            self.vsplit.setSizes([100, 0])
-        else:
-            self.vsplit.setSizes([200, 100])
+
+        if visibility is None:
+            visibility = not self.footer_tab.isVisible()
+
+        self.footer_tab.setVisible(visibility)
+        # if not visibility:
+        #     self.vsplit.setSizes([100, 0])
+        # else:
+        #     self.vsplit.setSizes([200, 100])
 
     def on_export_pressed(self):
         """
@@ -1064,9 +1123,7 @@ class MainWindow(QMainWindow):
         ]  # Hacky, extracts extension from second element from getSaveFileName result
 
         # Automatic extension of file_name
-        file_name = (
-            file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
-        )
+        file_name = file_name if file_name.endswith(chosen_ext) else f"{file_name}.{chosen_ext}"
 
         export_dialog: ExportDialog = ExportDialogFactory.create_dialog(
             self.conn,
@@ -1109,9 +1166,31 @@ class MainWindow(QMainWindow):
 
         return self.developers_menu
 
+    def update_status_bar(self):
+
+        source = self.get_state_data("source")
+        fields = self.get_state_data("fields")
+        filters = self.get_state_data("filters")
+        samples = self.get_state_data("samples")
+        order_by = self.get_state_data("order_by")
+
+        vql = querybuilder.filters_to_vql(filters)
+        if not vql:
+            vql = "None"
+
+        vql = "Filters: " + vql
+
+        # self.filter_info_label.setText(vql)
+
+        count = len(samples)
+        self.samples_info_label.setText(f"Samples: {count}")
+        self.samples_info_label.setToolTip("<br/>".join(samples))
+        self.source_info_label.setText(f"Source: {source}")
+
     def quick_search(self, query: str):
 
         additionnal_filter = quicksearch(query)
+        self.quick_search_edit.clear()
 
         if additionnal_filter:
             previous_filter = copy.deepcopy(self.get_state_data("filters"))

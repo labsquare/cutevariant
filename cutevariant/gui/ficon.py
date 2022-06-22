@@ -45,9 +45,7 @@ class FIconEngine(QIconEngine):
     def setBackgroundColor(self, color: QColor):
         self.bgcolor = color
 
-    def paint(
-        self, painter: QPainter, rect: QRect, mode: QIcon.Mode, state: QIcon.State
-    ):
+    def paint(self, painter: QPainter, rect: QRect, mode: QIcon.Mode, state: QIcon.State):
         """override"""
         font = FIconEngine.font if hasattr(FIconEngine, "font") else painter.font()
 
@@ -69,22 +67,16 @@ class FIconEngine(QIconEngine):
 
         else:
             if mode == QIcon.Disabled:
-                painter.setPen(
-                    QPen(self.palette.color(QPalette.Disabled, QPalette.ButtonText))
-                )
+                painter.setPen(QPen(self.palette.color(QPalette.Disabled, QPalette.ButtonText)))
             else:
-                painter.setPen(
-                    QPen(self.palette.color(QPalette.Active, QPalette.ButtonText))
-                )
+                painter.setPen(QPen(self.palette.color(QPalette.Active, QPalette.ButtonText)))
 
         font.setPixelSize(rect.size().width())
 
         painter.setFont(font)
         # painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
 
-        painter.drawText(
-            rect, Qt.AlignCenter | Qt.AlignVCenter, str(chr(self.hex_character))
-        )
+        painter.drawText(rect, Qt.AlignCenter | Qt.AlignVCenter, str(chr(self.hex_character)))
         painter.restore()
 
     def pixmap(self, size, mode, state):
@@ -113,9 +105,7 @@ class FIconEngine(QIconEngine):
 class FIcon(QIcon):
     """Handy public class to load and use custom font in QIcons"""
 
-    def __init__(
-        self, hex_character: int, color: QColor = None, bgcolor: QColor = None
-    ):
+    def __init__(self, hex_character: int, color: QColor = None, bgcolor: QColor = None):
         """Build an icon with the given character and color from the current font
 
         Args:
@@ -149,7 +139,7 @@ class FIcon(QIcon):
 def setFontPath(filename):
     """Handy function to load font file
 
-    .. note:: Fonts are supposed to be in cm.DIR_FONTS
+    .. note:: Fonts are supposed to be in cst.DIR_FONTS
     .. note:: This function is called only 1 time at the start of the program
     """
     return FIconEngine.setFontPath(filename)

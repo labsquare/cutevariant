@@ -70,9 +70,7 @@ class VQLSyntaxError(ValueError):
 
 
 # ============ Error handle ==================================
-def error_message_from_err(
-    err: textx.exceptions.TextXSyntaxError, raw_vql: str
-) -> Tuple[str, int]:
+def error_message_from_err(err: textx.exceptions.TextXSyntaxError, raw_vql: str) -> Tuple[str, int]:
     """Return human-readable information and index in raw_sql query
     about the given exception"""
     # print(err)
@@ -221,6 +219,7 @@ class SelectCmd(metaclass=model_class):
             "fields": fields,
             "source": self.source,
             "filters": filters,
+            "order_by": order_by,
         }
 
         if order_by:

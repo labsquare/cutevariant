@@ -1,3 +1,4 @@
+from cutevariant.core.reader.fakereader import FakeReader
 from tests import utils
 import pytest
 import tempfile
@@ -14,11 +15,20 @@ from cutevariant.core.reader import VcfReader
 @pytest.fixture
 def conn():
 
-    #  Required a real file to make it work !
+    # Required a real file to make it work !
     tempdb = tempfile.mkstemp(suffix=".db")[1]
     conn = sql.get_sql_connection(tempdb)
-    sql.import_reader(conn, VcfReader(open("examples/test.snpeff.vcf"), "snpeff"))
+    sql.import_reader(conn, FakeReader())
     return conn
+
+
+def test_plugin(qtbot, conn):
+
+    plugin = widgets.VariantViewWidget()
+    plugin.mainwindow = utils.create_mainwindow()
+    plugin.on_open_project(conn)
+    plugin.on_refresh()
+    qtbot.addWidget(plugin)
 
 
 def test_model_load(qtmodeltester, qtbot, conn):
@@ -29,13 +39,11 @@ def test_model_load(qtmodeltester, qtbot, conn):
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # Load asynchronously
-    with qtbot.waitSignals(
-        [model.variant_loaded, model.count_loaded], timeout=5000
-    ) as blocker:
+    with qtbot.waitSignals([model.variant_loaded, model.count_loaded], timeout=10000) as blocker:
         model.load()
 
     # Test default variants !
-    assert model.total == 11
+    assert model.total == 3
     assert model.rowCount() == model.total
     assert model.columnCount() == len(model.fields)
     qtmodeltester.check(model)
@@ -45,18 +53,16 @@ def test_model_pagination(qtbot, conn):
 
     model = widgets.VariantModel()
     model.conn = conn
-    model.limit = 6
+    model.limit = 2
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # Load asynchronously
-    with qtbot.waitSignals(
-        [model.variant_loaded, model.count_loaded], timeout=5000
-    ) as blocker:
+    with qtbot.waitSignals([model.variant_loaded, model.count_loaded], timeout=10000) as blocker:
         model.load()
 
     # Test default variants !
-    assert model.total == 11
-    assert model.rowCount() == 6
+    assert model.total == 3
+    assert model.rowCount() == 2
     assert model.page == 1
     assert model.pageCount() == 2
 
@@ -65,30 +71,30 @@ def test_model_pagination(qtbot, conn):
     assert model.hasPage(2)
     model.nextPage()
 
-    with qtbot.waitSignal(model.load_finished, timeout=5000):
+    with qtbot.waitSignal(model.load_finished, timeout=None):
         model.load()
 
-    assert model.total == 11
-    assert model.rowCount() == 5
+    assert model.total == 3
+    assert model.rowCount() == 1
     assert model.page == 2
 
     assert not model.hasPage(3)
 
     # Move to previous page
     # model.previousPage()
-    # with qtbot.waitSignal(model.load_finished, timeout=5000):
+    # with qtbot.waitSignal(model.load_finished, timeout=10000):
     #     model.load()
     # assert model.page == 1
 
     # #  Move to last page
     # model.lastPage()
-    # with qtbot.waitSignal(model.load_finished, timeout=5000):
+    # with qtbot.waitSignal(model.load_finished, timeout=10000):
     #     model.load()
 
     # assert model.page == 2
 
     # # Move to first page
-    # with qtbot.waitSignal(model.load_finished, timeout=5000):
+    # with qtbot.waitSignal(model.load_finished, timeout=10000):
     #     model.firstPage()
     # assert model.page == 1
 
@@ -100,7 +106,7 @@ def test_model_data(qtbot, conn):
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # Load asynchronously
-    with qtbot.waitSignal(model.load_finished, timeout=5000) as blocker:
+    with qtbot.waitSignal(model.load_finished, timeout=10000) as blocker:
         model.load()
 
     #  Test read variant
@@ -126,11 +132,11 @@ def test_model_sort(qtbot, conn):
     model.fields = ["chr", "pos", "ref", "alt"]
 
     # First load data
-    with qtbot.waitSignal(model.load_finished, timeout=5000):
+    with qtbot.waitSignal(model.load_finished, timeout=10000):
         model.load()
 
     # Then Sort position ( colonne 2 )
-    with qtbot.waitSignal(model.load_finished, timeout=5000) as blocker:
+    with qtbot.waitSignal(model.load_finished, timeout=10000) as blocker:
         model.sort(2, QtCore.Qt.DescendingOrder)
 
 
@@ -140,6 +146,6 @@ def test_view(qtbot, conn):
     view.conn = conn
 
     # with qtbot.waitSignals(
-    #     [view.model.variant_loaded, view.model.count_loaded], timeout=5000
+    #     [view.model.variant_loaded, view.model.count_loaded], timeout=10000
     # ) as blocker:
     #     view.load()

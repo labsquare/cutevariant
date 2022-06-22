@@ -3,22 +3,29 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 import typing
 
+from cutevariant.gui.ficon import FIcon
+
 # Tags {
 #     "name":"tags name",
 #     "color":"color",
 #     "description": "sdfsdf"
 # }
 
+LOCKED_SECTION = ["samples"]
+
 
 class ClassificationDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, section=None):
         super().__init__()
+
+        self.section = section
 
         self.number_edit = QLineEdit()
         self.number_edit.setPlaceholderText("Classification id")
         self.number_edit.setValidator(QIntValidator())
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("Classification Name ...")
+        self.lock_edit = QCheckBox(self.tr("Locked Classification"))
         self.color_edit = QPushButton()
         self.descr_edit = QTextEdit()
         self.descr_edit.setPlaceholderText("Description ...")
@@ -28,6 +35,8 @@ class ClassificationDialog(QDialog):
         form_layout = QVBoxLayout()
         form_layout.addWidget(self.number_edit)
         form_layout.addWidget(self.name_edit)
+        if self.section in LOCKED_SECTION:
+            form_layout.addWidget(self.lock_edit)
         form_layout.addWidget(self.color_edit)
 
         v_layout = QVBoxLayout(self)
@@ -46,6 +55,7 @@ class ClassificationDialog(QDialog):
 
         self.number_edit.setText(str(classification.get("number", 0)))
         self.name_edit.setText(str(classification.get("name", "")))
+        self.lock_edit.setChecked(bool(classification.get("lock", False)))
         self.descr_edit.setPlainText(str(classification.get("description", "")))
         self._set_color(classification.get("color", "black"))
 
@@ -54,11 +64,13 @@ class ClassificationDialog(QDialog):
         classification = {}
         classification["number"] = int(self.number_edit.text())
         classification["name"] = self.name_edit.text()
+        classification["lock"] = self.lock_edit.isChecked() or False
         classification["description"] = self.descr_edit.toPlainText()
         classification["color"] = self.color_edit.text()
         return classification
 
     def _on_select_color(self):
+
         color = QColorDialog.getColor()
 
         if color:
@@ -75,26 +87,24 @@ class ClassificationDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-    def paint(
-        self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
-    ):
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
 
-        if index.column() == 0:
+        # if index.column() == 0:
 
-            text = str(index.data(Qt.DisplayRole))
-            color = index.model().classification(index)["color"]
-            metrics = QFontMetrics(painter.font())
-            rect = metrics.boundingRect(text)
-            rect.moveCenter(option.rect.center())
-            rect = rect.adjusted(-3, -3, 3, 3)
-            painter.setBrush(QBrush(color))
-            painter.setPen(Qt.NoPen)
-            painter.drawRoundedRect(rect, 2, 2)
-            painter.setPen(QPen("white"))
-            painter.drawText(rect, Qt.AlignCenter, text)
+        #     text = str(index.data(Qt.DisplayRole))
+        #     color = index.model().classification(index)["color"]
+        #     metrics = QFontMetrics(painter.font())
+        #     rect = metrics.boundingRect(text)
+        #     rect.moveCenter(option.rect.center())
+        #     rect = rect.adjusted(-3, -3, 3, 3)
+        #     painter.setBrush(QBrush(color))
+        #     painter.setPen(Qt.NoPen)
+        #     painter.drawRoundedRect(rect, 2, 2)
+        #     painter.setPen(QPen("white"))
+        #     painter.drawText(rect, Qt.AlignCenter, text)
 
-        else:
-            return super().paint(painter, option, index)
+        #        else:
+        return super().paint(painter, option, index)
 
 
 class ClassificationModel(QAbstractTableModel):
@@ -104,10 +114,14 @@ class ClassificationModel(QAbstractTableModel):
         self._headers = ["Number", "Name"]
 
     def rowCount(self, parent=QModelIndex()):
-        return len(self._data)
+        if parent == QModelIndex():
+            return len(self._data)
+        return 0
 
     def columnCount(self, parent=QModelIndex()):
-        return 2
+        if parent == QModelIndex():
+            return 2
+        return 0
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole):
 
@@ -115,16 +129,18 @@ class ClassificationModel(QAbstractTableModel):
             return None
 
         if role == Qt.DisplayRole:
-            if index.column() == 0:
-                return self._data[index.row()]["number"]
             if index.column() == 1:
                 return self._data[index.row()]["name"]
 
+            if index.column() == 0:
+                return self._data[index.row()]["number"]
+
+        if role == Qt.DecorationRole and index.column() == 0:
+            return QIcon(FIcon(0xF012F, self._data[index.row()]["color"]))
+
         return None
 
-    def headerData(
-        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
-    ):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole):
 
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self._headers[section]
@@ -167,12 +183,14 @@ class ClassificationEditor(QWidget):
     DESCRIPTION_ROLE = Qt.UserRole + 1
     NUMBER_ROLE = Qt.UserRole + 2
 
-    def __init__(self, parent=None):
+    def __init__(self, section=None):
         super().__init__()
 
         self.model = ClassificationModel()
 
         self.delegate = ClassificationDelegate()
+
+        self.section = section
 
         self.view = QTableView()
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -180,7 +198,10 @@ class ClassificationEditor(QWidget):
         self.view.setItemDelegate(self.delegate)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setShowGrid(False)
         self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.horizontalHeader().hide()
+        self.view.setAlternatingRowColors(True)
         self.view.verticalHeader().hide()
         # self.view.selectionModel().selectionChanged.connect(self._on_selection_changed)
 
@@ -207,7 +228,7 @@ class ClassificationEditor(QWidget):
 
     def _on_add_classification(self):
 
-        dialog = ClassificationDialog()
+        dialog = ClassificationDialog(section=self.section)
         if dialog.exec() == QDialog.Accepted:
             classification = dialog.get_classification()
             self.model.add_classification(classification)
@@ -217,7 +238,7 @@ class ClassificationEditor(QWidget):
         current_index = self.view.selectionModel().currentIndex()
         classification = self.model.classification(current_index)
 
-        dialog = ClassificationDialog()
+        dialog = ClassificationDialog(section=self.section)
         dialog.set_classification(classification)
         if dialog.exec() == QDialog.Accepted:
             classification = dialog.get_classification()
@@ -231,6 +252,7 @@ class ClassificationEditor(QWidget):
 
     def set_classifications(self, classifications: typing.List[dict]):
         self.model.set_classifications(classifications)
+        self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
     def get_classifications(self):
         return self.model.get_classifications()

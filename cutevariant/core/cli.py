@@ -137,7 +137,10 @@ def select(args, conn):
     if cmd["cmd"] in ("select_cmd",) and not args.to_selection:
         display_sql_results((i.values() for i in ret), ["id"] + cmd["fields"])
 
-    if cmd["cmd"] in ("drop_cmd", "import_cmd", "create_cmd", "set_cmd", "bed_cmd") or args.to_selection:
+    if (
+        cmd["cmd"] in ("drop_cmd", "import_cmd", "create_cmd", "set_cmd", "bed_cmd")
+        or args.to_selection
+    ):
         # PS: to_selection is used to detect select_cmd with selection creation
         display_query_status(ret)
 
@@ -185,11 +188,15 @@ the arguments.""",
         """,
     )
     createdb_parser.add_argument("-i", "--input", help="VCF file path", required=True)
-    createdb_parser.add_argument("-p", "--pedfile", help="A ped file describing the family relations between the samples.")
+    createdb_parser.add_argument(
+        "-p", "--pedfile", help="A ped file describing the family relations between the samples."
+    )
     createdb_parser.set_defaults(func=create_db)
 
     # Show parser ##############################################################
-    show_parser = sub_parser.add_parser("show", help="Display table content", parents=[parent_parser])
+    show_parser = sub_parser.add_parser(
+        "show", help="Display table content", parents=[parent_parser]
+    )
     show_parser.add_argument(
         "table",
         choices=["fields", "selections", "samples", "wordsets"],
@@ -198,7 +205,9 @@ the arguments.""",
     show_parser.set_defaults(func=show)
 
     # Remove parser ############################################################
-    remove_parser = sub_parser.add_parser("remove", help="remove selection", parents=[parent_parser])
+    remove_parser = sub_parser.add_parser(
+        "remove", help="remove selection", parents=[parent_parser]
+    )
     remove_parser.add_argument("names", nargs="+", help="Name(s) of selection(s).")
     remove_parser.set_defaults(func=remove)
 
@@ -239,7 +248,9 @@ the arguments.""",
     #     action="store_true",
     #     help="Group SELECT query by...(chr,pos,ref,alt).",
     # )
-    select_parser.add_argument("-s", "--to-selection", help="Save SELECT query into a selection name.")
+    select_parser.add_argument(
+        "-s", "--to-selection", help="Save SELECT query into a selection name."
+    )
     select_parser.set_defaults(func=select)
 
     # Set parser ###############################################################

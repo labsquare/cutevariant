@@ -8,7 +8,7 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 
 
-from cutevariant.gui.widgets import FieldsEditorWidget
+from cutevariant.gui.widgets import FieldsWidget
 from cutevariant.core.writer import (
     AbstractWriter,
     VcfWriter,
@@ -16,8 +16,6 @@ from cutevariant.core.writer import (
     BedWriter,
     PedWriter,
 )
-
-import cutevariant.commons as cm
 
 
 from cutevariant.core import sql
@@ -48,9 +46,7 @@ class ExportDialog(QDialog):
         self.filters = filters
         self.conn = conn
 
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Cancel | QDialogButtonBox.Save
-        )
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Save)
         self.vlayout = QVBoxLayout(self)
 
         self.vlayout.addWidget(self.button_box)
@@ -112,17 +108,11 @@ class BedExportDialog(ExportDialog):
     def __init__(self, conn, filename, fields, source, filters, parent=None):
         super().__init__(conn, filename, fields, source, filters, parent)
         self.set_central_widget(
-            QLabel(
-                self.tr(
-                    "Will export BED file (tab-separated file with CHR, START, END)"
-                )
-            )
+            QLabel(self.tr("Will export BED file (tab-separated file with CHR, START, END)"))
         )
 
     def save(self):
-        writer = BedWriter(
-            self.conn, self.filename, self.fields, self.source, self.filters
-        )
+        writer = BedWriter(self.conn, self.filename, self.fields, self.source, self.filters)
 
         success = self.save_from_writer(writer, "Saving BED file")
         if success:
@@ -179,9 +169,7 @@ class CsvExportDialog(ExportDialog):
                 self, self.tr("Error"), self.tr("No file name set. Nothing to save")
             )
 
-        writer = CsvWriter(
-            self.conn, self.filename, self.fields, self.source, self.filters
-        )
+        writer = CsvWriter(self.conn, self.filename, self.fields, self.source, self.filters)
         writer.separator = self.combo.currentData()
         success = self.save_from_writer(writer, "Saving CSV file")
         if success:
@@ -240,9 +228,7 @@ class VcfExportDialog(ExportDialog):
         self.set_central_widget(self.group_box)
 
     def save(self):
-        writer = VcfWriter(
-            self.conn, self.filename, self.fields, self.source, self.filters
-        )
+        writer = VcfWriter(self.conn, self.filename, self.fields, self.source, self.filters)
         success = self.save_from_writer(writer, "Exporting to VCF")
 
         if success:
@@ -304,17 +290,11 @@ class TestWindow(QMainWindow):
         self.combo_chose_format.addItems(ExportDialogFactory.get_supported_formats())
 
         self.label_state = QLabel(
-            self.tr(
-                "No database loaded yet (File -> Open to load variant sql database)"
-            )
+            self.tr("No database loaded yet (File -> Open to load variant sql database)")
         )
-        self.label_fields = QLabel(
-            self.tr("Please enter the fields to export (one per line)")
-        )
+        self.label_fields = QLabel(self.tr("Please enter the fields to export (one per line)"))
         self.text_edit_fields = QTextEdit("", self)
-        self.label_source = QLabel(
-            self.tr("Please chose the source you want to export from")
-        )
+        self.label_source = QLabel(self.tr("Please chose the source you want to export from"))
 
         self.combo_chose_source = QComboBox(self)
 

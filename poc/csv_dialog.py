@@ -9,10 +9,10 @@ from fields_selection_widget import FieldsEditorWidget
 
 from cutevariant.core.writer import CsvWriter
 
-import cutevariant.commons as cm
+import cutevariant.constants as cst
 import cutevariant.core.command as cmd
 
-LOGGER = cm.logger()
+from cutevariant import LOGGER
 
 
 class CSVDialog(AbstractWriterDialog):

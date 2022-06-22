@@ -15,9 +15,7 @@ READERS = [
 ]
 
 
-@pytest.mark.parametrize(
-    "reader", READERS, ids=[str(i.__class__.__name__) for i in READERS]
-)
+@pytest.mark.parametrize("reader", READERS, ids=[str(i.__class__.__name__) for i in READERS])
 def test_import(reader):
     conn = sql.get_sql_connection(":memory:")
     sql.import_reader(conn, reader)
@@ -31,6 +29,9 @@ def test_import_pedfile():
     sql.import_pedfile(conn, "examples/test.snpeff.pedigree.tfam")
 
     samples = [dict(row) for row in conn.execute("SELECT * FROM samples")]
+    # remove tags field due to changing date value (not tracable)
+    for sample in samples:
+        sample.pop("tags")
     print("Found samples:", samples)
 
     expected_first_sample = {
@@ -41,9 +42,10 @@ def test_import_pedfile():
         "mother_id": 1,
         "sex": 2,
         "phenotype": 1,
-        "valid": 0,
+        "classification": 0,
         "comment": "",
-        "tags": "",
+        "count_validation_negative_variant": 0,
+        "count_validation_positive_variant": 0,
     }
     expected_second_sample = {
         "id": 2,
@@ -53,9 +55,10 @@ def test_import_pedfile():
         "mother_id": 0,
         "sex": 1,
         "phenotype": 2,
-        "valid": 0,
+        "classification": 0,
         "comment": "",
-        "tags": "",
+        "count_validation_negative_variant": 0,
+        "count_validation_positive_variant": 0,
     }
 
     # Third sample is not conform

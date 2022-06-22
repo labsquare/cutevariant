@@ -1,125 +1,13 @@
 # Standard imports
-from logging.handlers import RotatingFileHandler
 import logging
-import datetime as dt
 import re
 import json
-import tempfile
 import os
-from pkg_resources import resource_filename
+import shutil
 
 from .bgzf import BgzfBlocks
 
-# Misc
-MAX_RECENT_PROJECTS = 5
-MIN_COMPLETION_LETTERS = 1
-DEFAULT_SELECTION_NAME = "variants"
-# version from which database files are supported (included)
-MIN_AUTHORIZED_DB_VERSION = "0.2.0"
-
-
-# ACMG Classification
-# CLASSIFICATION = {
-#     0: "Unclassified",
-#     1: "Benin",
-#     2: "Likely benin",
-#     3: "Variant of uncertain significance",
-#     4: "Likely pathogenic",
-#     5: "Pathogenic",
-# }
-
-# CLASSIFICATION_ICONS = {
-#     0: 0xF03A1,
-#     1: 0xF03A4,
-#     2: 0xF03A7,
-#     3: 0xF03AA,
-#     4: 0xF03AD,
-#     5: 0xF03B1,
-# }
-
-# SAMPLE_VARIANT_CLASSIFICATION = {
-#     0: "Unclassified",
-#     1: "Verification required",
-#     2: "Validated",
-#     3: "Rejected",
-# }
-
-# SAMPLE_CLASSIFICATION = {
-#     0: "Unlock",
-#     1: "Lock",
-#     2: "Rejected",
-# }
-
-# SAMPLE_VARIANT_CLASSIFICATION_COLOR = {
-#     0: "gray",
-#     1: "orange",
-#     2: "green"
-# }
-
-OPERATORS_PY_2_SQL = {
-    "$eq": "=",
-    "$gt": ">",
-    "$gte": ">=",
-    "$lt": "<",
-    "$lte": "<=",
-    "$in": "IN",
-    "$ne": "!=",
-    "$nin": "NOT IN",
-    "$regex": "REGEXP",
-    "$and": "AND",
-    "$or": "OR",
-}
-
-OPERATORS_SQL_2_PY = {
-    "=": "$eq",
-    ">": "$gt",
-    ">=": "$gte",
-    "<": "$lt",
-    "<=": "$lte",
-    "IN": "$in",
-    "!=": "$ne",
-    "NOT IN": "$nin",
-    "~": "$regexp",
-    "AND": "$and",
-    "OR": "$or",
-}
-
-# Genotypes
-GENOTYPE_ICONS = {-1: 0xF10D3, 0: 0xF0766, 1: 0xF0AA1, 2: 0xF0AA5}
-
-GENOTYPE_DESC = {
-    -1: "Unknown genotype",
-    0: "Homozygous wild",
-    1: "Heterozygous",
-    2: "Homozygous muted",
-}
-
-# Paths
-DIR_LOGS = tempfile.gettempdir() + "/"
-
-DIR_ASSETS = resource_filename(__name__, "assets/")  # current package name
-DIR_TRANSLATIONS = DIR_ASSETS + "i18n/"
-DIR_FONTS = DIR_ASSETS + "fonts/"
-DIR_ICONS = DIR_ASSETS + "icons/"
-DIR_STYLES = DIR_ASSETS + "styles/"
-
-BASIC_STYLE = "Bright"
-FONT_FILE = DIR_FONTS + "materialdesignicons-webfont.ttf"
-
-
-REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"
-WIKI_URL = "https://github.com/labsquare/cutevariant/wiki"
-
-# Logging
-log_NAME = "cutevariant"
-LOG_LEVEL = "INFO"
-LOG_LEVELS = {
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-    "notset": logging.NOTSET,
-}
+from PySide6.QtGui import QColor
 
 ################################################################################
 def create_logger():
@@ -155,6 +43,15 @@ def is_gz_file(filepath):
     """Return a boolean according to the compression state of the file"""
     with open(filepath, "rb") as test_f:
         return test_f.read(3) == b"\x1f\x8b\x08"
+
+
+def create_fake_conn():
+    from cutevariant.core.reader import FakeReader
+    from cutevariant.core import sql
+
+    conn = sql.get_sql_connection(":memory:")
+    sql.import_reader(conn, FakeReader())
+    return conn
 
 
 def get_uncompressed_size(filepath):
@@ -201,6 +98,12 @@ def snake_to_camel(name: str) -> str:
 
     Returns:
         str: a camel string like: QueryView
+
+
+    >>> snake_to_camel("query_view")
+    'QueryView'
+
+
     """
     return "".join([i.capitalize() for i in name.split("_")])
 
@@ -230,3 +133,78 @@ def is_json_file(filename):
             return False
 
     return True
+
+
+def contrast_color(color: QColor, factor=200):
+
+    luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255
+
+    if luminance > 0.5:
+        new_color = color.darker(factor)
+    else:
+        new_color = color.lighter(factor)
+
+    return new_color
+
+
+def recursive_overwrite(src: str, dest: str, ignore=None):
+    """Credits to https://stackoverflow.com/a/15824216
+    Recursively copy a file or directory, overwriting files if they exist
+
+    Args:
+        src (_type_): source file or directory
+        dest (_type_): destination
+        ignore (_type_, optional): ignored files
+    """
+    if os.path.isdir(src):
+        if not os.path.isdir(dest):
+            os.makedirs(dest)
+        files = os.listdir(src)
+        if ignore is not None:
+            ignored = ignore(src, files)
+        else:
+            ignored = set()
+        for f in files:
+            if f not in ignored:
+                recursive_overwrite(os.path.join(src, f), os.path.join(dest, f), ignore)
+    else:
+        shutil.copyfile(src, dest)
+
+
+def find_variant_name(conn, variant_id: int, troncate=False, troncate_len: int = 40):
+    """Find variant name from annotations and a pattern in settings
+
+    Args:
+        conn: database connexion
+        variant_id (int): variant ID
+        troncate (bool, optional): If name need to be troncated
+        troncate_len (int, optional): max len of variant name if need to be troncated  
+    """
+    from cutevariant.config import Config
+    from cutevariant.core import sql
+
+    if not conn:
+        return "unknown"
+
+    # Get variant_name_pattern
+    config = Config("variables") or {}
+    variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
+
+    # Get fields
+    if variant_id:
+        with_annotations = re.findall("ann.", variant_name_pattern)
+        variant = sql.get_variant(conn, variant_id, with_annotations=with_annotations)
+        if len(variant["annotations"]) and with_annotations:
+            for ann in variant["annotations"][0]:
+                variant["annotations___" + str(ann)] = variant["annotations"][0][ann]
+            variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+        variant_name = variant_name_pattern.format(**variant)
+    else:
+        variant_name = "unknown"
+
+    # Troncate variant name
+    if troncate and len(variant_name) > troncate_len:
+        troncate_position = int(troncate_len / 2)
+        variant_name = variant_name[0:troncate_position] + "..." + variant_name[-troncate_position:]
+    
+    return variant_name

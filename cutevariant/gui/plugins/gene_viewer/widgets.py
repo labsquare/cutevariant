@@ -334,7 +334,9 @@ class GeneView(QAbstractScrollArea):
                 painter.drawRect(exon_rect)
                 color = self.palette().color(QPalette.Highlight)
 
-                linearGrad = QLinearGradient(QPoint(0, exon_rect.top()), QPoint(0, exon_rect.bottom()))
+                linearGrad = QLinearGradient(
+                    QPoint(0, exon_rect.top()), QPoint(0, exon_rect.bottom())
+                )
                 linearGrad.setColorAt(0, color)
                 linearGrad.setColorAt(1, color.darker())
                 brush = QBrush(linearGrad)
@@ -393,9 +395,6 @@ class GeneView(QAbstractScrollArea):
 
             for index, rect in rects_to_draw[::-1]:
                 if index == self.selected_exon:
-                    painter.setBrush(QBrush(self.palette().color(QPalette.Highlight)))
-
-                else:
                     painter.setBrush(QBrush(self.palette().color(QPalette.Highlight)))
 
                 pen = QPen(self.palette().color(QPalette.Text))
@@ -501,7 +500,9 @@ class GeneView(QAbstractScrollArea):
                     self.area.center().y() - self.cds_height / 2,
                 )
 
-                linearGrad = QLinearGradient(QPoint(0, cds_rect.top()), QPoint(0, cds_rect.bottom()))
+                linearGrad = QLinearGradient(
+                    QPoint(0, cds_rect.top()), QPoint(0, cds_rect.bottom())
+                )
                 linearGrad.setColorAt(0, QColor("#194980"))
                 linearGrad.setColorAt(1, QColor("#194980").darker(400))
                 brush = QBrush(linearGrad)
@@ -806,13 +807,14 @@ class GeneViewerWidget(plugin.PluginWidget):
 
     # LOCATION = plugin.FOOTER_LOCATION
     ENABLE = True
-    REFRESH_ONLY_VISIBLE = False
+    REFRESH_ONLY_VISIBLE = True
     REFRESH_STATE_DATA = {"current_variant"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Gene Viewer"))
+        self.setWindowIcon(FIcon(0xF0684))
 
         self.view = GeneView()
         # annconn = sqlite3.connect(
@@ -866,7 +868,9 @@ class GeneViewerWidget(plugin.PluginWidget):
         main_layout.addLayout(self.stack_layout)
 
         # Connect comboboxes to their respective callbacks
-        self.exon_combo.activated.connect(lambda x: self.view.zoom_to_exon(self.exon_combo.currentData()))
+        self.exon_combo.activated.connect(
+            lambda x: self.view.zoom_to_exon(self.exon_combo.currentData())
+        )
         self.gene_name_combo.currentTextChanged.connect(self.on_selected_gene_changed)
         self.transcript_name_combo.currentTextChanged.connect(self.on_selected_transcript_changed)
 
@@ -929,7 +933,9 @@ class GeneViewerWidget(plugin.PluginWidget):
         if transcript_field.split(".")[0] == "ann":
             if "annotations" in self.current_variant:
                 if transcript_field.split(".")[1] in self.current_variant["annotations"][0]:
-                    transcript = self.current_variant["annotations"][0][transcript_field.split(".")[1]].split(".")[0]
+                    transcript = self.current_variant["annotations"][0][
+                        transcript_field.split(".")[1]
+                    ].split(".")[0]
         # transcript from common field
         else:
             if transcript_field in self.current_variant:
@@ -967,7 +973,14 @@ class GeneViewerWidget(plugin.PluginWidget):
         """Called whenever the selected gene changes. Allows the user to select the transcript of interest."""
         if self.gene_conn:
             transcript_names = (
-                [s["transcript_name"] for s in self.gene_conn.execute(f"SELECT transcript_name FROM genes WHERE gene = '{self.selected_gene}'")] if self.selected_gene is not None else []
+                [
+                    s["transcript_name"]
+                    for s in self.gene_conn.execute(
+                        f"SELECT transcript_name FROM genes WHERE gene = '{self.selected_gene}'"
+                    )
+                ]
+                if self.selected_gene is not None
+                else []
             )
 
             self.transcript_name_combo.clear()
@@ -1004,6 +1017,9 @@ class GeneViewerWidget(plugin.PluginWidget):
         self.update_view()
 
     def update_view(self):
+
+        if not self.current_variant:
+            return
 
         # Udpate gene view
         gene = self.gene_name_combo.currentText()

@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
 
 # Custom imports
 from cutevariant.gui.ficon import FIcon
-from cutevariant import commons as cm
+from cutevariant import constants as cst
 
 from cutevariant import LOGGER
 
@@ -44,7 +44,7 @@ class MarkdownEditor(QWidget):
         super().__init__(parent)
 
         self.setWindowTitle("Cutevariant - " + self.tr("Comment editor"))
-        self.setWindowIcon(QIcon(cm.DIR_ICONS + "app.png"))
+        self.setWindowIcon(QIcon(cst.DIR_ICONS + "app.png"))
 
         self.stack_widget = QStackedWidget()
 
@@ -77,23 +77,17 @@ class MarkdownEditor(QWidget):
         self.act_redo.setShortcut(QKeySequence.Redo)
         self.editor_actions.addAction(self.act_redo)
 
-        self.act_bold = self.toolbar.addAction(
-            self.tr("bold"), lambda: self.infix("**")
-        )
+        self.act_bold = self.toolbar.addAction(self.tr("bold"), lambda: self.infix("**"))
         self.act_bold.setIcon(FIcon(0xF0264))
         self.act_bold.setShortcut(QKeySequence("CTRL+B"))
         self.editor_actions.addAction(self.act_bold)
 
-        self.act_italic = self.toolbar.addAction(
-            self.tr("italic"), lambda: self.infix("*")
-        )
+        self.act_italic = self.toolbar.addAction(self.tr("italic"), lambda: self.infix("*"))
         self.act_italic.setIcon(FIcon(0xF0277))
         self.act_italic.setShortcut(QKeySequence("CTRL+I"))
         self.editor_actions.addAction(self.act_italic)
 
-        self.act_heading = self.toolbar.addAction(
-            self.tr("insert title"), lambda: self.heading()
-        )
+        self.act_heading = self.toolbar.addAction(self.tr("insert title"), lambda: self.heading())
         self.act_heading.setShortcut(QKeySequence("CTRL+H"))
         self.act_heading.setIcon(FIcon(0xF0274))
         self.editor_actions.addAction(self.act_heading)
@@ -245,11 +239,11 @@ class MarkdownDialog(QDialog):
 if __name__ == "__main__":
     import sys
     from cutevariant.gui.ficon import setFontPath
-    import cutevariant.commons as cm
+    import cutevariant.constants as cst
 
     app = QApplication(sys.argv)
 
-    setFontPath(cm.FONT_FILE)
+    setFontPath(cst.FONT_FILE)
 
     edit = MarkdownDialog()
 
