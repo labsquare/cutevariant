@@ -37,6 +37,7 @@ class ExportDialog(QDialog):
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
+        selected_samples=[],
         parent=None,
     ):
         super().__init__(parent)
@@ -44,6 +45,7 @@ class ExportDialog(QDialog):
         self.fields = fields
         self.source = source
         self.filters = filters
+        self.samples = selected_samples
         self.conn = conn
 
         self.button_box = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Save)
@@ -105,8 +107,8 @@ class ExportDialog(QDialog):
 class BedExportDialog(ExportDialog):
     """Dialog to export database to a bed file"""
 
-    def __init__(self, conn, filename, fields, source, filters, parent=None):
-        super().__init__(conn, filename, fields, source, filters, parent)
+    def __init__(self, conn, filename, fields, source, filters, selected_samples, parent=None):
+        super().__init__(conn, filename, fields, source, filters, selected_samples, parent)
         self.set_central_widget(
             QLabel(self.tr("Will export BED file (tab-separated file with CHR, START, END)"))
         )
@@ -131,9 +133,10 @@ class CsvExportDialog(ExportDialog):
         fields,
         source,
         filters,
+        selected_samples,
         parent=None,
     ):
-        super().__init__(conn, filename, fields, source, filters, parent)
+        super().__init__(conn, filename, fields, source, filters, selected_samples, parent)
 
         form_layout = QFormLayout()
         self.combo = QComboBox()
@@ -181,11 +184,11 @@ class CsvExportDialog(ExportDialog):
 class PedExportDialog(ExportDialog):
     """Dialog to export database to a bed file"""
 
-    def __init__(self, conn, filename, fields, source, filters, parent=None):
-        super().__init__(conn, filename, fields, source, filters, parent)
+    def __init__(self, conn, filename, fields, source, filters, selected_samples, parent=None):
+        super().__init__(conn, filename, fields, source, filters, selected_samples, parent)
 
     def save(self):
-        writer = PedWriter(self.conn, self.filename)
+        writer = PedWriter(self.conn, self.filename, self.samples)
 
         success = self.save_from_writer(writer, "Saving PED file")
         if success:
@@ -206,9 +209,10 @@ class VcfExportDialog(ExportDialog):
         fields,
         source,
         filters,
+        samples,
         parent=None,
     ):
-        super().__init__(conn, filename, fields, source, filters, parent)
+        super().__init__(conn, filename, fields, source, filters, samples, parent)
 
         self.group_box = QGroupBox()
         self.group_box.setTitle(self.tr("The following fields will be exported"))
@@ -228,7 +232,7 @@ class VcfExportDialog(ExportDialog):
         self.set_central_widget(self.group_box)
 
     def save(self):
-        writer = VcfWriter(self.conn, self.filename, self.fields, self.source, self.filters)
+        writer = VcfWriter(self.conn, self.filename, self.fields, self.source, self.filters, self.samples)
         success = self.save_from_writer(writer, "Exporting to VCF")
 
         if success:
@@ -255,6 +259,7 @@ class ExportDialogFactory:
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
+        samples=[],
     ):
         DialogClass = cls.FORMATS.get(format_name)
         dialog = DialogClass(
@@ -263,6 +268,7 @@ class ExportDialogFactory:
             fields,
             source,
             filters,
+            samples,
         )
 
         return dialog

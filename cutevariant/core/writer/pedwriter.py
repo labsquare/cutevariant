@@ -23,12 +23,14 @@ class PedWriter(AbstractWriter):
             writer.save(conn)
     """
 
-    def __init__(self, conn, filename):
-        super().__init__(conn, filename)
+    def __init__(self, conn, filename, samples=[]):
+        super().__init__(conn, filename, samples=samples)
 
     def async_save(self, *args, **kwargs):
 
         samples = list(sql.get_samples(self.conn))
+        if self.samples != []:
+            samples = [s for s in samples if s["name"] in self.samples]
         sample_map = dict((sample["id"], sample["name"]) for sample in samples)
 
         with open(self.filename, "w") as device:
