@@ -34,7 +34,7 @@ class FieldsModel(QAbstractListModel):
             return
 
         if role == Qt.DisplayRole:
-            return self._items[index.row()]["name"]
+            return self._items[index.row()]["field_name"]
 
         if role == Qt.ToolTipRole:
             return self._items[index.row()]["tooltip"]
