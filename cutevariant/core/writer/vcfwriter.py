@@ -32,7 +32,7 @@ class VcfWriter(AbstractWriter):
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
-        selected_samples=None
+        selected_samples=[]
     ):
         super().__init__(conn, filename, fields, source, filters, selected_samples)
 
@@ -135,7 +135,7 @@ class VcfWriter(AbstractWriter):
         sample_annotations = sql.get_genotypes(self.conn, variant_id, fields=fields)
 
         for annotations in sample_annotations:
-            if self.selected_samples != None and annotations["name"] not in self.selected_samples:
+            if self.selected_samples != [] and annotations["name"] not in self.selected_samples:
                 continue
 
             sssample = []
@@ -176,7 +176,7 @@ class VcfWriter(AbstractWriter):
 
         # Write the header (column labels) of the VCF
         samples = sql.get_samples(self.conn)
-        if self.selected_samples == None:
+        if self.selected_samples == []:
             samples_name = "\t".join([item["name"] for item in samples])
         else:
             samples_name = "\t".join([item["name"] for item in samples if item["name"] in self.selected_samples])

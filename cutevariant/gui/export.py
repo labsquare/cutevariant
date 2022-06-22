@@ -37,7 +37,7 @@ class ExportDialog(QDialog):
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
-        selected_samples=None,
+        selected_samples=[],
         parent=None,
     ):
         super().__init__(parent)
@@ -259,7 +259,7 @@ class ExportDialogFactory:
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
-        selected_samples=None,
+        selected_samples=[],
     ):
         DialogClass = cls.FORMATS.get(format_name)
         dialog = DialogClass(

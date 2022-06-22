@@ -28,7 +28,7 @@ class AbstractWriter:
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
-        selected_samples=None,
+        selected_samples=[],
     ):
 
         self.fields = fields
