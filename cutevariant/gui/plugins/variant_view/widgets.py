@@ -2022,7 +2022,7 @@ class VariantViewWidget(plugin.PluginWidget):
             dock.setVisible(not dock.isVisible())
 
     def on_vql_button_clicked(self):
-        self.mainwindow.toggle_footer_visibility
+        self.mainwindow.toggle_footer_visibility()
 
     def on_fields_changed(self, fields: list):
         if fields:
