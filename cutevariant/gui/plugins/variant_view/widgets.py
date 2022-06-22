@@ -2012,7 +2012,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.view.source_menu_changed.connect(self.on_source_changed)
         self.view.filters_menu_changed.connect(self.on_filters_changed)
 
-        self.view.vql_button_clicked.connect(self.mainwindow.toggle_footer_visibility)
+        self.view.vql_button_clicked.connect(self.on_vql_button_clicked)
 
     def show_plugin(self, name: str):
 
@@ -2020,6 +2020,9 @@ class VariantViewWidget(plugin.PluginWidget):
             print("YOO ", name)
             dock = self.mainwindow.plugins[name].parent()
             dock.setVisible(not dock.isVisible())
+
+    def on_vql_button_clicked(self):
+        self.mainwindow.toggle_footer_visibility
 
     def on_fields_changed(self, fields: list):
         if fields:
