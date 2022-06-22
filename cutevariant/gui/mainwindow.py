@@ -417,20 +417,23 @@ class MainWindow(QMainWindow):
         ## File Menu
         self.file_menu = self.menuBar().addMenu(self.tr("&File"))
         self.new_project_action = self.file_menu.addAction(
-            FIcon(0xF0415), self.tr("&New project"), self.new_project, QKeySequence.New
+            FIcon(0xF0415), self.tr("&New Project"), self.new_project, QKeySequence.New
         )
+        self.new_project_action.setToolTip(self.tr("Create a new database and import data"))
         self.open_project_action = self.file_menu.addAction(
             FIcon(0xF0DCF),
-            self.tr("&Open project..."),
+            self.tr("&Open a Project"),
             self.open_project,
             QKeySequence.Open,
         )
+        self.open_project_action.setToolTip(self.tr("Open a database"))
         self.import_file_action = self.file_menu.addAction(
-            FIcon(0xF102F),
-            self.tr("&Import file"),
+            FIcon(0xF02FA),
+            self.tr("&Import a file"),
             self.import_file,
             QKeySequence.AddTab,
         )
+        self.import_file_action.setToolTip(self.tr("Import a file into the current database"))
 
         self.toolbar.addAction(self.new_project_action)
         self.toolbar.addAction(self.open_project_action)
@@ -470,10 +473,17 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addSeparator()
 
-        self.file_menu.addAction(FIcon(0xF0193), self.tr("Save session ..."), self.on_save_session)
-        self.file_menu.addAction(
-            FIcon(0xF0770), self.tr("Restore session ..."), self.on_load_session
+        save_session_action = self.file_menu.addAction(
+            FIcon(0xF0818), self.tr("Save session ..."), self.on_save_session
         )
+        save_session_action.setToolTip(self.tr("Save current session into a file"))
+        load_session_action = self.file_menu.addAction(
+            FIcon(0xF0DCF), self.tr("Restore session ..."), self.on_load_session
+        )
+        load_session_action.setToolTip(self.tr("Load a session from a file "))
+
+        self.toolbar.addAction(save_session_action)
+        self.toolbar.addAction(load_session_action)
 
         self.file_menu.addSeparator()
         ### Misc
@@ -506,11 +516,6 @@ class MainWindow(QMainWindow):
         self.view_menu = self.menuBar().addMenu(self.tr("&View"))
         self.view_menu.addAction(self.tr("Reset widgets positions"), self.reset_ui)
         # Set toggle footer visibility action
-        show_action = self.view_menu.addAction(FIcon(0xF018D), self.tr("Show VQL editor"))
-        show_action.setCheckable(True)
-        self.toolbar.addAction(show_action)
-        show_action.setChecked(True)
-        show_action.toggled.connect(self.toggle_footer_visibility)
 
         fullscreen_action = self.view_menu.addAction(
             self.tr("Enter Full Screen"),
@@ -1055,13 +1060,17 @@ class MainWindow(QMainWindow):
             #  TODO: handle UI changes by passing UI_VERSION to saveState()
             self.app_settings.setValue("windowState", self.saveState())
 
-    def toggle_footer_visibility(self, visibility):
+    def toggle_footer_visibility(self, visibility=None):
         """Toggle visibility of the bottom toolbar and all its plugins"""
-        # self.footer_tab.setVisible(visibility)
-        if not visibility:
-            self.vsplit.setSizes([100, 0])
-        else:
-            self.vsplit.setSizes([200, 100])
+
+        if visibility is None:
+            visibility = not self.footer_tab.isVisible()
+
+        self.footer_tab.setVisible(visibility)
+        # if not visibility:
+        #     self.vsplit.setSizes([100, 0])
+        # else:
+        #     self.vsplit.setSizes([200, 100])
 
     def on_export_pressed(self):
         """

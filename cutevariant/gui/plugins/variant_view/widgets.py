@@ -802,6 +802,7 @@ class VariantView(QWidget):
     fields_menu_changed = Signal(list)
     source_menu_changed = Signal(str)
     filters_menu_changed = Signal(dict)
+    vql_button_clicked = Signal()
 
     def __init__(self, parent=None):
         """
@@ -962,20 +963,12 @@ class VariantView(QWidget):
         self.filters_button.setMenu(self.filters_menu)
         self.top_bar.addWidget(self.filters_button)
 
-        # self.source_button = ChoiceButton()
-        # self.source_button.triggered.connect(self.source_btn_clicked)
-        # self.source_button.setToolTip("Edit Source ")
-        # self.filters_button = ChoiceButton()
-        # self.filters_button.triggered.connect(self.filters_btn_clicked)
-        # self.filters_button.setToolTip("Edit Filters ")
-
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.top_bar.addWidget(spacer)
 
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.top_bar.addWidget(spacer)
+        self.show_vql = self.top_bar.addAction(FIcon(0xF018D), "Show VQL")
+        self.show_vql.triggered.connect(self.vql_button_clicked)
         # -----------Resize action ----------
 
         self.resize_action = self.top_bar.addAction(FIcon(0xF142A), self.tr("Auto resize"))
@@ -1053,7 +1046,7 @@ class VariantView(QWidget):
         presets = config["presets"] or {}
         self.fields_menu.clear()
         current_fields = self.model.fields
-        current_name = "<not set>"
+        current_name = "< not found >"
         for key, value in presets.items():
             action = self.fields_menu.addAction(QIcon(), key)
             action.setData(value)
@@ -1075,7 +1068,7 @@ class VariantView(QWidget):
         presets = config["presets"] or {}
         self.filters_menu.clear()
         current_filters = self.model.filters
-        current_name = "<not set>"
+        current_name = "< not found >"
         act = self.filters_menu.addAction("Clear all filters")
         act.setData({"$and": []})
         self.filters_menu.addSeparator()
@@ -1832,7 +1825,7 @@ class VariantView(QWidget):
         """
         Action on default doubleClick
         """
-        #self.open_editor(index)
+        # self.open_editor(index)
         self.update_favorites()
 
     def on_double_clicked_vertical_header(self, index: QModelIndex):
@@ -2018,6 +2011,8 @@ class VariantViewWidget(plugin.PluginWidget):
         self.view.fields_menu_changed.connect(self.on_fields_changed)
         self.view.source_menu_changed.connect(self.on_source_changed)
         self.view.filters_menu_changed.connect(self.on_filters_changed)
+
+        self.view.vql_button_clicked.connect(self.mainwindow.toggle_footer_visibility)
 
     def show_plugin(self, name: str):
 
