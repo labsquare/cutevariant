@@ -41,7 +41,7 @@ def display_query_status(query_result):
     exit(1)
 
 
-def create_db(args, conn):
+def create_db(args):
     if not args.db:
         # Database file is not set:
         # The output file will be based on the name of the VCF one
@@ -59,7 +59,7 @@ def create_db(args, conn):
         with create_reader(args.input) as reader:
             sql.import_reader(conn, reader)
 
-    print("Successfully created database!")
+        print("Successfully created database!")
 
 
 def show(args, conn):
@@ -274,10 +274,18 @@ the arguments.""",
 
     # Init SQL connection
     # If there is still no db defined at this point, it should mean that we are using the 'createdb' subparser
-    conn = None
-    if args.db:
+
+    # Generic subcommand, with database specified
+    if args.db and args.subparser != "createdb":
         conn = sql.get_sql_connection(args.db)
-    return args.func(args, conn)
+        return args.func(args, conn)
+    if args.subparser == "createdb":
+        return create_db(args)
+
+    print(
+        "You specified no database to open, asked for none to be created, there is nothing more I can do!"
+    )
+    return 1
 
 
 if __name__ == "__main__":
