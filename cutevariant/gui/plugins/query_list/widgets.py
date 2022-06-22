@@ -6,7 +6,8 @@ from cutevariant.gui import mainwindow, plugin
 from cutevariant.gui import MainWindow
 from cutevariant.gui.widgets import CodeEdit
 from cutevariant.gui.settings import Config
-from cutevariant.gui import FIcon, style
+from cutevariant.gui import FIcon
+import cutevariant.constants as cst
 
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
@@ -79,8 +80,8 @@ class QueryWidget(QWidget):
                     field["category"],
                     field["description"],
                 )
-                color = style.FIELD_TYPE.get(field["type"], "str")["color"]
-                icon = FIcon(style.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
+                color = cst.FIELD_TYPE.get(field["type"], "str")["color"]
+                icon = FIcon(cst.FIELD_TYPE.get(field["type"], "str")["icon"], "white")
 
                 if field["category"] == "variants":
                     self.code_edit.completer.model.add_item(name, description, icon, color)
