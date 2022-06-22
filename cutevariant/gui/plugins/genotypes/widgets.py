@@ -751,14 +751,18 @@ class GenotypesWidget(plugin.PluginWidget):
 
         genotype = self.model.get_genotype(self.view.selectionModel().selectedRows()[0].row())
 
-        if value is None:
-            value = self.sender().data()
-            text = self.sender().text()
-        else:
+        value = int(value)
+
+        if value:
             if len(self.view.selectionModel().selectedRows()) == 1:
                 genotype_classification = genotype.get("classification")
                 if genotype_classification == value:
                     value = 0
+        else:
+            try:
+                value = self.sender().data()
+            except:
+                value = 0
 
         if genotype.get("gt", None) is not None:
             rows = [i.row() for i in self.view.selectionModel().selectedRows()]
