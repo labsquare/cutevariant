@@ -21,8 +21,8 @@ class BedWriter(AbstractWriter):
                 writer.save(conn)
     """
 
-    def __init__(self, conn, filename, fields=["chr", "pos"], source="variants", filters={}):
-        super().__init__(conn, filename, fields, source, filters)
+    def __init__(self, conn, filename, fields=["chr", "pos"], source="variants", filters={}, selected_samples=None):
+        super().__init__(conn, filename, fields, source, filters, selected_samples)
 
     def async_save(self, *args, **kwargs):
         r""""""
