@@ -401,9 +401,7 @@ class VcfImportWidget(QWidget):
         return self.import_id.text()
 
     def pedfile(self):
-        _, filename = tempfile.mkstemp()
-        self.samples_widget.view.model.to_pedfile(filename)
-        return filename
+        return self.samples_widget.view.pedfile
 
     def get_ignored_fields(self):
         return self.fields_widget.model.get_ignored_fields()
