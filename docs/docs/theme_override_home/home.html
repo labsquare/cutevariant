@@ -1,8 +1,9 @@
 <!-- Custom HTML site displayed as the Home chapter -->
 
-{% extends "main.html" %}
+{% extends "base.html" %}
 {% block tabs %}
 {{ super() }}
+
 
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
@@ -31,16 +32,6 @@
 
         /* Support for IE. */
         font-feature-settings: 'liga';
-    }
-
-
-    .md-main {
-        flex-grow: 0
-    }
-
-    .md-main__inner {
-        display: flex;
-        height: 100%;
     }
 
     .tx-container {
@@ -79,10 +70,6 @@
         margin: 0 auto;
     }
 
-    .tx-hero__image {
-        width: 100%;
-    }
-
     .tx-hero .md-button {
         margin-top: .5rem;
         margin-right: .5rem;
@@ -103,47 +90,7 @@
         border-color: var(--md-accent-fg-color)
     }
 
-    .feature-item h2 svg {
-        height: 30px;
-        float: left;
-        margin-right: 10px;
-        transform: translateY(10%);
-    }
 
-    .top-hr {
-        margin-top: 42px;
-    }
-
-    .feature-item {
-        font-family: 'Lato', sans-serif;
-        font-weight: 300;
-        box-sizing: border-box;
-        padding: 0 15px;
-        word-break: break-word
-    }
-
-    .feature-item h2 {
-        color: #333;
-        font-weight: 300;
-        font-size: 25px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: normal;
-        margin-top: 20px;
-        margin-bottom: 10px;
-        font-family: inherit;
-    }
-
-    .feature-item p {
-        font-size: 16px;
-        line-height: 1.8em;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-        color: #111;
-        margin: 0 0 10px;
-        display: block;
-    }
 
     @media screen and (max-width:30em) {
         .tx-hero h1 {
@@ -198,15 +145,7 @@
             padding: 0 .2rem;
         }
 
-        .feature-item {
-            flex: 1;
-            min-width: 0;
-        }
 
-        .feature-item:hover {
-            background-color: #526cfe47;
-            border-radius: 3px;
-        }
     }
 
     .hr {
@@ -258,6 +197,73 @@
     .md-footer-social {
         padding-top: 20px;
     }
+
+    #features {
+        width: 960px;
+        margin: auto;
+    }
+
+    .feature {
+        font-family: 'Lato', sans-serif;
+        font-weight: 300;
+        box-sizing: border-box;
+        word-break: break-word;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        margin-top: 30px;
+
+
+    }
+
+    .feature > div {
+        margin-right: 10px; 
+        margin-left: 10px; 
+    }
+
+    .feature > div >  h2 {
+        color: #333;
+        font-weight: 300;
+        font-size: 25px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: normal;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-family: inherit;
+    }
+
+    .feature > div >  p {
+     font-size: 16px;
+     line-height: 1.8em;
+     text-rendering: optimizeLegibility;
+     -webkit-font-smoothing: antialiased;
+     color: #111;
+     margin: 0 0 10px;
+     display: block;
+ }
+
+ #features h1  {
+    margin-bottom: 0;
+    color: currentColor;
+    font-size: 30px;
+
+    font-family: 'Lato', sans-serif;
+
+}
+
+#footer{
+    padding-top: 20px;
+    background-image: url("images/dna_layer.png");
+    background: linear-gradient(180deg, rgba(36, 23, 46, 1) 0%, rgba(69, 44, 88, 1) 100%);
+    height: 200px
+    width:  960px;
+    display: flex
+    justify-content: flex-end
+
+}
+
 </style>
 
 
@@ -265,15 +271,17 @@
 <section class="tx-container">
     <div class="md-grid md-typeset">
         <div class="tx-hero">
-
             <div class="tx-hero__content">
                 <div class="tx-hero__title">
+
+
                     <h1> Cutevariant </h1>
                     <p>A standalone and free application to explore genetics variations from VCF file</p>
                 </div>
+
                 <div class="tx-hero__actions">
-                    <a href="{{ page.next_page.url | url }}" title="{{ page.next_page.title | striptags }}"
-                        class="md-button md-button--primary">
+
+                    <a href="introduction/" title="Introduction" class="md-button md-button--primary">
                         Get started
                     </a>
                     <a href="installation" title="Download" class="md-button">
@@ -281,87 +289,96 @@
                     </a>
                 </div>
             </div>
-            <div class="tx-hero__image">
-                <video width="100%" height="auto" playsinline loop controls="flase" autoplay="true">
-                    <source src="images/cutevariant.webm" type="video/webm">
-                </video>
-                <!-- <img src="https://raw.githubusercontent.com/labsquare/cutevariant/master/screenshot1.png"
-                    draggable="false"> -->
-            </div>
+            <img src="images/landing.png" alt="">
+
         </div>
     </div>
 </section>
 
-<!-- Main site box descriptions -->
-<div class="top-hr">
-    <div class="feature-item">
-        <h2>
-            <span class="material-icons md-48">wysiwyg</span>
-            Standalone
-        </h2>
-        <p> Doesn't require any server. Your data stays with you. Filtering is faster and you don't have the latency of
-            a web application. Easy to install on any computer using <b>Windows</b>, <b>Mac</b> or <b>Linux</b>. </p>
-    </div>
-    <div class="feature-item">
-        <h2>
-            <span class="material-icons">code</span>
-            VQL Language
-        </h2>
+<hr class="top-hr">
+
+
+<section id="features">
+    <h1> Features </h1>
+
+    <div class="feature">
+        <div>
+            <h2><span class="material-icons">wysiwyg</span>
+            Desktop Application </h2>
+            <p>
+              Cutevariant is a cross-platform desktop application used to explore genomics variation from a VCF files. It is Easy to install on any computer using Windows, Mac or Linux. Unlike other solutions, there is no need to send files to a third party. All your data stays with you. Exploring genomics variants is faster and you don't have the latency of a web application. 
+          </p>
+      </div>
+      <div><img src="images/crossplateforme.png" width="400px" alt=""></div>
+  </div>
+
+  <div class="feature">
+      <div><img src="images/github.png" width="300px" alt=""></div>
+      <div>
+        <h2><span class="material-icons">people</span>
+        Community</h2>
         <p>
-            <b>Select</b> and <b>filters</b> variants directly from a domain specific language that looks like a subset
-            of SQL. It makes possible to create all kinds of query that you could not do with any other user interface.
-            If you don't like query manually, you can always build them indirectly from plugins available from the
-            mainwindow.
-        </p>
-    </div>
-    <div class="feature-item">
-        <h2>
-            <span class="material-icons">extension</span>
-            Plugins
-        </h2>
-        <p>Cutevariant is composed entirely of <b>plugins</b>. It means that it is easily customizable at will. You can
-            create custom controllers, themes and support new file formats for importing or exporting. </p>
-    </div>
-    <div class="feature-item">
-        <h2>
-            <span class="material-icons">people</span>
-            Community
-        </h2>
-        <p>Cutevariant is a new opensource project written in <a href="https://www.python.org/"><b>Python</b></a> and <a
-                href="https://www.qt.io/qt-for-python"><b>Qt framework</b></a> and available on github. Contribution are
-            welcome. You can create new plugin and share them with the community. Since it is a new project, bug report
-            and any feedback will be highly appreciated.
+          Cutevariant is a new opensource project written in Python and Qt framework and available on github. Contribution are welcome. You can create new plugin and share them with the community. Since it is a new project, bug report and any feedback will be highly appreciated.    
 
-
-        </p>
-    </div>
+      </p>
+  </div>
 </div>
 
-
+<div class="feature">
+  <div><img src="images/import_vcf.png" width="600px" alt=""></div>
+  <div>
+    <h2><span class="material-icons">code</span>
+    Import VCF files</h2>
+    <p>
+      Cutevariant works by importing VCF file into a sqlite database. 
+      It supports Snpeff and VEP annotation. You can create a new project and incrementally import VCF files. You can then make a database of all your variants and use it to query them later.    
+  </p>
 </div>
 </div>
 
-
-<!-- Custom narrow footer -->
-<div class="md-footer-meta__inner md-grid">
-
-    <div class="feature-item">
-
-        <a
-            href="https://www.chu-brest.fr/fr/notre-offre-soins/nos-specialites/biologie/genetique-moleculaire-histocompatibilite"><img
-                src="images/CHU_brest_logo.png" /></a>
-    </div>
-
-    <div class="feature-item">
-        <a href="https://www.univ-brest.fr/umr1078/"><img src="images/inserm_logo.png" /></a>
-    </div>
-
-
-    <div class="feature-item">
-        <a href="https://www.univ-brest.fr/"><img src="images/ubo_logo.png" /></a>
-    </div>
-
+<div class="feature">
+  <div>
+    <h2><span class="material-icons">extension</span>
+    Plugins</h2>
+    <p>
+     Cutevariant is composed entirely of plugins. It means that it is easily customizable at will. You can create custom controllers, themes and support new file formats for importing or exporting. 
+     All plugins are made with Python. 
+ </p>
 </div>
+<div><img src="images/extension.png" width="600px" alt=""></div>
+</div>
+
+
+<div class="feature">
+     <div>
+         <img src="images/strasbourg.png" alt="">
+
+     </div>
+
+<div>
+    <img src="images/brest.png" alt=""> <br>
+    
+</div>
+</div>
+</div>
+
+</section>
+
+
+
+
+
+
+
+
 
 
 {% endblock %}
+
+
+
+{% block content %}{% endblock %}
+{% block footer %}{% endblock %}
+
+
+

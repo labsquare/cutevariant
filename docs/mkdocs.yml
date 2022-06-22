@@ -62,7 +62,7 @@ theme:
 
   custom_dir: docs/theme_override_home/
   include_search_page: false
-  search_index_only: true
+  search_index_only: false
 
   features:
     - navigation.tabs
