@@ -32,6 +32,7 @@ from PySide6.QtCore import (
     QCommandLineOption,
     QLibraryInfo,
     Qt,
+    QTimer,
 )
 from PySide6.QtWidgets import QApplication, QSplashScreen, QStyleFactory, QColorDialog
 from PySide6.QtGui import QPixmap, QColor
@@ -40,6 +41,7 @@ from PySide6.QtNetwork import QNetworkProxy
 # Custom imports
 from cutevariant.config import Config
 from cutevariant.gui import MainWindow, network, setFontPath, style
+from cutevariant.gui.widgets import SplashScreen
 import cutevariant.constants as cst
 from cutevariant import LOGGER
 from cutevariant import __version__
@@ -92,10 +94,10 @@ def main():
 
     LOGGER.info("Starting the GUI...")
     # Splash screen
-    splash = QSplashScreen()
-    splash.setPixmap(QPixmap(cst.DIR_ICONS + "splash.png"))
-    splash.showMessage(f"Version {__version__}")
+    splash = SplashScreen()
+
     splash.show()
+
     app.processEvents()
 
     # Check version
@@ -107,9 +109,9 @@ def main():
 
     # Display
     w = MainWindow()
-
-    w.show()
     splash.finish(w)
+    w.show()
+
     app.exec()
 
 

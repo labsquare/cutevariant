@@ -284,9 +284,9 @@ class PedView(QTableView):
 
     def __init__(self):
         super().__init__()
-        self.model = PedModel()
+        self._model = PedModel()
         self.delegate = PedDelegate()
-        self.setModel(self.model)
+        self.setModel(self._model)
         self.horizontalHeader().setStretchLastSection(True)
         self.setAlternatingRowColors(True)
         self.verticalHeader().hide()
@@ -297,12 +297,12 @@ class PedView(QTableView):
         self.outfile = None
 
     def clear(self):
-        self.model.clear()
+        self._model.clear()
 
     @property
     def samples(self):
         """Get samples (list of PED fields)"""
-        return self.model.samples_data
+        return self._model.samples_data
 
     @samples.setter
     def samples(self, samples):
@@ -311,7 +311,7 @@ class PedView(QTableView):
         Args:
             samples(list): PED fields
         """
-        self.model.set_samples(samples)
+        self._model.set_samples(samples)
 
     @Property(str)  # Qt property for QWizardPage.registerFields
     def pedfile(self):
@@ -323,5 +323,5 @@ class PedView(QTableView):
             # Same file but reused at each call
             self.outfile = tempfile.mkstemp(suffix=".ped", text=True)[1]
         # Export the PED data
-        self.model.to_pedfile(self.outfile)
+        self._model.to_pedfile(self.outfile)
         return self.outfile

@@ -49,3 +49,5 @@ from .filters_widget import (
 
 from .groupby_widget import GroupbyTable, GroupbyDialog
 from .multi_combobox import MultiComboBox
+
+from .splashscreen import SplashScreen
