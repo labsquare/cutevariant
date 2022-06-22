@@ -996,6 +996,10 @@ class MainWindow(QMainWindow):
         for name, plugin in self.plugins.items():
             session["plugins"][name] = plugin.to_json()
 
+        config_dir = os.path.dirname(filename)
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+
         with open(filename, "w") as file:
             json.dump(session, file)
 
@@ -1134,6 +1138,7 @@ class MainWindow(QMainWindow):
             fields=self.get_state_data("fields"),
             source=self.get_state_data("source"),
             filters=self.get_state_data("filters"),
+            samples=self.get_state_data("samples"),
         )
 
         # # TODO : refactor self.state

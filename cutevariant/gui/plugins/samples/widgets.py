@@ -219,6 +219,7 @@ class SampleVerticalHeader(QHeaderView):
 
     def __init__(self, parent=None):
         super().__init__(Qt.Vertical, parent)
+        self.parent = parent
 
     def sizeHint(self) -> QSize:
         """override"""
@@ -239,12 +240,21 @@ class SampleVerticalHeader(QHeaderView):
 
             style = next(i for i in self.model().classifications if i["number"] == classification)
             color = style.get("color", "white")
-            # selected_samples = self.mainwindow.get_state_data("selected_samples") or []
-            # if name in selected_samples:
-            #     icon = 0xF0133
-            # else:
-            # icon = 0xF012F # or 0xF0009 or 0xF0B55
-            icon = 0xF0009
+
+            current_source = self.parent.mainwindow.get_state_data("source") or ""
+
+            sources = sql.get_selections(self.parent.model.conn)
+            sources_samples = {
+                source["name"]: source["description"].split(",")
+                for source in sources
+                if source["description"] is not None
+            }
+            current_samples = sources_samples.get(current_source, [])
+            
+            if name in current_samples:
+                icon = 0xF0009
+            else:
+                icon = 0xF0013
 
             pen = QPen(QColor(color))
             pen.setWidth(6)
@@ -299,7 +309,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         
-        self.view.setVerticalHeader(SampleVerticalHeader(parent))
+        self.view.setVerticalHeader(SampleVerticalHeader(self))
         self.view.verticalHeader().setSectionsClickable(True)
         self.view.verticalHeader().sectionDoubleClicked.connect(self.on_double_clicked_vertical_header)
 
@@ -702,13 +712,14 @@ class SamplesWidget(plugin.PluginWidget):
             )
             self.mainwindow.set_state_data("source", source_name)
             self.mainwindow.refresh_plugins(sender=self)
-            if "source_editor" in self.mainwindow.plugins:
-                self.mainwindow.refresh_plugin("source_editor")
         else:
             self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
             self.mainwindow.refresh_plugins(sender=self)
-            if "source_editor" in self.mainwindow.plugins:
-                self.mainwindow.refresh_plugin("source_editor")
+        
+        for i in range(self.view.verticalHeader().count()):
+            self.view.verticalHeader().updateSection(i)
+        if "source_editor" in self.mainwindow.plugins:
+               self.mainwindow.refresh_plugin("source_editor")
 
     def on_add_genotypes(self, samples: list = None, refresh=True):
         """Add from a list of samples
