@@ -462,8 +462,8 @@ class SamplesWidget(plugin.PluginWidget):
 
         menu = QMenu(self)
 
-        #menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit)
-        menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_double_clicked) 
+        menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit)
+        #menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_double_clicked) 
 
         menu.addMenu(self._create_classification_menu(sample))
         if not self.is_locked(sample_id):
@@ -511,7 +511,8 @@ class SamplesWidget(plugin.PluginWidget):
         """
         Action on default doubleClick
         """
-        self.on_edit()
+        #self.on_edit()
+        self.on_show_variant()
 
     def on_double_clicked_vertical_header(self):
         """

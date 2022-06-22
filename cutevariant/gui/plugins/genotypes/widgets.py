@@ -606,7 +606,7 @@ class GenotypesWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def _on_double_clicked(self):
-        self._show_sample_variant_dialog()
+        self._on_default_classification_changed()
 
     def _on_double_clicked_vertical_header(self):
         self._show_sample_variant_dialog()
@@ -744,19 +744,43 @@ class GenotypesWidget(plugin.PluginWidget):
         else:
             self.view.hideColumn(col)
 
-    def _on_classification_changed(self):
+    def _on_classification_changed(self, value:int = None):
         """triggered from menu"""
         if not self.sender():
             return
 
-        value = self.sender().data()
-        text = self.sender().text()
+        genotype = self.model.get_genotype(self.view.selectionModel().selectedRows()[0].row())
 
-        rows = [i.row() for i in self.view.selectionModel().selectedRows()]
-        self.model.edit(rows, {"classification": value})
+        if value is None:
+            value = self.sender().data()
+            text = self.sender().text()
+        else:
+            if len(self.view.selectionModel().selectedRows()) == 1:
+                genotype_classification = genotype.get("classification")
+                if genotype_classification == value:
+                    value = 0
+
+        if genotype.get("gt", None) is not None:
+            rows = [i.row() for i in self.view.selectionModel().selectedRows()]
+            self.model.edit(rows, {"classification": value})
 
         if "samples" in self.mainwindow.plugins:
             self.mainwindow.refresh_plugin("samples")
+
+    def _on_default_classification_changed(self):
+        # default_classification_validation
+        global_variables = Config("genotypes")
+        default_classification_genotype_validation = global_variables.get("default_classification_validation", 1)
+        # genotypes classifications
+        classifications = Config("classifications")
+        genotypes_classification = classifications.get("genotypes")
+        # test if classification 1 exists, else 0
+        classification_genotype_validation = 0
+        for classification in genotypes_classification:
+            if classification.get("number",0) == default_classification_genotype_validation:
+                classification_genotype_validation = default_classification_genotype_validation
+        # change clssification
+        self._on_classification_changed(classification_genotype_validation)
 
     def _on_tags_changed(self, tags: list = []):
         """triggered from menu"""
