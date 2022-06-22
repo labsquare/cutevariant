@@ -188,7 +188,7 @@ class PedExportDialog(ExportDialog):
         super().__init__(conn, filename, fields, source, filters, selected_samples, parent)
 
     def save(self):
-        writer = PedWriter(self.conn, self.filename)
+        writer = PedWriter(self.conn, self.filename, self.selected_samples)
 
         success = self.save_from_writer(writer, "Saving PED file")
         if success:
@@ -232,7 +232,7 @@ class VcfExportDialog(ExportDialog):
         self.set_central_widget(self.group_box)
 
     def save(self):
-        writer = VcfWriter(self.conn, self.filename, self.fields, self.source, self.filters)
+        writer = VcfWriter(self.conn, self.filename, self.fields, self.source, self.filters, self.selected_samples)
         success = self.save_from_writer(writer, "Exporting to VCF")
 
         if success:
