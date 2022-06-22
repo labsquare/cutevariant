@@ -45,7 +45,7 @@ class ExportDialog(QDialog):
         self.fields = fields
         self.source = source
         self.filters = filters
-        self.selected_samples = selected_samples
+        self.samples = selected_samples
         self.conn = conn
 
         self.button_box = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Save)
@@ -188,7 +188,7 @@ class PedExportDialog(ExportDialog):
         super().__init__(conn, filename, fields, source, filters, selected_samples, parent)
 
     def save(self):
-        writer = PedWriter(self.conn, self.filename, self.selected_samples)
+        writer = PedWriter(self.conn, self.filename, self.samples)
 
         success = self.save_from_writer(writer, "Saving PED file")
         if success:
@@ -209,10 +209,10 @@ class VcfExportDialog(ExportDialog):
         fields,
         source,
         filters,
-        selected_samples,
+        samples,
         parent=None,
     ):
-        super().__init__(conn, filename, fields, source, filters, selected_samples, parent)
+        super().__init__(conn, filename, fields, source, filters, samples, parent)
 
         self.group_box = QGroupBox()
         self.group_box.setTitle(self.tr("The following fields will be exported"))
@@ -232,7 +232,7 @@ class VcfExportDialog(ExportDialog):
         self.set_central_widget(self.group_box)
 
     def save(self):
-        writer = VcfWriter(self.conn, self.filename, self.fields, self.source, self.filters, self.selected_samples)
+        writer = VcfWriter(self.conn, self.filename, self.fields, self.source, self.filters, self.samples)
         success = self.save_from_writer(writer, "Exporting to VCF")
 
         if success:
@@ -259,7 +259,7 @@ class ExportDialogFactory:
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
-        selected_samples=[],
+        samples=[],
     ):
         DialogClass = cls.FORMATS.get(format_name)
         dialog = DialogClass(
@@ -268,7 +268,7 @@ class ExportDialogFactory:
             fields,
             source,
             filters,
-            selected_samples,
+            samples,
         )
 
         return dialog

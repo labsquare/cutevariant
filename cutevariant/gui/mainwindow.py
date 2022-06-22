@@ -1134,7 +1134,7 @@ class MainWindow(QMainWindow):
             fields=self.get_state_data("fields"),
             source=self.get_state_data("source"),
             filters=self.get_state_data("filters"),
-            selected_samples=self.get_state_data("samples"),
+            samples=self.get_state_data("samples"),
         )
 
         # # TODO : refactor self.state

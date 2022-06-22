@@ -29,9 +29,9 @@ class CsvWriter(AbstractWriter):
         fields=["chr", "pos", "ref", "alt"],
         source="variants",
         filters={},
-        selected_samples=[],
+        samples=[],
     ):
-        super().__init__(conn, filename, fields, source, filters, selected_samples)
+        super().__init__(conn, filename, fields, source, filters, samples)
 
         self.separator = "\t"
 
