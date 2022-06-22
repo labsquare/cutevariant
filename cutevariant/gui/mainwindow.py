@@ -323,7 +323,7 @@ class MainWindow(QMainWindow):
             long_description = extension.get("long_description", "")
             short_description = extension.get("description", "")
             widget.setWhatsThis(long_description)
-            widget.setToolTip(short_description)
+            # widget.setToolTip(short_description)
             # Register (launch first init on some of them)
             widget.mainwindow = self
             widget.on_register(self)

@@ -941,6 +941,7 @@ class VariantView(QWidget):
         self.fields_button.setToolTip(self.tr("Select a Field Preset"))
         self.fields_button.setIcon(FIcon(0xF08DF))
         self.fields_button.setMenu(self.fields_menu)
+
         self.top_bar.addWidget(self.fields_button)
 
         self.source_button = QPushButton()
@@ -957,7 +958,7 @@ class VariantView(QWidget):
         self.filters_menu.triggered.connect(self.on_filter_menu_changed)
         self.filters_button.setFlat(True)
         self.filters_button.setIcon(FIcon(0xF0232))
-        self.filters_button.setText(self.tr("Select a filter preset"))
+        self.filters_button.setToolTip(self.tr("Select a filter preset"))
         self.filters_button.setMenu(self.filters_menu)
         self.top_bar.addWidget(self.filters_button)
 
@@ -1067,7 +1068,6 @@ class VariantView(QWidget):
             for rec in sql.get_selections(self.conn):
                 action = self.source_menu.addAction(QIcon(), rec["name"])
                 action.setData(rec["name"])
-
         self.source_menu.parent().setText(f"Source: {self.model.source}")
 
         # Load filters preset
@@ -1076,6 +1076,9 @@ class VariantView(QWidget):
         self.filters_menu.clear()
         current_filters = self.model.filters
         current_name = "<not set>"
+        act = self.filters_menu.addAction("Clear all filters")
+        act.setData({"$and": []})
+        self.filters_menu.addSeparator()
         for key, value in presets.items():
             action = self.filters_menu.addAction(key)
             action.setData(value)
