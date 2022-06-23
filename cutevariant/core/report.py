@@ -121,7 +121,7 @@ class SampleReport(AbstractReport):
         }
         genotypes_classifs = SampleReport._classif_number_to_label("genotypes")
         for row in sql.get_variant_groupby_for_samples(
-            self._conn, "genotypes.classification", [self._sample_id]
+            self._conn, "genotypes.classification", [self._sample_id], 1
         ):
             row = [
                 genotypes_classifs.get(row["classification"], row["classification"]),

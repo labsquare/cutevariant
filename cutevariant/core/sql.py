@@ -2698,7 +2698,7 @@ def get_variant_as_group(
         yield res
 
 
-def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samples: List[int], order_by=True) -> typing.Tuple[dict]:
+def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samples: List[int], gt_threshold=0, order_by=True) -> typing.Tuple[dict]:
     """Get count of variants for any field in "variants" or "genotype", 
     limited to samples in list
 
@@ -2718,6 +2718,7 @@ def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samp
     FROM variants
     INNER JOIN genotypes ON variants.id = genotypes.variant_id
     WHERE genotypes.sample_id IN ({samples})
+    AND genotypes.gt >= {gt_threshold}
     GROUP BY {groupby}
     """
 
