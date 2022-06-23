@@ -128,6 +128,8 @@ class SourceModel(QAbstractTableModel):
             font = QFont()
             if table_name == self.current_source:
                 font.setBold(True)
+            else:
+                font.setBold(False)
             return font
 
         if role == Qt.ForegroundRole:
@@ -365,7 +367,7 @@ class SourceEditorWidget(plugin.PluginWidget):
 
     @Slot(QModelIndex)
     def on_double_click(self, current: QModelIndex):
-        source = current.data(Qt.DisplayRole)
+        source = self.model.records[current.row()].get("name","unknown")
         if source:
             self.model.current_source = source
             self.mainwindow.set_state_data("source", source)
