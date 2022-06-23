@@ -133,21 +133,15 @@ cov_html/
 
 
 cutevariant.vim
-
 cutevariant.code-workspace
 
-debug.py
-
-graph_gui.py
-
-grep
-
-log_corpos3.json
-
-run.py
-
-test2.py
-
-test4.py
-
-testt.py
+/*.py
+/*.swp
+/docs/site
+poc/circos.py
+poc/lineedit.py
+poc/protein_viewer.py
+poc/testcolumn.py
+poc/widgets.py
+.session.json
+codecov
