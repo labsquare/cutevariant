@@ -621,7 +621,7 @@ class MainWindow(QMainWindow):
 
         self.conn = conn
 
-        # self._state_data.reset()
+        self._state_data.reset()
 
         # Clear memoization cache for count_cmd
         sql.clear_lru_cache()
@@ -1031,6 +1031,8 @@ class MainWindow(QMainWindow):
                 for name, plugin in self.plugins.items():
                     if name in state["plugins"]:
                         plugin.from_json(state["plugins"][name])
+
+            self.refresh_plugins()
 
     def write_settings(self):
         """Store the state of this mainwindow.
