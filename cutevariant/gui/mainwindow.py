@@ -190,6 +190,7 @@ class MainWindow(QMainWindow):
         )
 
         search_bar = self.addToolBar("Search")
+        search_bar.setObjectName("search")
         search_bar.addWidget(self.quick_search_edit)
 
         # Window geometry
