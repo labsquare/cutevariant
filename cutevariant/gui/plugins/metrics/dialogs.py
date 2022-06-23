@@ -99,10 +99,12 @@ class MetricsDialog(PluginDialog):
         self.tab_widget = QTabWidget()
         self.status_bar = QStatusBar()
 
+        self.proj_view = DictWidget()
         self.meta_view = DictWidget()
         self.stat_view = DictWidget()
         self.ann_view = DictWidget()
 
+        self.tab_widget.addTab(self.proj_view, "Project")
         self.tab_widget.addTab(self.meta_view, "Metadata")
         self.tab_widget.addTab(self.stat_view, "Variants")
         # self.tab_widget.addTab(self.ann_view, "Annotations")
@@ -111,7 +113,7 @@ class MetricsDialog(PluginDialog):
 
         self.buttons.accepted.connect(self.accept)
 
-        self.setWindowTitle(self.tr("Project metrics"))
+        self.setWindowTitle(self.tr("Informations"))
 
         v_layout = QVBoxLayout()
         v_layout.addWidget(self.tab_widget)
@@ -135,6 +137,7 @@ class MetricsDialog(PluginDialog):
         def compute_metrics(conn):
             """Async function"""
 
+            proj_data = sql.get_project(conn)
             meta_data = sql.get_metadatas(conn)
 
             stats_data = {
@@ -155,7 +158,7 @@ class MetricsDialog(PluginDialog):
             else:
                 gene_data = {}
 
-            return meta_data, stats_data, genes_data
+            return proj_data, meta_data, stats_data, genes_data
 
         self.status_bar.showMessage("Loading ...")
         self.metric_thread = SqlThread(self.conn, compute_metrics)
@@ -164,11 +167,11 @@ class MetricsDialog(PluginDialog):
 
     def loaded(self):
         """Called at the end of the thread and populate data"""
-        meta_data, stats_data, genes_data = self.metric_thread.results
+        proj_data, meta_data, stats_data, genes_data = self.metric_thread.results
 
+        self.proj_view.set_dict(proj_data)
         self.stat_view.set_dict(stats_data)
         self.meta_view.set_dict(meta_data)
-        # self.ann_view.set_dict(genes_data)
         self.status_bar.showMessage("")
 
 

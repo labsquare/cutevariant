@@ -1,4 +1,4 @@
-__title__ = "Show metadatas"
+__title__ = "Information"
 __description__ = "A dialog to compute different metrics on the database of variants"
 __long_description__ = ""
 __author__ = "Sacha schutz"

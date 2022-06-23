@@ -4,6 +4,7 @@ from PySide6.QtGui import *
 import os
 from cutevariant.gui.widgets.import_widget import VcfImportWidget, ImportThread
 from cutevariant.gui.widgets import DictWidget
+from cutevariant import constants as cst
 
 from cutevariant.core import sql
 
@@ -15,12 +16,21 @@ class ProjectPage(QWizardPage):
         super().__init__()
 
         self.setTitle(self.tr("Create project"))
-        self.setSubTitle(self.tr("Name your database where to import data"))
+        self.setSubTitle(self.tr("Set the database file location "))
 
         self.name_edit = QLineEdit()
+        self.name_edit.setPlaceholderText("myproject")
+        self.name_edit.setToolTip(self.tr("Name of your database file"))
         self.name_edit.textChanged.connect(self.completeChanged)
         self.path_edit = QLineEdit()
         self.path_edit.textChanged.connect(self.completeChanged)
+
+        self.genom_edit = QComboBox()
+        self.genom_edit.setToolTip(self.tr("Select an existing genome or set a custom name"))
+        self.genom_edit.addItems(cst.PROJECT_GENOMES)
+        self.genom_edit.setEditable(True)
+        self.descr_edit = QPlainTextEdit()
+        self.descr_edit.setPlaceholderText("Project description ... ")
 
         self.browse_btn = QPushButton(self.tr("Browse..."))
         self.browse_btn.clicked.connect(self._browse)
@@ -31,8 +41,11 @@ class ProjectPage(QWizardPage):
         path_layout.addWidget(self.browse_btn)
 
         form_layout = QFormLayout()
-        form_layout.addRow(self.tr("Name:"), self.name_edit)
+        form_layout.addRow(self.tr("File name:"), self.name_edit)
         form_layout.addRow(self.tr("Create in:"), path_layout)
+        form_layout.addRow(self.tr("Genome:"), self.genom_edit)
+        form_layout.addRow(self.tr("Description:"), self.descr_edit)
+        
 
         self.setLayout(form_layout)
 
@@ -43,6 +56,14 @@ class ProjectPage(QWizardPage):
 
     def db_filename(self):
         return QDir(self.path_edit.text()).filePath(self.name_edit.text()) + ".db"
+
+    def project(self):
+        return {
+            "name": self.name_edit.text(),
+            "description": self.descr_edit.toPlainText(),
+            "genome": self.genom_edit.currentText(),
+            "date": QDateTime.currentDateTime().toString(Qt.ISODate)
+        }
 
     def validatePage(self):
         name = self.name_edit.text()
@@ -158,6 +179,7 @@ class ImportPage(QWizardPage):
 
         self.thread_finished = False
         self.thread.db_filename = self.wizard().page(0).db_filename()
+        self.thread.project = self.wizard().page(0).project()
         self.thread.filename = self.wizard().page(1).filename()
         self.thread.pedfile = self.wizard().page(1).pedfile()
         self.thread.import_id = self.wizard().page(1).widget.get_import_id()

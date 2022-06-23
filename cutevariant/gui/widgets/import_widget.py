@@ -498,6 +498,8 @@ class ImportThread(QThread):
         self.db_filename = None
         # File top open
         self.filename = None
+        # Projet settings
+        self.project = None
         # Import ID
         self.import_id = None
         # pedfile
@@ -551,6 +553,7 @@ class ImportThread(QThread):
                     self.conn,
                     reader,
                     pedfile=self.pedfile,
+                    project = self.project,
                     import_id=import_id,
                     ignored_fields=self.ignored_fields,
                     indexed_fields=self.indexed_fields,

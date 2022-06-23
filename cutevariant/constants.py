@@ -101,3 +101,5 @@ FONT_FILE = DIR_FONTS + "materialdesignicons-webfont.ttf"
 
 REPORT_BUG_URL = "https://github.com/labsquare/cutevariant/issues/new"
 WIKI_URL = "https://github.com/labsquare/cutevariant/wiki"
+
+PROJECT_GENOMES = ["GRCh37", "GRCh38", "hg19", "hg38"]

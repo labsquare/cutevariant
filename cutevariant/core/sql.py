@@ -3380,6 +3380,7 @@ def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
     pedfile: str = None,
+    project:dict = None,
     import_id: str = None,
     ignored_fields: list = [],
     indexed_fields: list = [],
@@ -3399,6 +3400,10 @@ def import_reader(
 
     # Update metadatas
     update_metadatas(conn, reader.get_metadatas())
+
+    # Update project 
+    if project:
+        update_project(conn, project)
 
     # insert samples
     if progress_callback:
