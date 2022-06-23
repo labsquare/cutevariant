@@ -1046,7 +1046,7 @@ class VariantView(QWidget):
         presets = config["presets"] or {}
         self.fields_menu.clear()
         current_fields = self.model.fields
-        current_name = "< not found >"
+        current_name = "< not set >"
         for key, value in presets.items():
             action = self.fields_menu.addAction(QIcon(), key)
             action.setData(value)
@@ -1068,7 +1068,7 @@ class VariantView(QWidget):
         presets = config["presets"] or {}
         self.filters_menu.clear()
         current_filters = self.model.filters
-        current_name = "< not found >"
+        current_name = "< not set >"
         act = self.filters_menu.addAction("Clear all filters")
         act.setData({"$and": []})
         self.filters_menu.addSeparator()
