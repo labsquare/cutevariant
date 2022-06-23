@@ -3302,7 +3302,7 @@ def create_triggers(conn):
             "sex",
             "phenotype",
         ],
-        "genotypes": ["tags", "comment"],
+        "genotypes": ["classification", "tags", "comment"],
     }
 
     for table in tables_fields_triggered:
