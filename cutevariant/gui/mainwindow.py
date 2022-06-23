@@ -980,6 +980,9 @@ class MainWindow(QMainWindow):
     def save_session(self, filename: str):
         """save plugin state into a json file"""
 
+        if not self.conn:
+            return 
+            
         session = {
             "db_path": sql.get_database_file_name(self.conn),
             "fields": self.get_state_data("fields"),
