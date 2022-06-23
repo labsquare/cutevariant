@@ -71,11 +71,7 @@ class SampleReport(AbstractReport):
             dict
         """
         sample = sql.get_sample(self._conn, self._sample_id)
-        if constants.HAS_OPERATOR in sample["tags"]:
-            sample["tags"] = sample["tags"].split(constants.HAS_OPERATOR)
-        else:
-            sample["tags"] = [sample["tags"]]
-
+        sample["tags"] = self._tags_to_list(sample["tags"])
         sample_classifs = SampleReport._classif_number_to_label("samples")
         sample["classification"] = sample_classifs.get(
             sample["classification"], sample["classification"]
@@ -168,9 +164,20 @@ class SampleReport(AbstractReport):
                 0
             ]  # keep only current sample
             var["variant_name"] = variant_name_pattern.format(**var)
+            var["tags"] = self._tags_to_list(var["tags"])
+            var["samples"]["tags"] = self._tags_to_list(var["samples"]["tags"])
             variants.append(var)
 
         return variants
+
+    def _tags_to_list(self, tags):
+        if hasattr(constants, "HAS_OPERATOR"):
+            separator = constants.HAS_OPERATOR
+        else:
+            separator = ","
+        if separator not in tags:
+            return [tags]
+        return tags.split(separator)
 
     @classmethod
     def _classif_number_to_label(cls, classification_type: list) -> dict:
