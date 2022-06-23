@@ -126,9 +126,15 @@ class SourceModel(QAbstractTableModel):
 
         if role == Qt.FontRole:
             font = QFont()
-            if table_name == self.current_source and index.column() == self.NAME_COLUMN:
+            if table_name == self.current_source:
                 font.setBold(True)
             return font
+
+        if role == Qt.ForegroundRole:
+            if table_name != self.current_source:
+                return QApplication.style().standardPalette().color(QPalette.Dark)
+            else:
+                return  QApplication.style().standardPalette().color(QPalette.Light)
 
         if role == Qt.UserRole:
             return self.records[index.row()]
