@@ -633,8 +633,6 @@ class MainWindow(QMainWindow):
 
         # self.state = self.app_settings.value(f"{file_path}/last_state", State())
 
-        self._state_data.reset()
-
         self._project_is_opening = True
         for plugin_obj in self.plugins.values():
             plugin_obj.on_open_project(self.conn)
@@ -1021,6 +1019,7 @@ class MainWindow(QMainWindow):
             state = json.load(file)
 
         if "db_path" in state:
+            self.open_database_from_file(state["db_path"])
 
             self.set_state_data("fields", state.get("fields", []))
             self.set_state_data("source", state.get("source", "variants"))
@@ -1032,8 +1031,6 @@ class MainWindow(QMainWindow):
                 for name, plugin in self.plugins.items():
                     if name in state["plugins"]:
                         plugin.from_json(state["plugins"][name])
-
-            self.open_database_from_file(state["db_path"])
 
     def write_settings(self):
         """Store the state of this mainwindow.
