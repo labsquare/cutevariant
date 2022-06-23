@@ -28,6 +28,39 @@ Standalone binary are available for windows:
 - [Download cutevariant 32 bit](https://github.com/labsquare/cutevariant/releases/latest/download/cutevariant-standalone-x86.zip)
 - [Download cutevariant 64 bit](https://github.com/labsquare/cutevariant/releases/latest/download/cutevariant-standalone-x64.zip)
 
+## Linux
+
+If you run Linux, then you can either use PyPI or install from source.
+But before you proceed to installation, make sure that running this command:
+```bash
+sqlite3 --version
+```
+returns at least `3.32`.
+If not, run:
+
+```bash
+# Uninstall previous versions of sqlite3 (to avoid conflicts)
+sudo apt remove sqlite3
+# Download latest sqlite version
+wget https://www.sqlite.org/2022/sqlite-autoconf-3380500.tar.gz
+# Extract it
+tar -xvf sqlite-autoconf-3380500.tar.gz
+cd sqlite-autoconf-3380500
+./configure
+# Run make to build
+make
+# Run make install, this will put the shared object in /usr/local/lib
+sudo make install
+# Then add LD_LIBRARY_PATH to your bash profile (either ~/.zshrc, ~/.bashrc, or whatever is your favorite)
+echo "export LD_LIBRARY_PATH=/usr/local/lib" >> ~/.zshrc
+# Source your shell profile so you don't have to restart it
+source ~/.zshrc
+#Now just to be sure:
+sqlite3 --version
+# You should see 3.38 now. If not, this means that the installation went wrong.
+# That's it! Now you can install cutevariant, either from PyPI or directly from source
+```
+
 ## PyPi
 Cutevariant is avaible from [Pypi](https://pypi.org/project/cutevariant/) : 
 
