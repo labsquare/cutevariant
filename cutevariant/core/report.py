@@ -2,6 +2,7 @@ import codecs
 import datetime
 import getpass
 import jinja2
+import markdown
 import os
 import shutil
 import sqlite3
@@ -71,11 +72,7 @@ class SampleReport(AbstractReport):
             dict
         """
         sample = sql.get_sample(self._conn, self._sample_id)
-        if constants.HAS_OPERATOR in sample["tags"]:
-            sample["tags"] = sample["tags"].split(constants.HAS_OPERATOR)
-        else:
-            sample["tags"] = [sample["tags"]]
-
+        sample["tags"] = self._tags_to_list(sample["tags"])
         sample_classifs = SampleReport._classif_number_to_label("samples")
         sample["classification"] = sample_classifs.get(
             sample["classification"], sample["classification"]
@@ -108,7 +105,7 @@ class SampleReport(AbstractReport):
             "classification",
             sql.get_table_columns(self._conn, "variants"),
             "variants",
-            {},
+            {"$and": [{"samples." + sql.get_sample(self._conn, self._sample_id)["name"] + ".gt":{"$gt": 0}}]}
         ):
             # if classif is not defined in config, keep the number by default
             row = [variant_classifs.get(row["classification"], row["classification"]), row["count"]]
@@ -124,7 +121,7 @@ class SampleReport(AbstractReport):
         }
         genotypes_classifs = SampleReport._classif_number_to_label("genotypes")
         for row in sql.get_variant_groupby_for_samples(
-            self._conn, "genotypes.classification", [self._sample_id]
+            self._conn, "genotypes.classification", [self._sample_id], 1
         ):
             row = [
                 genotypes_classifs.get(row["classification"], row["classification"]),
@@ -168,9 +165,20 @@ class SampleReport(AbstractReport):
                 0
             ]  # keep only current sample
             var["variant_name"] = variant_name_pattern.format(**var)
+            var["tags"] = self._tags_to_list(var["tags"])
+            var["samples"]["tags"] = self._tags_to_list(var["samples"]["tags"])
             variants.append(var)
 
         return variants
+
+    def _tags_to_list(self, tags) -> list[str]:
+        if hasattr(constants, "HAS_OPERATOR"):
+            separator = constants.HAS_OPERATOR
+        else:
+            separator = ","
+        if separator not in tags:
+            return [tags]
+        return tags.split(separator)
 
     @classmethod
     def _classif_number_to_label(cls, classification_type: list) -> dict:
@@ -213,14 +221,20 @@ class SampleReport(AbstractReport):
         template_dir = os.path.dirname(self._template)
         output_dir = os.path.dirname(output_path)
 
+        data = self.get_data()
+        #using markdown instead of jinja-markdown, because the latter does not work when packaged with nuitka
+        data["sample"]["comment"] = markdown.markdown(data["sample"]["comment"])
+        for i in range(len(data["variants"])):
+            data["variants"][i]["comment"] = markdown.markdown(data["variants"][i]["comment"])
+            data["variants"][i]["samples"]["comment"] = markdown.markdown(data["variants"][i]["samples"]["comment"])
+
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(template_dir),
-            autoescape=True,
-            extensions=["jinja_markdown.MarkdownExtension"],
+            autoescape=True
         )
 
         template = env.get_template(os.path.basename(self._template))
-        output = template.render(self.get_data())
+        output = template.render(data)
 
         # Dangereux ..
         # recursive_overwrite(template_dir, output_dir, ignore=shutil.ignore_patterns("*.html"))
