@@ -762,7 +762,7 @@ class SamplesWidget(plugin.PluginWidget):
 
                 # If locked source names
                 if source_name in [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]:
-                    ret = QMessageBox.warning(
+                    QMessageBox.warning(
                         self,
                         self.tr("Overwrite source locked"),
                         self.tr(f"Source '{source_name}' is locked")
