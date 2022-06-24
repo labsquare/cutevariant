@@ -485,7 +485,7 @@ class SamplesWidget(plugin.PluginWidget):
             menu.addMenu(self._create_tags_menu())
         menu.addSeparator()
 
-        fields_menu = menu.addMenu("Add genotype fields ...")
+        fields_menu = menu.addMenu("Add genotype fields...")
 
         for field in sql.get_field_by_category(self.model.conn, "samples"):
             field_action = fields_menu.addAction(QIcon(), field["name"], self.on_add_field)
@@ -556,16 +556,26 @@ class SamplesWidget(plugin.PluginWidget):
         field = action.data()
         field_name = field["name"]
 
+        # Selected samples (by index)
         indexes = self.view.selectionModel().selectedRows()
+
         if indexes:
-            sample_name = indexes[0].siblingAtColumn(0).data()
 
+            # Copy existing fields
             fields = copy.deepcopy(self.mainwindow.get_state_data("fields"))
-            new_field = f"samples.{sample_name}.{field_name}"
 
-            fields.append(new_field)
-            print(fields)
+            # Add field for selected samples
+            for sample_index in indexes:
+
+                sample_name = sample_index.siblingAtColumn(0).data()
+                new_field = f"samples.{sample_name}.{field_name}"
+                if new_field not in fields:
+                    fields.append(new_field)
+
+            # Set State Data
             self.mainwindow.set_state_data("fields", fields)
+
+            # Refresh plugins
             self.mainwindow.refresh_plugins(sender=self)
 
     def on_remove(self):
