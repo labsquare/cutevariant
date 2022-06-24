@@ -461,7 +461,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.create_filter_action_union = QAction(FIcon(0xF0EF1), "Create filters (union)")
         self.create_filter_action_union.triggered.connect(self.on_create_filter_union)
 
-        self.clear_filter_action = QAction(FIcon(0xF0234), "Clear all filters")
+        self.clear_filter_action = QAction(FIcon(0xF0234), "Clear filters")
         self.clear_filter_action.triggered.connect(self.on_clear_filters)
 
         self.source_action = QAction(FIcon(0xF0A75), "Create a source")
