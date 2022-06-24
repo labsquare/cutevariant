@@ -222,7 +222,7 @@ class FieldsWidget(QWidget):
         self._model.conn = value
 
     def show_checked_only(self, active=False):
-        self.proxy_model.setFilterRole(Qt.CheckStateRole)
+        self.proxy_model.setFilterRole(Qt.CheckStateRole if active else Qt.UserRole)
         self.proxy_model.setFilterKeyColumn(0)
         # Checked = "2" / Unchecked = "0" / All : ""
         is_checked_str = "2" if active else ""
