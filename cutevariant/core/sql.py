@@ -3262,18 +3262,18 @@ def create_triggers(conn):
     )
 
     # variants count validations on samples update
-    conn.execute(
-        """
-        CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_after_update_on_samples AFTER UPDATE ON samples
-        WHEN new.classification <> old.classification
-        BEGIN
-            UPDATE variants
-            SET count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.classification>0 AND shv.variant_id=variants.id AND shv.classification>0), 
-                count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.classification>0 AND shv.variant_id=variants.id AND shv.classification<0)
-            WHERE id IN (SELECT shv2.variant_id FROM genotypes as shv2 WHERE shv2.sample_id=new.id);
-        END;
-        """
-    )
+    # conn.execute(
+    #     """
+    #     CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_after_update_on_samples AFTER UPDATE ON samples
+    #     WHEN new.classification <> old.classification
+    #     BEGIN
+    #         UPDATE variants
+    #         SET count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.classification>0 AND shv.variant_id=variants.id AND shv.classification>0), 
+    #             count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.classification>0 AND shv.variant_id=variants.id AND shv.classification<0)
+    #         WHERE id IN (SELECT shv2.variant_id FROM genotypes as shv2 WHERE shv2.sample_id=new.id);
+    #     END;
+    #     """
+    # )
 
     # variants count validations on samples update
     conn.execute(
