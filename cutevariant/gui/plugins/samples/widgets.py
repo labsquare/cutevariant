@@ -77,9 +77,10 @@ class SampleModel(QAbstractTableModel):
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
 
         col = index.column()
+        sample = self._samples[index.row()]
 
         if role == Qt.DisplayRole:
-            sample = self._samples[index.row()]
+
             if col == SampleModel.NAME_COLUMN:
                 return sample.get("name", "unknown")
 
@@ -92,7 +93,7 @@ class SampleModel(QAbstractTableModel):
                 return count_validation_positive_variant
 
         if role == Qt.DecorationRole:
-            sample = self._samples[index.row()]
+
             color = QApplication.palette().color(QPalette.Text)
             color_alpha = QColor(QApplication.palette().color(QPalette.Text))
             color_alpha.setAlpha(50)
@@ -131,8 +132,6 @@ class SampleModel(QAbstractTableModel):
                 return QIcon(FIcon(0xF017A, color_alpha))
 
         if role == Qt.ToolTipRole:
-
-            sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
                 sample_comment_tooltip = sample.get("comment", "").replace("\n", "<br>")
@@ -253,9 +252,9 @@ class SampleVerticalHeader(QHeaderView):
             current_samples = sources_samples.get(current_source, [])
             
             if name in current_samples:
-                icon = 0xF0009
+                icon = 0xF0017 #0xF0016 #0xF0899 #0xF0008 #0xF0009
             else:
-                icon = 0xF0013
+                icon = 0xF0004 #0xF0013
 
             pen = QPen(QColor(color))
             pen.setWidth(6)
