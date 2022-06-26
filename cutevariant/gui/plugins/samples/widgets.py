@@ -239,7 +239,7 @@ class SampleVerticalHeader(QHeaderView):
             painter.restore()
 
             style = next(i for i in self.model().classifications if i["number"] == classification)
-            color = style.get("color", "white")
+            color = style.get("color", "white")            
 
             current_source = self.parent.mainwindow.get_state_data("source") or ""
 
@@ -251,15 +251,18 @@ class SampleVerticalHeader(QHeaderView):
             }
             current_samples = sources_samples.get(current_source, [])
             
-            if name in current_samples:
-                icon = 0xF0017 #0xF0016 #0xF0899 #0xF0008 #0xF0009
-            else:
-                icon = 0xF0004 #0xF0013
+            color_alpha = QColor(color)
 
-            pen = QPen(QColor(color))
+            if name in current_samples:
+                icon = 0xF0009 #0xF0016 #0xF0899 #0xF0008 #0xF0009
+            else:
+                icon = 0xF0009 #0xF0013
+                color_alpha.setAlpha(0)
+
+            pen = QPen(color_alpha)
             pen.setWidth(6)
             painter.setPen(pen)
-            painter.setBrush(QBrush(color))
+            painter.setBrush(QBrush(color_alpha))
             painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
             target = QRect(0, 0, 20, 20)
