@@ -764,12 +764,29 @@ class GenotypesWidget(plugin.PluginWidget):
             except:
                 value = 0
 
-        if genotype.get("gt", None) is not None:
+        if self.is_locked(genotype.get("sample_id", 0)):
+            sample_name = genotype.get("name", "unknown")
+            QMessageBox.information(
+                self, "Sample is locked", self.tr(f"Sample '{sample_name}' is locked")
+            )
+            return
+
+        if genotype.get("sample_id", None) is not None and genotype.get("variant_id", None) is not None:
             rows = [i.row() for i in self.view.selectionModel().selectedRows()]
             self.model.edit(rows, {"classification": value})
 
-        if "samples" in self.mainwindow.plugins:
-            self.mainwindow.refresh_plugin("samples")
+            if "samples" in self.mainwindow.plugins:
+                self.mainwindow.refresh_plugin("samples")
+
+            if "variant_view" in self.mainwindow.plugins:
+                fields = self.mainwindow.get_state_data("fields")
+                field_genotype_classification = False
+                for field in fields:
+                    if re.findall(r"^samples.(\w+)\.classification$", field):
+                        field_genotype_classification = True
+                        break
+                if field_genotype_classification:
+                    self.mainwindow.refresh_plugin("variant_view")
 
     def _on_default_classification_changed(self):
         # default_classification_validation
