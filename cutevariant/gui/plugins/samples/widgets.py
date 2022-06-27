@@ -77,9 +77,10 @@ class SampleModel(QAbstractTableModel):
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
 
         col = index.column()
+        sample = self._samples[index.row()]
 
         if role == Qt.DisplayRole:
-            sample = self._samples[index.row()]
+
             if col == SampleModel.NAME_COLUMN:
                 return sample.get("name", "unknown")
 
@@ -92,7 +93,7 @@ class SampleModel(QAbstractTableModel):
                 return count_validation_positive_variant
 
         if role == Qt.DecorationRole:
-            sample = self._samples[index.row()]
+
             color = QApplication.palette().color(QPalette.Text)
             color_alpha = QColor(QApplication.palette().color(QPalette.Text))
             color_alpha.setAlpha(50)
@@ -131,8 +132,6 @@ class SampleModel(QAbstractTableModel):
                 return QIcon(FIcon(0xF017A, color_alpha))
 
         if role == Qt.ToolTipRole:
-
-            sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
                 sample_comment_tooltip = sample.get("comment", "").replace("\n", "<br>")
@@ -240,7 +239,11 @@ class SampleVerticalHeader(QHeaderView):
             painter.restore()
 
             style = next(i for i in self.model().classifications if i["number"] == classification)
-            color = style.get("color", "white")
+            color = style.get("color", "white")  
+            color_alpha_75 = QColor(color)
+            color_alpha_75.setAlpha(75)
+            color_alpha_0 = QColor(color)
+            color_alpha_0.setAlpha(0)   
 
             current_source = self.parent.mainwindow.get_state_data("source") or ""
 
@@ -251,20 +254,24 @@ class SampleVerticalHeader(QHeaderView):
                 if source["description"] is not None
             }
             current_samples = sources_samples.get(current_source, [])
-            
-            if name in current_samples:
-                icon = 0xF0009
-            else:
-                icon = 0xF0013
 
-            pen = QPen(QColor(color))
+            if name in current_samples:
+                icon = 0xF0009 #0xF0016 #0xF0899 #0xF0008 #0xF0009
+                color_line = color
+                color_icon = color
+            else:
+                icon = 0xF0009 #0xF0013
+                color_line = color_alpha_0
+                color_icon = color_alpha_75
+
+            pen = QPen(color_line)
             pen.setWidth(6)
             painter.setPen(pen)
-            painter.setBrush(QBrush(color))
+            painter.setBrush(QBrush(color_line))
             painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
             target = QRect(0, 0, 20, 20)
-            pix = FIcon(icon, color).pixmap(target.size())
+            pix = FIcon(icon, color_icon).pixmap(target.size())
             target.moveCenter(rect.center() + QPoint(1, 1))
 
             painter.drawPixmap(target, pix)
