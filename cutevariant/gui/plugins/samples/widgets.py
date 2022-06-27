@@ -239,7 +239,11 @@ class SampleVerticalHeader(QHeaderView):
             painter.restore()
 
             style = next(i for i in self.model().classifications if i["number"] == classification)
-            color = style.get("color", "white")            
+            color = style.get("color", "white")  
+            color_alpha_75 = QColor(color)
+            color_alpha_75.setAlpha(75)
+            color_alpha_0 = QColor(color)
+            color_alpha_0.setAlpha(0)   
 
             current_source = self.parent.mainwindow.get_state_data("source") or ""
 
@@ -250,23 +254,24 @@ class SampleVerticalHeader(QHeaderView):
                 if source["description"] is not None
             }
             current_samples = sources_samples.get(current_source, [])
-            
-            color_alpha = QColor(color)
 
             if name in current_samples:
                 icon = 0xF0009 #0xF0016 #0xF0899 #0xF0008 #0xF0009
+                color_line = color
+                color_icon = color
             else:
                 icon = 0xF0009 #0xF0013
-                color_alpha.setAlpha(0)
+                color_line = color_alpha_0
+                color_icon = color_alpha_75
 
-            pen = QPen(color_alpha)
+            pen = QPen(color_line)
             pen.setWidth(6)
             painter.setPen(pen)
-            painter.setBrush(QBrush(color_alpha))
+            painter.setBrush(QBrush(color_line))
             painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
             target = QRect(0, 0, 20, 20)
-            pix = FIcon(icon, color).pixmap(target.size())
+            pix = FIcon(icon, color_icon).pixmap(target.size())
             target.moveCenter(rect.center() + QPoint(1, 1))
 
             painter.drawPixmap(target, pix)
