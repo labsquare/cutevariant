@@ -79,18 +79,13 @@ class CutestyleFormatter(Formatter):
 
         if re.match(r"samples\..+\.classification", field):
             if value == "NULL":
-                genotype_classification_name = ""
-                genotype_classification_color = "gray"
-                genotype_classification_icon = "" #0xF0130
                 return {"text": ""}
             else:
-                genotype_classification_name = self.CLASSIFICATIONS_GENOTYPES.get(int(value),{}).get("name","unknown")
                 genotype_classification_color = self.CLASSIFICATIONS_GENOTYPES.get(int(value),{}).get("color","gray")
                 if int(value) != 0:
                     genotype_classification_icon = 0xF0133
                 else:
                     genotype_classification_icon = 0xF0130 #0xF0130 #0xF012F
-                value = genotype_classification_name
                 return {"text": "", "color": genotype_classification_color, "icon": FIcon(genotype_classification_icon, color=genotype_classification_color)}
 
         if value == "NULL" or value == "None":
