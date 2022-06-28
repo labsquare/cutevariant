@@ -75,7 +75,6 @@ class VariantVerticalHeader(QHeaderView):
 
             painter.restore()
 
-            # classification = next(i for i in self.model().classifications if i["number"] == number)
             if self.model().classifications:
                 classification = next(i for i in self.model().classifications if i["number"] == number)
             else:
