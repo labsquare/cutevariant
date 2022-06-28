@@ -83,7 +83,8 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load classification
         config = Config("classifications")
-        self.variant_classification = config.get("variants",{})
+        self.variant_classification = config.get("variants",[])
+        self.variant_classification = sorted(self.variant_classification, key=lambda d: d.get('number',0))
         for item in self.variant_classification:
             self.class_combo.addItem(
                 FIcon(0xF012F, item.get("color", "gray")),
@@ -314,7 +315,7 @@ class OccurenceModel(QAbstractTableModel):
                 classification = item.get("classification", 0)
                 classification_text = str(classification)
                 config = Config("classifications")
-                self.genotype_classification = config.get("genotypes",{})
+                self.genotype_classification = config.get("genotypes",[])
                 for item in self.genotype_classification:
                     if item["number"] == classification:
                         classification_text = item["name"]

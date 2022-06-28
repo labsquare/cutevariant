@@ -76,7 +76,7 @@ class VariantVerticalHeader(QHeaderView):
             painter.restore()
 
             if self.model().classifications:
-                classification = next(i for i in self.model().classifications if i["number"] == number)
+                classification = next(i for i in self.model().classifications if i.get("number",None) == number) or {}
             else:
                 classification = {}
 
@@ -1501,7 +1501,7 @@ class VariantView(QWidget):
         Returns:
             locked (bool) : lock status of sample attached to current genotype
         """
-        config_classif = Config("classifications").get("samples", {})
+        config_classif = Config("classifications").get("samples", [])
         sample = sql.get_sample(self.conn, sample_id)
         sample_classif = sample.get("classification", None)
 
@@ -1929,7 +1929,8 @@ class VariantView(QWidget):
         validation_menu = QMenu(self.tr(f"Genotype Classification"))
 
         config = Config("classifications")
-        genotypes_classifications = config.get("genotypes", {})
+        genotypes_classifications = config.get("genotypes", [])
+        genotypes_classifications = sorted(genotypes_classifications, key=lambda d: d.get('number',0))
 
         for item in genotypes_classifications:
 
@@ -2121,7 +2122,8 @@ class VariantViewWidget(plugin.PluginWidget):
         self.view.model.set_cache(config.get("memory_cache", 32))
 
         config = Config("classifications")
-        self.view.model.classifications = list(config.get("variants", {}))
+        self.view.model.classifications = config.get("variants", [])
+        self.view.model.classifications = sorted(self.view.model.classifications, key=lambda d: d.get('number',0))
 
         self.on_refresh()
 
