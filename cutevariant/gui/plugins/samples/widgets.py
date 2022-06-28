@@ -238,7 +238,10 @@ class SampleVerticalHeader(QHeaderView):
 
             painter.restore()
 
-            style = next(i for i in self.model().classifications if i["number"] == classification)
+            if self.model().classifications:
+                style = next(i for i in self.model().classifications if i["number"] == classification)
+            else:
+                style = {}
             color = style.get("color", "white")  
             color_alpha_75 = QColor(color)
             color_alpha_75.setAlpha(75)
@@ -516,7 +519,7 @@ class SamplesWidget(plugin.PluginWidget):
         Returns:
             locked (bool) : lock status of sample attached to current genotype
         """
-        config_classif = Config("classifications").get("samples", None)
+        config_classif = Config("classifications").get("samples", {})
         sample = sql.get_sample(self.model.conn, sample_id)
         sample_classif = sample.get("classification", None)
 
@@ -882,7 +885,7 @@ class SamplesWidget(plugin.PluginWidget):
         # Chargement des classification
 
         config = Config("classifications")
-        self.model.classifications = config.get("samples", [])
+        self.model.classifications = config.get("samples", {})
         self.model.load()
 
     def on_refresh(self):

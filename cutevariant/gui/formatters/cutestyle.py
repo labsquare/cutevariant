@@ -65,7 +65,7 @@ class CutestyleFormatter(Formatter):
 
          # Classification genotypes
         self.CLASSIFICATIONS_GENOTYPES = {}
-        classifications_genotypes = Config("classifications").get("genotypes", None)
+        classifications_genotypes = Config("classifications").get("genotypes", {})
         for classification in classifications_genotypes:
             self.CLASSIFICATIONS_GENOTYPES[classification["number"]] = classification
 

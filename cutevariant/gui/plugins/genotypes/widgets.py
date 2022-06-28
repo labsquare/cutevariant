@@ -688,7 +688,7 @@ class GenotypesWidget(plugin.PluginWidget):
         Returns:
             locked (bool) : lock status of sample attached to current genotype
         """
-        config_classif = Config("classifications").get("samples", None)
+        config_classif = Config("classifications").get("samples", {})
         sample = sql.get_sample(self.conn, sample_id)
         sample_classif = sample.get("classification", None)
 
@@ -790,7 +790,7 @@ class GenotypesWidget(plugin.PluginWidget):
         default_classification_genotype_validation = global_variables.get("default_classification_validation", 1)
         # genotypes classifications
         classifications = Config("classifications")
-        genotypes_classification = classifications.get("genotypes")
+        genotypes_classification = classifications.get("genotypes",{})
         # test if classification 1 exists, else 0
         classification_genotype_validation = 0
         for classification in genotypes_classification:
@@ -911,7 +911,7 @@ class GenotypesWidget(plugin.PluginWidget):
         self.load_all_filters()
 
         config = Config("classifications")
-        self.model.classifications = config.get("genotypes", [])
+        self.model.classifications = config.get("genotypes", {})
 
     def _is_selectors_checked(self):
         """Return False if selectors is not checked"""

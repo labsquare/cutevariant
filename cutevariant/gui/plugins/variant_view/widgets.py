@@ -75,17 +75,21 @@ class VariantVerticalHeader(QHeaderView):
 
             painter.restore()
 
-            classification = next(i for i in self.model().classifications if i["number"] == number)
+            # classification = next(i for i in self.model().classifications if i["number"] == number)
+            if self.model().classifications:
+                classification = next(i for i in self.model().classifications if i["number"] == number)
+            else:
+                classification = {}
 
-            color = classification.get("color")
+            color = classification.get("color", "white")
             icon = 0xF0130
 
             icon_favorite = 0xF0133
 
-            pen = QPen(QColor(classification.get("color")))
+            pen = QPen(QColor(classification.get("color", "white")))
             pen.setWidth(6)
             painter.setPen(pen)
-            painter.setBrush(QBrush(classification.get("color")))
+            painter.setBrush(QBrush(classification.get("color", "white")))
             painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
             target = QRect(0, 0, 20, 20)
@@ -1497,7 +1501,7 @@ class VariantView(QWidget):
         Returns:
             locked (bool) : lock status of sample attached to current genotype
         """
-        config_classif = Config("classifications").get("samples", None)
+        config_classif = Config("classifications").get("samples", {})
         sample = sql.get_sample(self.conn, sample_id)
         sample_classif = sample.get("classification", None)
 
@@ -1925,7 +1929,7 @@ class VariantView(QWidget):
         validation_menu = QMenu(self.tr(f"Genotype Classification"))
 
         config = Config("classifications")
-        genotypes_classifications = config.get("genotypes", [])
+        genotypes_classifications = config.get("genotypes", {})
 
         for item in genotypes_classifications:
 
@@ -2117,7 +2121,7 @@ class VariantViewWidget(plugin.PluginWidget):
         self.view.model.set_cache(config.get("memory_cache", 32))
 
         config = Config("classifications")
-        self.view.model.classifications = list(config.get("variants", []))
+        self.view.model.classifications = list(config.get("variants", {}))
 
         self.on_refresh()
 

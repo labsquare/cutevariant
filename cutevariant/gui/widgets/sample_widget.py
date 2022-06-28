@@ -39,7 +39,7 @@ def is_locked(self, sample_id: int):
     Returns:
         locked (bool) : lock status of sample attached to current genotype
     """
-    config_classif = Config("classifications").get("samples", None)
+    config_classif = Config("classifications").get("samples", {})
     sample = sql.get_sample(self.conn, sample_id)
     sample_classif = sample.get("classification", None)
 
@@ -129,7 +129,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load classification
         config = Config("classifications")
-        self.sample_classification = config.get("samples")
+        self.sample_classification = config.get("samples",{})
         self.sample_classification = sorted(self.sample_classification, key=lambda c: c["number"])
         for item in self.sample_classification:
             self.class_combo.addItem(
@@ -396,7 +396,7 @@ class OccurenceModel(QAbstractTableModel):
                 classification = item.get("classification", 0)
                 classification_text = str(classification)
                 config = Config("classifications")
-                self.genotype_classification = config.get("genotypes")
+                self.genotype_classification = config.get("genotypes",{})
                 for item in self.genotype_classification:
                     if item["number"] == classification:
                         classification_text = item["name"]
