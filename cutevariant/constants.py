@@ -1,11 +1,14 @@
 # Misc
 import logging
 import tempfile
-
+import os
 from pkg_resources import resource_filename
 from PySide6.QtWidgets import QApplication
 
 # Logging
+
+BASEDIR = os.path.dirname(__file__)
+
 
 LOG_LEVEL = "INFO"
 LOG_LEVELS = {

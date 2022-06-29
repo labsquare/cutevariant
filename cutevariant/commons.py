@@ -9,6 +9,7 @@ from .bgzf import BgzfBlocks
 
 from PySide6.QtGui import QColor
 
+from cutevariant.constants import BASEDIR
 ################################################################################
 def create_logger():
     logger = logging.getLogger(__name__)
@@ -19,22 +20,22 @@ def create_logger():
     stdout_handler = logging.StreamHandler()
     stdout_handler.setFormatter(formatter)
 
-    file_handler = logging.FileHandler("cutevariant.log", mode="w")
-    file_handler.setFormatter(formatter)
+    file_handler = logging.FileHandler(os.path.join(BASEDIR,"cutevariant.log"), mode="w")
+    #file_handler.setFormatter(formatter)
 
-    class MyCustomLogFilter(logging.Filter):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
+    # class MyCustomLogFilter(logging.Filter):
+    #     def __init__(self, *args, **kwargs):
+    #         super().__init__(*args, **kwargs)
 
-        def filter(self, record):
-            dirname = os.path.basename(os.path.dirname(record.pathname))
-            record.dirname = dirname
-            return True
+    #     def filter(self, record):
+    #         dirname = os.path.basename(os.path.dirname(record.pathname))
+    #         record.dirname = dirname
+    #         return True
 
-    stdout_handler.addFilter(MyCustomLogFilter())
+    # stdout_handler.addFilter(MyCustomLogFilter())
 
-    logger.addHandler(stdout_handler)
-    logger.addHandler(file_handler)
+    # logger.addHandler(stdout_handler)
+    #logger.addHandler(file_handler)
 
     return logger
 
