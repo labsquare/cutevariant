@@ -111,7 +111,7 @@ import cutevariant.constants as cst
 
 DEFAULT_SELECTION_NAME = cst.DEFAULT_SELECTION_NAME or "variants"
 SAMPLES_SELECTION_NAME = cst.SAMPLES_SELECTION_NAME or "samples"
-CURRENT_SAMPLE_SELECTION_NAME = cst.CURRENT_SAMPLE_SELECTION_NAME or "current_sample"
+CURRENT_SAMPLE_SELECTION_NAME = cst.CURRENT_SAMPLE_SELECTION_NAME or "current_samples"
 LOCKED_SELECTIONS = [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]
 
 PYTHON_TO_SQLITE = {
@@ -250,20 +250,6 @@ MANDATORY_FIELDS = [
         "constraint": "DEFAULT 0",
         "category": "variants",
         "description": "Number of rejected genotypes",
-    },
-    {
-        "name": "count_validation_positive_sample_lock",
-        "type": "int",
-        "constraint": "DEFAULT 0",
-        "category": "variants",
-        "description": "Number of validated genotypes within validated samples",
-    },
-    {
-        "name": "count_validation_negative_sample_lock",
-        "type": "int",
-        "constraint": "DEFAULT 0",
-        "category": "variants",
-        "description": "Number of rejected genotypes within validated samples",
     },
     {
         "name": "control_count_hom",
@@ -3253,24 +3239,8 @@ def create_triggers(conn):
         BEGIN
             UPDATE variants
             SET count_validation_positive = (SELECT count(shv.sample_id) FROM genotypes as shv WHERE shv.variant_id=new.variant_id AND shv.classification>0), 
-                count_validation_negative = (SELECT count(shv.sample_id) FROM genotypes as shv WHERE shv.variant_id=new.variant_id AND shv.classification<0),
-                count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.classification>0 AND shv.variant_id=new.variant_id AND shv.classification>0), 
-                count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.classification>0 AND shv.variant_id=new.variant_id AND shv.classification<0)
+                count_validation_negative = (SELECT count(shv.sample_id) FROM genotypes as shv WHERE shv.variant_id=new.variant_id AND shv.classification<0)
             WHERE id=new.variant_id;
-        END;
-        """
-    )
-
-    # variants count validations on samples update
-    conn.execute(
-        """
-        CREATE TRIGGER IF NOT EXISTS count_validation_positive_negative_after_update_on_samples AFTER UPDATE ON samples
-        WHEN new.classification <> old.classification
-        BEGIN
-            UPDATE variants
-            SET count_validation_positive_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.classification>0 AND shv.variant_id=variants.id AND shv.classification>0), 
-                count_validation_negative_sample_lock = (SELECT count(shv.sample_id) FROM genotypes as shv INNER JOIN samples as s ON s.id=shv.sample_id WHERE s.classification>0 AND shv.variant_id=variants.id AND shv.classification<0)
-            WHERE id IN (SELECT shv2.variant_id FROM genotypes as shv2 WHERE shv2.sample_id=new.id);
         END;
         """
     )

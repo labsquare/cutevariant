@@ -105,7 +105,15 @@ class SampleReport(AbstractReport):
             "classification",
             sql.get_table_columns(self._conn, "variants"),
             "variants",
-            {"$and": [{"samples." + sql.get_sample(self._conn, self._sample_id)["name"] + ".gt":{"$gt": 0}}]}
+            {
+                "$and": [
+                    {
+                        "samples."
+                        + sql.get_sample(self._conn, self._sample_id)["name"]
+                        + ".gt": {"$gt": 0}
+                    }
+                ]
+            },
         ):
             # if classif is not defined in config, keep the number by default
             row = [variant_classifs.get(row["classification"], row["classification"]), row["count"]]
@@ -171,7 +179,7 @@ class SampleReport(AbstractReport):
 
         return variants
 
-    def _tags_to_list(self, tags) -> list[str]:
+    def _tags_to_list(self, tags) -> typing.List[str]:
         if hasattr(constants, "HAS_OPERATOR"):
             separator = constants.HAS_OPERATOR
         else:
@@ -222,16 +230,15 @@ class SampleReport(AbstractReport):
         output_dir = os.path.dirname(output_path)
 
         data = self.get_data()
-        #using markdown instead of jinja-markdown, because the latter does not work when packaged with nuitka
+        # using markdown instead of jinja-markdown, because the latter does not work when packaged with nuitka
         data["sample"]["comment"] = markdown.markdown(data["sample"]["comment"])
         for i in range(len(data["variants"])):
             data["variants"][i]["comment"] = markdown.markdown(data["variants"][i]["comment"])
-            data["variants"][i]["samples"]["comment"] = markdown.markdown(data["variants"][i]["samples"]["comment"])
+            data["variants"][i]["samples"]["comment"] = markdown.markdown(
+                data["variants"][i]["samples"]["comment"]
+            )
 
-        env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir),
-            autoescape=True
-        )
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir), autoescape=True)
 
         template = env.get_template(os.path.basename(self._template))
         output = template.render(data)

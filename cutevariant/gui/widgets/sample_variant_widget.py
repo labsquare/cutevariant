@@ -90,9 +90,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load classification
         config = Config("classifications")
-        self.genotype_classification = config.get("genotypes")
+        self.genotype_classification = config.get("genotypes",[])
         self.genotype_classification = sorted(
-            self.genotype_classification, key=lambda c: c["number"]
+            self.genotype_classification, key=lambda d: d.get('number',0)
         )
         for item in self.genotype_classification:
             self.class_combo.addItem(
@@ -167,7 +167,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         Returns:
             locked (bool) : lock status of sample attached to current genotype
         """
-        config_classif = Config("classifications").get("samples", None)
+        config_classif = Config("classifications").get("samples", [])
         sample = sql.get_sample(self.conn, sample_id)
         sample_classif = sample.get("classification", None)
 

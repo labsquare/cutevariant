@@ -63,6 +63,12 @@ class CutestyleFormatter(Formatter):
         ):
             self.TAGS_COLOR[tag["name"]] = tag["color"]
 
+         # Classification genotypes
+        self.CLASSIFICATIONS_GENOTYPES = {}
+        classifications_genotypes = Config("classifications").get("genotypes", {})
+        for classification in classifications_genotypes:
+            self.CLASSIFICATIONS_GENOTYPES[classification["number"]] = classification
+
     def format(self, field: str, value: str, option, is_selected):
 
         if re.match(r"samples\..+\.gt", field) or field == "gt":
@@ -70,6 +76,17 @@ class CutestyleFormatter(Formatter):
                 value = -1
             icon = cst.GENOTYPE_ICONS.get(int(value))
             return {"text": "", "icon": FIcon(icon)}
+
+        if re.match(r"samples\..+\.classification", field):
+            if value == "NULL":
+                return {"text": ""}
+            else:
+                genotype_classification_color = self.CLASSIFICATIONS_GENOTYPES.get(int(value),{}).get("color","gray")
+                if int(value) != 0:
+                    genotype_classification_icon = 0xF0133
+                else:
+                    genotype_classification_icon = 0xF0130 #0xF0130 #0xF012F
+                return {"text": "", "color": genotype_classification_color, "icon": FIcon(genotype_classification_icon, color=genotype_classification_color)}
 
         if value == "NULL" or value == "None":
             font = QFont()

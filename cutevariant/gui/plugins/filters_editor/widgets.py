@@ -564,6 +564,7 @@ class FiltersEditorWidget(plugin.PluginWidget):
         if name in presets:
             del presets[name]
             config.save()
+            self.presets_model.load()
             self.load_presets()
 
     def on_select_preset(self):

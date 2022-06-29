@@ -1,4 +1,5 @@
 from logging import Logger
+from random import sample
 import sqlite3
 import functools
 from typing import List
@@ -22,7 +23,7 @@ import time
 
 DEFAULT_SELECTION_NAME = cst.DEFAULT_SELECTION_NAME or "variants"
 SAMPLES_SELECTION_NAME = cst.SAMPLES_SELECTION_NAME or "samples"
-CURRENT_SAMPLE_SELECTION_NAME = cst.CURRENT_SAMPLE_SELECTION_NAME or "current_sample"
+CURRENT_SAMPLE_SELECTION_NAME = cst.CURRENT_SAMPLE_SELECTION_NAME or "current_samples"
 LOCKED_SELECTIONS = [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]
 
 
@@ -76,9 +77,10 @@ class SampleModel(QAbstractTableModel):
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
 
         col = index.column()
+        sample = self._samples[index.row()]
 
         if role == Qt.DisplayRole:
-            sample = self._samples[index.row()]
+
             if col == SampleModel.NAME_COLUMN:
                 return sample.get("name", "unknown")
 
@@ -91,7 +93,7 @@ class SampleModel(QAbstractTableModel):
                 return count_validation_positive_variant
 
         if role == Qt.DecorationRole:
-            sample = self._samples[index.row()]
+
             color = QApplication.palette().color(QPalette.Text)
             color_alpha = QColor(QApplication.palette().color(QPalette.Text))
             color_alpha.setAlpha(50)
@@ -130,8 +132,6 @@ class SampleModel(QAbstractTableModel):
                 return QIcon(FIcon(0xF017A, color_alpha))
 
         if role == Qt.ToolTipRole:
-
-            sample = self._samples[index.row()]
 
             if col == SampleModel.COMMENT_COLUMN:
                 sample_comment_tooltip = sample.get("comment", "").replace("\n", "<br>")
@@ -238,8 +238,15 @@ class SampleVerticalHeader(QHeaderView):
 
             painter.restore()
 
-            style = next(i for i in self.model().classifications if i["number"] == classification)
-            color = style.get("color", "white")
+            if self.model().classifications:
+                style = next(i for i in self.model().classifications if i.get("number",None) == classification) or {}
+            else:
+                style = {}
+            color = style.get("color", "white")  
+            color_alpha_75 = QColor(color)
+            color_alpha_75.setAlpha(75)
+            color_alpha_0 = QColor(color)
+            color_alpha_0.setAlpha(0)   
 
             current_source = self.parent.mainwindow.get_state_data("source") or ""
 
@@ -250,20 +257,24 @@ class SampleVerticalHeader(QHeaderView):
                 if source["description"] is not None
             }
             current_samples = sources_samples.get(current_source, [])
-            
-            if name in current_samples:
-                icon = 0xF0009
-            else:
-                icon = 0xF0013
 
-            pen = QPen(QColor(color))
+            if name in current_samples:
+                icon = 0xF0009 #0xF0016 #0xF0899 #0xF0008 #0xF0009
+                color_line = color
+                color_icon = color
+            else:
+                icon = 0xF0009 #0xF0013
+                color_line = color_alpha_0
+                color_icon = color_alpha_75
+
+            pen = QPen(color_line)
             pen.setWidth(6)
             painter.setPen(pen)
-            painter.setBrush(QBrush(color))
+            painter.setBrush(QBrush(color_line))
             painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
             target = QRect(0, 0, 20, 20)
-            pix = FIcon(icon, color).pixmap(target.size())
+            pix = FIcon(icon, color_icon).pixmap(target.size())
             target.moveCenter(rect.center() + QPoint(1, 1))
 
             painter.drawPixmap(target, pix)
@@ -306,7 +317,8 @@ class SamplesWidget(plugin.PluginWidget):
         self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.view.setShowGrid(False)
-        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        # self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         
         self.view.setVerticalHeader(SampleVerticalHeader(self))
@@ -453,14 +465,17 @@ class SamplesWidget(plugin.PluginWidget):
         self.select_action = QAction(FIcon(0xF0349), "Select variants")
         self.select_action.triggered.connect(self.on_show_variant)
 
-        self.create_filter_action = QAction(FIcon(0xF0EF1), "Create filters")
-        self.create_filter_action.triggered.connect(self.on_create_filter)
+        self.create_filter_action_intersection = QAction(FIcon(0xF0EF1), "Create filters (intersection)")
+        self.create_filter_action_intersection.triggered.connect(self.on_create_filter_intersection)
 
-        self.clear_filter_action = QAction(FIcon(0xF0234), "Clear all filters")
+        self.create_filter_action_union = QAction(FIcon(0xF0EF1), "Create filters (union)")
+        self.create_filter_action_union.triggered.connect(self.on_create_filter_union)
+
+        self.clear_filter_action = QAction(FIcon(0xF0234), "Clear filters")
         self.clear_filter_action.triggered.connect(self.on_clear_filters)
 
         self.source_action = QAction(FIcon(0xF0A75), "Create a source")
-        self.source_action.triggered.connect(self.on_create_samples_source)
+        self.source_action.triggered.connect(self.on_create_samples_source_from_selected)
         self.genotype_action = QAction(FIcon(0xF0B38), "Add genotypes from all samples")
         self.genotype_action.triggered.connect(self.on_add_genotypes)
 
@@ -480,14 +495,15 @@ class SamplesWidget(plugin.PluginWidget):
             menu.addMenu(self._create_tags_menu())
         menu.addSeparator()
 
-        fields_menu = menu.addMenu("Add genotype fields ...")
+        fields_menu = menu.addMenu("Add genotype fields...")
 
         for field in sql.get_field_by_category(self.model.conn, "samples"):
             field_action = fields_menu.addAction(QIcon(), field["name"], self.on_add_field)
             field_action.setData(field)
 
         menu.addAction(self.select_action)
-        menu.addAction(self.create_filter_action)
+        menu.addAction(self.create_filter_action_intersection)
+        menu.addAction(self.create_filter_action_union)
         menu.addAction(self.clear_filter_action)
         menu.addAction(self.source_action)
 
@@ -503,7 +519,7 @@ class SamplesWidget(plugin.PluginWidget):
         Returns:
             locked (bool) : lock status of sample attached to current genotype
         """
-        config_classif = Config("classifications").get("samples", None)
+        config_classif = Config("classifications").get("samples", [])
         sample = sql.get_sample(self.model.conn, sample_id)
         sample_classif = sample.get("classification", None)
 
@@ -550,16 +566,26 @@ class SamplesWidget(plugin.PluginWidget):
         field = action.data()
         field_name = field["name"]
 
+        # Selected samples (by index)
         indexes = self.view.selectionModel().selectedRows()
+
         if indexes:
-            sample_name = indexes[0].siblingAtColumn(0).data()
 
+            # Copy existing fields
             fields = copy.deepcopy(self.mainwindow.get_state_data("fields"))
-            new_field = f"samples.{sample_name}.{field_name}"
 
-            fields.append(new_field)
-            print(fields)
+            # Add field for selected samples
+            for sample_index in indexes:
+
+                sample_name = sample_index.siblingAtColumn(0).data()
+                new_field = f"samples.{sample_name}.{field_name}"
+                if new_field not in fields:
+                    fields.append(new_field)
+
+            # Set State Data
             self.mainwindow.set_state_data("fields", fields)
+
+            # Refresh plugins
             self.mainwindow.refresh_plugins(sender=self)
 
     def on_remove(self):
@@ -634,65 +660,147 @@ class SamplesWidget(plugin.PluginWidget):
         indexes = self.view.selectionModel().selectedRows()
 
         if indexes:
-            sample_name = indexes[0].siblingAtColumn(0).data()
+
+            # Create list of selected samples
+            sample_name_list = []
+            for sample_index in indexes:
+                sample_name = sample_index.siblingAtColumn(0).data()
+                sample_name_list.append(sample_name)
 
             # Add GT field
-            # fields = self.mainwindow.get_state_data("fields")
-            # fields = [f for f in fields if not f.startswith("samples")]
-            # fields += [f"samples.{sample_name}.gt"]
-
-            self.on_add_genotypes(samples=[sample_name], refresh=False)
+            self.on_add_genotypes(samples=sample_name_list, refresh=False)
 
             # Create/Update current_sample source
             self.on_create_samples_source(
-                source_name=CURRENT_SAMPLE_SELECTION_NAME, samples=[sample_name]
+                source_name=CURRENT_SAMPLE_SELECTION_NAME, samples=sample_name_list
             )
 
-            # self.mainwindow.set_state_data("fields", fields)
-            # self.mainwindow.set_state_data("source", "current_sample")
+    def on_create_filter_intersection(self):
 
-            # self.mainwindow.refresh_plugins(sender=self)
+        self.on_create_filter(operator="$and")
 
-            # if "source_editor" in self.mainwindow.plugins:
-            #     self.mainwindow.refresh_plugin("source_editor")
+    def on_create_filter_union(self):
 
-    def on_create_filter(self):
+        self.on_create_filter(operator="$or")
 
+    def on_create_filter(self, operator:str = '$and'):
+
+        # Selected samples (by index)
         indexes = self.view.selectionModel().selectedRows()
 
-        if indexes:
-            sample_name = indexes[0].siblingAtColumn(0).data()
+        # Default operator (if not set)
+        if not operator:
+            operator = '$and'
 
+        if indexes:
+
+            # Copy existing filters
             filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
 
+            # If no filters
             if not filters:
                 filters = {"$and": []}
 
+            # root operator
             root = list(filters.keys())[0]  # Get first logic "$or" or "$and"
 
-            # Append new filters
-            filters[root].append({f"samples.{sample_name}.gt": {"$gt": 0}})
+            # Create filters for selected samples
+            filters_samples = []
+            for sample_index in indexes:
+                sample_name = sample_index.siblingAtColumn(0).data()
+                filters_samples.append({f"samples.{sample_name}.gt": {"$gt": 0}})
 
-            self.mainwindow.set_state_data("filters", filters)
+            # Add samples' filter on filters
+            if {operator: filters_samples} not in filters[root]:
+                filters[root].append({operator: filters_samples})
 
-            # if "source_editor" in self.mainwindow.plugins:
-            #     self.mainwindow.refresh_plugin("source_editor")
+                # Set State Data
+                self.mainwindow.set_state_data("filters", filters)
 
-            self.mainwindow.refresh_plugins(sender=self)
+                # Refresh plugins
+                # if "source_editor" in self.mainwindow.plugins:
+                #     self.mainwindow.refresh_plugin("source_editor")
+                self.mainwindow.refresh_plugins(sender=self)
 
     def on_clear_filters(self):
 
+        # Selected samples (by index)
+        indexes = self.view.selectionModel().selectedRows()
+
+        # Copy existing filters
+        filters = self.mainwindow.get_state_data("filters")
+
+        if indexes:
+
+            # Create filters for selected samples
+            for sample_index in indexes:
+                sample_name = sample_index.siblingAtColumn(0).data()
+                filters = querybuilder.remove_field_in_filter(filters, f"samples.{sample_name}.gt")
+
+            # Set State Data
+            self.mainwindow.set_state_data("filters", filters)
+
+            # Refresh plugins
+            self.mainwindow.refresh_plugins(sender=self)
+
+    def on_create_samples_source_from_selected(
+        self
+    ):
+        """Create source from a list of samples manually selected in samples model"""
+
+         # Selected samples (by index)
         indexes = self.view.selectionModel().selectedRows()
 
         if indexes:
-            sample_name = indexes[0].siblingAtColumn(0).data()
 
-            filters = self.mainwindow.get_state_data("filters")
-            filters = querybuilder.remove_field_in_filter(filters, f"samples.{sample_name}.gt")
+            # Create list of selected samples
+            sample_name_list = []
+            for sample_index in indexes:
+                sample_name = sample_index.siblingAtColumn(0).data()
+                sample_name_list.append(sample_name)
 
-            self.mainwindow.set_state_data("filters", filters)
+            # Ask for source name
+            source_name, ok = QInputDialog.getText(
+                self,
+                self.tr("Input dialog"),
+                self.tr("Source name:"),
+                QLineEdit.Normal,
+                QDir.home().dirName(),
+            )
 
-            self.mainwindow.refresh_plugins(sender=self)
+            if ok:
+
+                # If locked source names
+                if source_name in [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]:
+                    QMessageBox.warning(
+                        self,
+                        self.tr("Overwrite source locked"),
+                        self.tr(f"Source '{source_name}' is locked")
+                    )
+                    return
+
+                # List of existing sources
+                sources = sql.get_selections(self.model.conn)
+                sources_samples = {
+                    source["name"]: source["description"].split(",")
+                    for source in sources
+                    if source["description"] is not None
+                }
+                
+                # Check if source exists
+                if sources_samples.get(source_name,None):
+                    # Ask for overwriting
+                    ret = QMessageBox.warning(
+                        self,
+                        self.tr("Overwrite source"),
+                        self.tr(f"Source '{source_name}' already exists. Do you want to overwrite it ?"),
+                        QMessageBox.Yes | QMessageBox.No,
+                    )
+                    if ret == QMessageBox.No:
+                        return
+
+                # Create source
+                self.on_create_samples_source(source_name=source_name, samples=sample_name_list)
 
     def on_create_samples_source(
         self, source_name: str = SAMPLES_SELECTION_NAME, samples: list = None
@@ -708,7 +816,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         if len(samples):
             sql.insert_selection_from_samples(
-                self.model.conn, samples, name=source_name, force=False
+                self.model.conn, samples, name=source_name, force=False, description=",".join(samples)
             )
             self.mainwindow.set_state_data("source", source_name)
             self.mainwindow.refresh_plugins(sender=self)
@@ -778,6 +886,7 @@ class SamplesWidget(plugin.PluginWidget):
 
         config = Config("classifications")
         self.model.classifications = config.get("samples", [])
+        self.model.classifications = sorted(self.model.classifications, key=lambda d: d.get('number',0))
         self.model.load()
 
     def on_refresh(self):
