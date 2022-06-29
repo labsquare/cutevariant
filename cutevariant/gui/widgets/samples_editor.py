@@ -156,7 +156,7 @@ class SamplesEditor(QDialog):
         self._setup_actions()
 
         config = Config("classifications")
-        self.CLASSIFICATION = config.get("samples")
+        self.CLASSIFICATION = config.get("samples",{})
 
         self.conn = conn
         self.on_selectionChanged()
