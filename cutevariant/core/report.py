@@ -150,6 +150,8 @@ class SampleReport(AbstractReport):
         config = Config("variables") or {}
         variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
         variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+        genotype_classifs = SampleReport._classif_number_to_label("genotypes")
+        variant_classifs = SampleReport._classif_number_to_label("variants")
 
         variants_ids = sql.get_variants(
             self._conn,
@@ -173,6 +175,12 @@ class SampleReport(AbstractReport):
                 0
             ]  # keep only current sample
             var["variant_name"] = variant_name_pattern.format(**var)
+            var["classification"] = variant_classifs.get(
+                var["classification"], var["classification"]
+            )
+            var["samples"]["classification"] = genotype_classifs.get(
+                var["samples"]["classification"], var["samples"]["classification"]
+            )
             var["tags"] = self._tags_to_list(var["tags"])
             var["samples"]["tags"] = self._tags_to_list(var["samples"]["tags"])
             variants.append(var)
