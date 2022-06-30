@@ -18,6 +18,7 @@ class SplashScreen(QSplashScreen):
         message = "Chargement ... "
         rect = painter.fontMetrics().boundingRect(message)
         rect.moveCenter(QPoint(self.rect().center().x(), self.rect().center().y() + 60))
+        painter.setPen(QPen(QColor("white")))
         painter.drawText(rect, Qt.AlignCenter, message)
 
         message = f"Version {QApplication.applicationVersion()}"
