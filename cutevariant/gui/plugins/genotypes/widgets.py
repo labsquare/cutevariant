@@ -210,7 +210,7 @@ class GenotypeModel(QAbstractTableModel):
         key = self._headers[index.column()]
 
         if role == Qt.DisplayRole:
-            return item[key] or "NULL"
+            return item[key]
 
         if role == Qt.ToolTipRole:
             return self.get_tooltip(index.row())
