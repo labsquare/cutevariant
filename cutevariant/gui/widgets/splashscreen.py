@@ -21,7 +21,7 @@ class SplashScreen(QSplashScreen):
         painter.setPen(QPen(QColor("white")))
         painter.drawText(rect, Qt.AlignCenter, message)
 
-        message = f"Version {QApplication.applicationVersion()}"
+        message = f"Version Rosalind {QApplication.applicationVersion()}"
         rect = painter.fontMetrics().boundingRect(message)
-        rect.moveBottomRight(self.rect().bottomRight() - QPoint(80, 80))
+        rect.moveBottomRight(self.rect().bottomRight() - QPoint(5, 5))
         painter.drawText(rect, Qt.AlignCenter, message)
