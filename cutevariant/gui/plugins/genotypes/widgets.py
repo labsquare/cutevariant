@@ -88,7 +88,7 @@ class GenotypeVerticalHeader(QHeaderView):
                     [genotype_sample_name],
                 )
             )
-            genotype = genotype_infos.get("gt",-1)
+            genotype = genotype_infos.get("gt", -1)
 
         if genotype == "NULL" or genotype is None or genotype == "":
             genotype_int = -1
@@ -431,7 +431,9 @@ class GenotypesWidget(plugin.PluginWidget):
 
         self.view.setVerticalHeader(GenotypeVerticalHeader())
         self.view.verticalHeader().setSectionsClickable(True)
-        self.view.verticalHeader().sectionDoubleClicked.connect(self._on_double_clicked_vertical_header)
+        self.view.verticalHeader().sectionDoubleClicked.connect(
+            self._on_double_clicked_vertical_header
+        )
 
         self.view.setItemDelegate(self.delegate)
 
@@ -669,7 +671,7 @@ class GenotypesWidget(plugin.PluginWidget):
 
             tags_preset = Config("tags")
 
-            for item in tags_preset.get("genotypes",[]):
+            for item in tags_preset.get("genotypes", []):
 
                 icon = 0xF04F9
 
@@ -735,9 +737,10 @@ class GenotypesWidget(plugin.PluginWidget):
 
         else:
             QMessageBox.information(
-                self, "No genotype", self.tr(f"Sample '{sample_name}' does not have genotype for this variant")
+                self,
+                "No genotype",
+                self.tr(f"Sample '{sample_name}' does not have genotype for this variant"),
             )
-
 
     def _toggle_column(self, col: int, show: bool):
         """hide/show columns"""
@@ -746,7 +749,7 @@ class GenotypesWidget(plugin.PluginWidget):
         else:
             self.view.hideColumn(col)
 
-    def _on_classification_changed(self, value:int = None):
+    def _on_classification_changed(self, value: int = None):
         """triggered from menu"""
         if not self.sender():
             return
@@ -756,7 +759,10 @@ class GenotypesWidget(plugin.PluginWidget):
         value = int(value)
 
         if value:
-            if len(self.view.selectionModel().selectedRows()) == 1 and genotype.get("classification") == value:
+            if (
+                len(self.view.selectionModel().selectedRows()) == 1
+                and genotype.get("classification") == value
+            ):
                 value = 0
         else:
             try:
@@ -764,7 +770,10 @@ class GenotypesWidget(plugin.PluginWidget):
             except:
                 value = 0
 
-        if genotype.get("sample_id", None) is not None and genotype.get("variant_id", None) is not None:
+        if (
+            genotype.get("sample_id", None) is not None
+            and genotype.get("variant_id", None) is not None
+        ):
 
             if self.is_locked(genotype.get("sample_id", 0)):
                 sample_name = genotype.get("name", "unknown")
@@ -789,14 +798,16 @@ class GenotypesWidget(plugin.PluginWidget):
     def _on_default_classification_changed(self):
         # default_classification_validation
         global_variables = Config("genotypes")
-        default_classification_genotype_validation = global_variables.get("default_classification_validation", 1)
+        default_classification_genotype_validation = global_variables.get(
+            "default_classification_validation", 1
+        )
         # genotypes classifications
         classifications = Config("classifications")
-        genotypes_classification = classifications.get("genotypes",[])
+        genotypes_classification = classifications.get("genotypes", [])
         # test if classification 1 exists, else 0
         classification_genotype_validation = 0
         for classification in genotypes_classification:
-            if classification.get("number",0) == default_classification_genotype_validation:
+            if classification.get("number", 0) == default_classification_genotype_validation:
                 classification_genotype_validation = default_classification_genotype_validation
         # change clssification
         self._on_classification_changed(classification_genotype_validation)
@@ -805,7 +816,7 @@ class GenotypesWidget(plugin.PluginWidget):
         """triggered from menu"""
 
         for index in self.view.selectionModel().selectedRows():
-            
+
             # current variant sample
             row = index.row()
             genotype = self.model.get_genotype(row)
@@ -813,12 +824,14 @@ class GenotypesWidget(plugin.PluginWidget):
             genotype_sample_name = genotype["name"]
 
             # current variant tags
-            current_genotype = next(sql.get_genotypes(
+            current_genotype = next(
+                sql.get_genotypes(
                     self.conn,
                     genotype_variant_id,
                     ["tags"],
                     [genotype_sample_name],
-                ))
+                )
+            )
             current_tags_text = current_genotype.get("tags", None)
             if current_tags_text:
                 current_tags = current_tags_text.split(cst.HAS_OPERATOR)
@@ -914,7 +927,9 @@ class GenotypesWidget(plugin.PluginWidget):
 
         config = Config("classifications")
         self.model.classifications = config.get("genotypes", [])
-        self.model.classifications = sorted(self.model.classifications, key=lambda d: d.get('number',0))
+        self.model.classifications = sorted(
+            self.model.classifications, key=lambda d: d.get("number", 0)
+        )
 
     def _is_selectors_checked(self):
         """Return False if selectors is not checked"""
@@ -935,6 +950,7 @@ class GenotypesWidget(plugin.PluginWidget):
             self.sample_selector.add_item(FIcon(0xF0B55), sample["name"], data=sample["name"])
 
     def load_fields(self):
+        self.fields_button.blockSignals(True)
         self.fields_button.clear()
         for field in sql.get_field_by_category(self.conn, "samples"):
             self.fields_button.add_item(
@@ -943,9 +959,10 @@ class GenotypesWidget(plugin.PluginWidget):
                 field["description"],
                 data=field["name"],
             )
+        self.fields_button.blockSignals(False)
 
     def on_refresh(self):
-
+        print("DEBUG")
         # variant id
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         if self.current_variant and "id" in self.current_variant:
