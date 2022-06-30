@@ -118,22 +118,27 @@ class SourceModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole:
             if index.column() == 0:
+                color = QApplication.palette().color(QPalette.Text)
+                color_alpha = QColor(QApplication.palette().color(QPalette.Text))
+                color_alpha.setAlpha(50)
+                if table_name != self.current_source:
+                    color = color_alpha
                 # if table_name == DEFAULT_SELECTION_NAME:
                 if table_name in LOCKED_SELECTIONS:
-                    return QIcon(FIcon(0xF13C6))
+                    return QIcon(FIcon(0xF13C6, color))
                 else:
-                    return QIcon(FIcon(0xF04EB))
+                    return QIcon(FIcon(0xF04EB, color))
 
-        if role == Qt.FontRole:
-            font = QFont()
-            font.setBold(table_name == self.current_source)
-            return font
+        # if role == Qt.FontRole:
+        #     font = QFont()
+        #     font.setBold(table_name == self.current_source)
+        #     return font
 
-        if role == Qt.ForegroundRole:
-            if table_name != self.current_source:
-                return QApplication.style().standardPalette().color(QPalette.Dark)
-            else:
-                return  QApplication.style().standardPalette().color(QPalette.Light)
+        # if role == Qt.ForegroundRole:
+        #     if table_name != self.current_source:
+        #         return QApplication.style().standardPalette().color(QPalette.Dark)
+        #     else:
+        #         return QApplication.style().standardPalette().color(QPalette.Light)
 
         if role == Qt.UserRole:
             return self.records[index.row()]
