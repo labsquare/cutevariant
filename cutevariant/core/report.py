@@ -141,7 +141,7 @@ class SampleReport(AbstractReport):
             "var_per_gt_classif": var_per_gt_classif,
         }
 
-    def get_variants(self) -> list[dict]:
+    def get_variants(self) -> typing.List[dict]:
         """
         Return classified variants of the current samples
         """
