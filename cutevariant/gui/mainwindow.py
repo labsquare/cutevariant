@@ -1031,12 +1031,12 @@ class MainWindow(QMainWindow):
             self.set_state_data("order_by", state.get("order_by", []))
             self.set_state_data("samples", state.get("samples", []))
 
-            if "plugins" in state:
-                for name, plugin in self.plugins.items():
-                    if name in state["plugins"]:
-                        plugin.from_json(state["plugins"][name])
-
             self.open_database_from_file(state["db_path"], reset=False)
+
+            # if "plugins" in state:
+            #     for name, plugin in self.plugins.items():
+            #         if name in state["plugins"]:
+            #             plugin.from_json(state["plugins"][name])
 
     def write_settings(self):
         """Store the state of this mainwindow.
