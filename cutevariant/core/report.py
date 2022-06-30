@@ -4,11 +4,9 @@ import getpass
 import jinja2
 import markdown
 import os
-import shutil
 import sqlite3
 import typing
 
-from cutevariant.commons import recursive_overwrite
 from cutevariant.config import Config
 from cutevariant.core import sql
 from cutevariant import constants
@@ -143,13 +141,15 @@ class SampleReport(AbstractReport):
             "var_per_gt_classif": var_per_gt_classif,
         }
 
-    def get_variants(self) -> dict:
+    def get_variants(self) -> list[dict]:
         """
         Return classified variants of the current samples
         """
         config = Config("variables") or {}
         variant_name_pattern = config.get("variant_name_pattern") or "{chr}:{pos} - {ref}>{alt}"
         variant_name_pattern = variant_name_pattern.replace("ann.", "annotations___")
+        genotype_classifs = SampleReport._classif_number_to_label("genotypes")
+        variant_classifs = SampleReport._classif_number_to_label("variants")
 
         variants_ids = sql.get_variants(
             self._conn,
@@ -173,6 +173,12 @@ class SampleReport(AbstractReport):
                 0
             ]  # keep only current sample
             var["variant_name"] = variant_name_pattern.format(**var)
+            var["classification"] = variant_classifs.get(
+                var["classification"], var["classification"]
+            )
+            var["samples"]["classification"] = genotype_classifs.get(
+                var["samples"]["classification"], var["samples"]["classification"]
+            )
             var["tags"] = self._tags_to_list(var["tags"])
             var["samples"]["tags"] = self._tags_to_list(var["samples"]["tags"])
             variants.append(var)
@@ -189,7 +195,7 @@ class SampleReport(AbstractReport):
         return tags.split(separator)
 
     @classmethod
-    def _classif_number_to_label(cls, classification_type: list) -> dict:
+    def _classif_number_to_label(cls, classification_type: str) -> dict:
         """Create a dic to convert from classification number to label, based on Config values
         Args:
             classif_config (list): classification of interest in config. Ex: Config("classifications")["variants"]
@@ -227,7 +233,6 @@ class SampleReport(AbstractReport):
             raise ValueError("No template is set ; use self.set_template(str)")
 
         template_dir = os.path.dirname(self._template)
-        output_dir = os.path.dirname(output_path)
 
         data = self.get_data()
         # using markdown instead of jinja-markdown, because the latter does not work when packaged with nuitka
@@ -242,9 +247,6 @@ class SampleReport(AbstractReport):
 
         template = env.get_template(os.path.basename(self._template))
         output = template.render(data)
-
-        # Dangereux ..
-        # recursive_overwrite(template_dir, output_dir, ignore=shutil.ignore_patterns("*.html"))
 
         with codecs.open(output_path, "w", "utf-8") as f:
             f.write(output)
