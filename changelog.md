@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-0.4.4 (unreleased)
+0.4.4 (2022-06-30)
 aaaaaaaaaaaaaaaaaa
 
 - Nothing changed yet.
