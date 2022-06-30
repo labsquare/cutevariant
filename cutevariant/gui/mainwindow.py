@@ -14,6 +14,7 @@ from logging import DEBUG
 from PySide6.QtCore import (
     QEventLoop,
     QStandardPaths,
+    QThread,
     Qt,
     QSettings,
     QByteArray,
@@ -566,7 +567,7 @@ class MainWindow(QMainWindow):
             self.about_cutevariant,
         )
 
-    def open_database_from_file(self, filepath):
+    def open_database_from_file(self, filepath, reset=True):
         """Open the given db/project file
 
         .. note:: Called at the end of a project creation by the Wizard,
@@ -597,7 +598,7 @@ class MainWindow(QMainWindow):
                 )
                 return
 
-            self.open_database(self.conn)
+            self.open_database(self.conn, reset)
             self.save_recent_project(filepath)
 
         except sqlite3.OperationalError as e:
@@ -613,7 +614,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Cutevariant - %s" % os.path.basename(filepath))
         self.status_bar.showMessage(self.tr("{} opened").format(filepath))
 
-    def open_database(self, conn):
+    def open_database(self, conn, reset=True):
         """Open the project file and populate widgets
 
         Args:
@@ -622,7 +623,8 @@ class MainWindow(QMainWindow):
 
         self.conn = conn
 
-        self._state_data.reset()
+        if reset:
+            self._state_data.reset()
 
         # Clear memoization cache for count_cmd
         sql.clear_lru_cache()
@@ -982,8 +984,8 @@ class MainWindow(QMainWindow):
         """save plugin state into a json file"""
 
         if not self.conn:
-            return 
-            
+            return
+
         session = {
             "db_path": sql.get_database_file_name(self.conn),
             "fields": self.get_state_data("fields"),
@@ -1023,8 +1025,6 @@ class MainWindow(QMainWindow):
             state = json.load(file)
 
         if "db_path" in state:
-            self.open_database_from_file(state["db_path"])
-
             self.set_state_data("fields", state.get("fields", []))
             self.set_state_data("source", state.get("source", "variants"))
             self.set_state_data("filters", state.get("filters", {}))
@@ -1036,7 +1036,7 @@ class MainWindow(QMainWindow):
                     if name in state["plugins"]:
                         plugin.from_json(state["plugins"][name])
 
-            self.refresh_plugins()
+            self.open_database_from_file(state["db_path"], reset=False)
 
     def write_settings(self):
         """Store the state of this mainwindow.
