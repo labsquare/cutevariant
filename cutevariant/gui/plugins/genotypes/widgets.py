@@ -962,7 +962,6 @@ class GenotypesWidget(plugin.PluginWidget):
         self.fields_button.blockSignals(False)
 
     def on_refresh(self):
-        print("DEBUG")
         # variant id
         self.current_variant = self.mainwindow.get_state_data("current_variant")
         if self.current_variant and "id" in self.current_variant:

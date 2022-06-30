@@ -48,13 +48,11 @@ def parse_gene_query(query: str) -> dict:
     if not query:
         return dict()
 
-    match = re.findall(r"^(\w+)$", query)
-
+    match = re.findall(r"^([\w-]+)$", query)
     if match:
         gene_name = match[0]
 
         gene_col_name = "gene"
-
         return {"$and": [{f"ann.{gene_col_name}": gene_name}]}
     else:
         return dict()
