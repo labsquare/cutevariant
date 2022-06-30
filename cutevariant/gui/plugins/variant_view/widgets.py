@@ -76,7 +76,10 @@ class VariantVerticalHeader(QHeaderView):
             painter.restore()
 
             if self.model().classifications:
-                classification = next(i for i in self.model().classifications if i.get("number",None) == number) or {}
+                classification = (
+                    next(i for i in self.model().classifications if i.get("number", None) == number)
+                    or {}
+                )
             else:
                 classification = {}
 
@@ -187,6 +190,7 @@ class VariantModel(QAbstractTableModel):
 
         self._finished_thread_count = 0
         self._user_has_interrupt = False
+        self._is_loading = False
 
         # Create results cache because Thread doesn't use the memoization cache from command.py.
         # This is because Thread create a new connection and change the function signature used by the cache.
@@ -527,6 +531,7 @@ class VariantModel(QAbstractTableModel):
                 interrupted = True
 
         if interrupted:
+            self._is_loading = False
             self.interrupted.emit()
 
         # # Wait for exception ...
@@ -553,10 +558,11 @@ class VariantModel(QAbstractTableModel):
         if self.conn is None:
             return
 
-        if self.is_running():
+        if self.is_running() or self._is_loading:
             LOGGER.debug("Cannot load data. Thread is not finished. You can call interrupt() ")
             return
 
+        self._is_loading = True
         LOGGER.debug("Start loading")
         self.mutex.lock()
         offset = (self.page - 1) * self.limit
@@ -658,6 +664,7 @@ class VariantModel(QAbstractTableModel):
         if self._finished_thread_count == 2:
             self._end_timer = time.perf_counter()
             self.elapsed_time = self._end_timer - self._start_timer
+            self._is_loading = False
             self.load_finished.emit()
 
     def on_count_loaded(self):
@@ -676,6 +683,7 @@ class VariantModel(QAbstractTableModel):
         if self._finished_thread_count == 2:
             self._end_timer = time.perf_counter()
             self.elapsed_time = self._end_timer - self._start_timer
+            self._is_loading = False
             self.load_finished.emit()
 
     def hasPage(self, page: int) -> bool:
@@ -1115,13 +1123,14 @@ class VariantView(QWidget):
     def load(self, reset_page: bool = False):
         """Load the view
 
-        If reset_page is set to True, also reset the page to 1
+        If reset_page is set to True, also reset the page to 1 and clear cache
 
         Args:
             reset_page (bool, optional):
         """
         if reset_page:
             self.model.page = 1
+            self.model.clear_all_cache()
             # self.model.order_by = None
 
         self.log_edit.hide()
@@ -1930,7 +1939,9 @@ class VariantView(QWidget):
 
         config = Config("classifications")
         genotypes_classifications = config.get("genotypes", [])
-        genotypes_classifications = sorted(genotypes_classifications, key=lambda d: d.get('number',0))
+        genotypes_classifications = sorted(
+            genotypes_classifications, key=lambda d: d.get("number", 0)
+        )
 
         for item in genotypes_classifications:
 
@@ -2123,7 +2134,9 @@ class VariantViewWidget(plugin.PluginWidget):
 
         config = Config("classifications")
         self.view.model.classifications = config.get("variants", [])
-        self.view.model.classifications = sorted(self.view.model.classifications, key=lambda d: d.get('number',0))
+        self.view.model.classifications = sorted(
+            self.view.model.classifications, key=lambda d: d.get("number", 0)
+        )
 
         self.on_refresh()
 
