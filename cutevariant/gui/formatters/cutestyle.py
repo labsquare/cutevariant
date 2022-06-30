@@ -55,6 +55,7 @@ class CutestyleFormatter(Formatter):
         self.refresh()
 
     def refresh(self):
+
         # Tags colors
         self.TAGS_COLOR = {}
         config = Config("tags")
@@ -70,11 +71,13 @@ class CutestyleFormatter(Formatter):
             self.CLASSIFICATIONS_GENOTYPES[classification["number"]] = classification
 
     def format(self, field: str, value: str, option, is_selected):
-
+        
         if re.match(r"samples\..+\.gt", field) or field == "gt":
-            if value == "NULL":
+            if value == "NULL" or value is None or value == "":
                 value = -1
-            icon = cst.GENOTYPE_ICONS.get(int(value))
+            else:
+                value = int(value)
+            icon = cst.GENOTYPE_ICONS.get(value)            
             return {"text": "", "icon": FIcon(icon)}
 
         if re.match(r"samples\..+\.classification", field):

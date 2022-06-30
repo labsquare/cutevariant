@@ -88,11 +88,13 @@ class GenotypeVerticalHeader(QHeaderView):
                     [genotype_sample_name],
                 )
             )
-            genotype = genotype_infos["gt"]
-        if genotype:
-            genotype_int = int(genotype)
-        else:
+            genotype = genotype_infos.get("gt",-1)
+
+        if genotype == "NULL" or genotype is None or genotype == "":
             genotype_int = -1
+        else:
+            genotype_int = int(genotype)
+
         pix_icon = GENOTYPE_ICONS.get(genotype_int)  # , GENOTYPE_ICONS[-1])
         pix_icon.engine.setColor(color)
 
@@ -277,7 +279,7 @@ class GenotypeModel(QAbstractTableModel):
 
         # Create load_func to run asynchronously: load samples
 
-        used_fields = copy.deepcopy(self.get_fields()) or ["gt"]
+        used_fields = copy.deepcopy(self.get_fields()) or []
         if "classification" not in used_fields:
             used_fields.append("classification")
 
