@@ -199,26 +199,27 @@
     }
 
     #features {
-        width: 960px;
-        margin: auto;
+        max-width: 960px;
+        padding: 0 10px;
     }
 
     .feature {
         font-family: 'Lato', sans-serif;
-        font-weight: 300;
-        box-sizing: border-box;
-        word-break: break-word;
         display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
         justify-content: space-around;
         align-items: center;
         margin-top: 30px;
-
-
     }
 
     .feature > div {
-        margin-right: 10px; 
-        margin-left: 10px; 
+        margin: 0 10px; 
+        max-width: 400px;
+    }
+    .feature.alt {
+        flex-flow: wrap-reverse;
+        flex-direction: row-reverse;
     }
 
     .feature > div >  h2 {
@@ -303,81 +304,68 @@
 
     <div class="feature">
         <div>
-            <h2><span class="material-icons">wysiwyg</span>
+            <h2><span class="material-icons"> wysiwyg</span>
             Desktop Application </h2>
             <p>
               Cutevariant is a cross-platform desktop application used to explore genomics variation from a VCF files. It is Easy to install on any computer using Windows, Mac or Linux. Unlike other solutions, there is no need to send files to a third party. All your data stays with you. Exploring genomics variants is faster and you don't have the latency of a web application. 
+            </p>
+        </div>
+        <div><img src="images/crossplateforme.png" width="400px" alt=""></div>
+    </div>
+
+    <div class="feature alt">
+        <div>
+           <h2><span class="material-icons">people</span> Community</h2>
+           <p>
+              Cutevariant is a new opensource project written in Python and Qt framework and available on github. Contribution are welcome. You can create new plugin and share them with the community. Since it is a new project, bug report and any feedback will be highly appreciated.
+           </p>
+        </div>
+        <div><img src="images/github.png" width="300px" alt=""></div>
+    </div>
+
+    <div class="feature">
+        <div>
+          <h2><span class="material-icons">code</span> Import VCF files</h2>
+          <p>
+            Cutevariant works by importing VCF file into a sqlite database. 
+            It supports Snpeff and VEP annotation. You can create a new project and incrementally import VCF files. You can then make a database of all your variants and use it to query them later.    
           </p>
-      </div>
-      <div><img src="images/crossplateforme.png" width="400px" alt=""></div>
-  </div>
+        </div>
+        <div><img src="images/import_vcf.png" width="600px" alt=""></div>
+    </div>
 
-  <div class="feature">
-      <div><img src="images/github.png" width="300px" alt=""></div>
-      <div>
-        <h2><span class="material-icons">people</span>
-        Community</h2>
-        <p>
-          Cutevariant is a new opensource project written in Python and Qt framework and available on github. Contribution are welcome. You can create new plugin and share them with the community. Since it is a new project, bug report and any feedback will be highly appreciated.    
+    <div class="feature alt">
+        <div>
+          <h2><span class="material-icons">code</span> VQL Language </h2>
+          <p>
+            Select and filters variants directly from a domain specific language that looks like a subset of SQL. It makes possible to create all kinds of query that you could not do with any other user interface. If you don't like query manually, you can always build them indirectly from plugins available from the mainwindow.    
+          </p>
+        </div>
+        <div><img src="images/vql.gif" width="600px" alt="" style="box-shadow: 5px 5px 5px 5px rgba(0, 0, 0, 0.7);"></div>
+    </div>
 
-      </p>
-  </div>
-</div>
-
-<div class="feature">
-  <div><img src="images/import_vcf.png" width="600px" alt=""></div>
-  <div>
-    <h2><span class="material-icons">code</span>
-    Import VCF files</h2>
-    <p>
-      Cutevariant works by importing VCF file into a sqlite database. 
-      It supports Snpeff and VEP annotation. You can create a new project and incrementally import VCF files. You can then make a database of all your variants and use it to query them later.    
-  </p>
-</div>
-</div>
-
-<div class="feature">
-  <div>
-    <h2><span class="material-icons">code</span>
-    VQL Language </h2>
-    <p>
-      Select and filters variants directly from a domain specific language that looks like a subset of SQL. It makes possible to create all kinds of query that you could not do with any other user interface. If you don't like query manually, you can always build them indirectly from plugins available from the mainwindow.    
-  </p>
-</div>
-  <div>
-    <img src="images/vql.gif" width="600px" alt="" style="box-shadow: 5px 5px 5px 5px rgba(0, 0, 0, 0.7);">
-
-</div>
-
-</div>
-
-<div class="feature">
-    <div><img src="images/extension.png" width="600px" alt=""></div>
-
-  <div>
-    <h2><span class="material-icons">extension</span>
-    Plugins</h2>
-    <p>
-     Cutevariant is composed entirely of plugins. It means that it is easily customizable at will. You can create custom controllers, themes and support new file formats for importing or exporting. 
-     All plugins are made with Python. 
- </p>
-</div>
-</div>
+    <div class="feature">
+        <div>
+          <h2><span class="material-icons">extension</span> Plugins</h2>
+          <p>
+            Cutevariant is composed entirely of plugins. It means that it is easily customizable at will. You can create custom controllers, themes and support new file formats for importing or exporting. 
+            All plugins are made with Python. 
+          </p>
+        </div>
+        <div><img src="images/extension.png" width="600px" alt=""></div>
+    </div>
 
     <h1> Credits </h1>
 
 
-<div class="feature">
-     <div>
+    <div class="feature">
+       <div>
          <a href="https://www.chru-strasbourg.fr/service/bioinformatique-medicale-appliquee-au-diagnostic-unite-de/"><img src="images/strasbourg.png" alt=""></a>
-
-     </div>
-
-<div>
-    <a href="https://www.chu-brest.fr"><img src="images/brest.png" alt=""></a> <br>
-    
-</div>
-</div>
+       </div>
+       <div>
+         <a href="https://www.chu-brest.fr"><img src="images/brest.png" alt=""></a> <br>
+       </div>
+    </div>
 </div>
 
 
