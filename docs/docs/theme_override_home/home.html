@@ -201,6 +201,15 @@
     #features {
         max-width: 960px;
         padding: 0 10px;
+        margin: auto;
+        
+        h1  {
+            margin-bottom: 0;
+            color: currentColor;
+            font-size: 30px;
+            text-align: center;
+            font-family: 'Lato', sans-serif;
+        }
     }
 
     .feature {
@@ -211,48 +220,46 @@
         justify-content: space-around;
         align-items: center;
         margin-top: 30px;
+        
+        
+        .alt {
+            flex-flow: wrap-reverse;
+            flex-direction: row-reverse;
+        }
+        
+        div {
+            margin: 0 10px; 
+            max-width: 400px;
+            
+            img {
+                /* box-shadow: 5px 5px 5px 5px rgb(0 0 0 / 70%); */
+                max-width: 100%;
+            }
+            
+            h2 {
+                color: #333;
+                font-weight: 300;
+                font-size: 25px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                line-height: normal;
+                margin-top: 20px;
+                margin-bottom: 10px;
+                font-family: inherit;
+            }
+            p {
+                 font-size: 16px;
+                 line-height: 1.8em;
+                 text-rendering: optimizeLegibility;
+                 -webkit-font-smoothing: antialiased;
+                 color: #111;
+                 margin: 0 0 10px;
+                 display: block;
+             }
+        }
     }
 
-    .feature > div {
-        margin: 0 10px; 
-        max-width: 400px;
-    }
-    .feature.alt {
-        flex-flow: wrap-reverse;
-        flex-direction: row-reverse;
-    }
-
-    .feature > div >  h2 {
-        color: #333;
-        font-weight: 300;
-        font-size: 25px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: normal;
-        margin-top: 20px;
-        margin-bottom: 10px;
-        font-family: inherit;
-    }
-
-    .feature > div >  p {
-     font-size: 16px;
-     line-height: 1.8em;
-     text-rendering: optimizeLegibility;
-     -webkit-font-smoothing: antialiased;
-     color: #111;
-     margin: 0 0 10px;
-     display: block;
- }
-
- #features h1  {
-    margin-bottom: 0;
-    color: currentColor;
-    font-size: 30px;
-    text-align: center;
-    font-family: 'Lato', sans-serif;
-
-}
 
 #footer{
     padding-top: 20px;
@@ -310,7 +317,7 @@
               Cutevariant is a cross-platform desktop application used to explore genomics variation from a VCF files. It is Easy to install on any computer using Windows, Mac or Linux. Unlike other solutions, there is no need to send files to a third party. All your data stays with you. Exploring genomics variants is faster and you don't have the latency of a web application. 
             </p>
         </div>
-        <div><img src="images/crossplateforme.png" width="400px" alt=""></div>
+        <div><img src="images/crossplateforme.png" alt=""></div>
     </div>
 
     <div class="feature alt">
@@ -320,7 +327,7 @@
               Cutevariant is a new opensource project written in Python and Qt framework and available on github. Contribution are welcome. You can create new plugin and share them with the community. Since it is a new project, bug report and any feedback will be highly appreciated.
            </p>
         </div>
-        <div><img src="images/github.png" width="300px" alt=""></div>
+        <div><img src="images/github.png" alt=""></div>
     </div>
 
     <div class="feature">
@@ -331,7 +338,7 @@
             It supports Snpeff and VEP annotation. You can create a new project and incrementally import VCF files. You can then make a database of all your variants and use it to query them later.    
           </p>
         </div>
-        <div><img src="images/import_vcf.png" width="600px" alt=""></div>
+        <div><img src="images/import_vcf.png" alt=""></div>
     </div>
 
     <div class="feature alt">
@@ -341,7 +348,7 @@
             Select and filters variants directly from a domain specific language that looks like a subset of SQL. It makes possible to create all kinds of query that you could not do with any other user interface. If you don't like query manually, you can always build them indirectly from plugins available from the mainwindow.    
           </p>
         </div>
-        <div><img src="images/vql.gif" width="600px" alt="" style="box-shadow: 5px 5px 5px 5px rgba(0, 0, 0, 0.7);"></div>
+        <div><img src="images/vql.gif" alt="" style="box-shadow: 5px 5px 5px 5px rgba(0, 0, 0, 0.7);"></div>
     </div>
 
     <div class="feature">
@@ -352,7 +359,7 @@
             All plugins are made with Python. 
           </p>
         </div>
-        <div><img src="images/extension.png" width="600px" alt=""></div>
+        <div><img src="images/extension.png" alt=""></div>
     </div>
 
     <h1> Credits </h1>
