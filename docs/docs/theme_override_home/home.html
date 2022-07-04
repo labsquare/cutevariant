@@ -227,7 +227,10 @@
     .feature > div > img {
         margin: auto; 
         max-width: 350px;
-        box-shadow: 5px 5px 5px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .gif {
+                box-shadow: 2px 2px 5px 5px rgba(0, 0, 0, 0.3);
     }
     
     .feature > div >  h2 {
@@ -339,7 +342,7 @@
             It supports Snpeff and VEP annotation. You can create a new project and incrementally import VCF files. You can then make a database of all your variants and use it to query them later.    
           </p>
         </div>
-        <div><img src="images/import_vcf.png" alt=""></div>
+        <div><img src="images/import_vcf.png"  onclick="window.open(this.src)" alt=""></div>
     </div>
 
     <div class="feature alt">
@@ -349,7 +352,7 @@
             Select and filters variants directly from a domain specific language that looks like a subset of SQL. It makes possible to create all kinds of query that you could not do with any other user interface. If you don't like query manually, you can always build them indirectly from plugins available from the mainwindow.    
           </p>
         </div>
-        <div><img src="images/vql.gif" alt=""></div>
+        <div><img class="gif" src="images/vql.gif" onclick="window.open(this.src)"  alt=""></div>
     </div>
 
     <div class="feature">
@@ -360,7 +363,7 @@
             All plugins are made with Python. 
           </p>
         </div>
-        <div><img src="images/extension.png" alt=""></div>
+        <div><img src="images/extension.png" onclick="window.open(this.src)"  alt=""></div>
     </div>
 
     <h1> Credits </h1>
