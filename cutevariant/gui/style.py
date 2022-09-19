@@ -17,6 +17,7 @@ import yaml
 
 class AppStyle(QProxyStyle):
     PALETTE_KEYS = {}
+    PALETTE_GROUPS = {}
 
     def __init__(self):
         super().__init__(QStyleFactory.create("fusion"))
@@ -24,6 +25,10 @@ class AppStyle(QProxyStyle):
         self.theme = {}
         self._colors = {}
         AppStyle.PALETTE_KEYS = {camel_to_snake(k): v for k, v in QPalette.ColorRole.values.items()}
+        AppStyle.PALETTE_GROUPS = {
+            camel_to_snake(k): v for k, v in QPalette.ColorGroup.values.items()
+        }
+
         self.load_theme("dark.yaml")
 
     def load_theme(self, filename: str):
@@ -42,11 +47,23 @@ class AppStyle(QProxyStyle):
         """override"""
 
         if isinstance(value, QPalette):
+
             cols = self.theme["palette"]["normal"]
+
             for key, col in cols.items():
                 if key in AppStyle.PALETTE_KEYS:
                     role = AppStyle.PALETTE_KEYS[key]
                     value.setColor(role, QColor(col))
+
+            for group in self.theme["palette"]:
+                if group != "normal":
+                    cols = self.theme["palette"][group]
+
+                    for key, col in cols.items():
+                        if key in AppStyle.PALETTE_KEYS:
+                            role = AppStyle.PALETTE_KEYS[key]
+                            gp = AppStyle.PALETTE_GROUPS[group]
+                            value.setColor(gp, role, QColor(col))
 
     def drawPrimitive(self, element, option, painter, widget) -> None:
 
