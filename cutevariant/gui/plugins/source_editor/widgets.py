@@ -129,10 +129,10 @@ class SourceModel(QAbstractTableModel):
                 else:
                     return QIcon(FIcon(0xF04EB, color))
 
-        # if role == Qt.FontRole:
-        #     font = QFont()
-        #     font.setBold(table_name == self.current_source)
-        #     return font
+        if role == Qt.FontRole:
+            font = QFont()
+            font.setBold(table_name == self.current_source)
+            return font
 
         # if role == Qt.ForegroundRole:
         #     if table_name != self.current_source:
@@ -445,7 +445,7 @@ class SourceEditorWidget(plugin.PluginWidget):
         # model_index = self.model.find_record(self.source)
         # self.view.setCurrentIndex(model_index)
         # self.view.selectionModel().blockSignals(False)
-        if "plugins" in dir(self.mainwindow): # For FakeMainWindow
+        if "plugins" in dir(self.mainwindow):  # For FakeMainWindow
             if "samples" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("samples")
 
