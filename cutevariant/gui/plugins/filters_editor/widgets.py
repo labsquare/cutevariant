@@ -92,7 +92,8 @@ from cutevariant.core.querybuilder import (
 )
 import cutevariant.constants as cst
 from cutevariant.gui.sql_thread import SqlThread
-from cutevariant.gui.widgets import FiltersWidget, FilterItem, PresetAction
+from cutevariant.gui.widgets import FiltersWidget, FilterItem, PresetAction, FilterDialog
+
 
 from cutevariant import LOGGER
 
@@ -640,19 +641,30 @@ class FiltersEditorWidget(plugin.PluginWidget):
         """
         index = self.view.currentIndex()
 
-        if index.isValid():
-            if self.model.item(index).type == FilterItem.LOGIC_TYPE:
-                # Add condition item to existing logic operator
-                self.model.add_condition_item(parent=index)
-        else:
-            if self.model.rowCount() == 0:
-                # Full new logic operator and condition item
-                self.model.add_logic_item(parent=QModelIndex())
-                gpindex = self.model.index(0, 0, QModelIndex())
-                self.model.add_condition_item(parent=gpindex)
+        dialog = FilterDialog(self.conn)
+        dialog.set_field("chr")
+        if dialog.exec() == QDialog.Accepted:
 
-        self._update_view_geometry()
-        self.refresh_buttons()
+            a_filter = dialog.get_filter()
+            field = list(a_filter.keys())[0]
+            operator = list(a_filter[field].keys())[0]
+            value = a_filter[field][operator]
+            condition = (field, operator, value)
+
+            if index.isValid():
+                if self.model.item(index).type == FilterItem.LOGIC_TYPE:
+                    # Add condition item to existing logic operator
+                    self.model.add_condition_item(value=condition, parent=index)
+
+            else:
+                if self.model.rowCount() == 0:
+                    # Full new logic operator and condition item
+                    self.model.add_logic_item(parent=QModelIndex())
+                    gpindex = self.model.index(0, 0, QModelIndex())
+                    self.model.add_condition_item(value=condition, parent=gpindex)
+
+            self._update_view_geometry()
+            self.refresh_buttons()
 
     def on_clear_all(self):
         """Clear all filters
