@@ -73,30 +73,30 @@ class GenotypeVerticalHeader(QHeaderView):
         else:
             color = default_color
 
-        # genotype icon
-        GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
-        genotype_sample_name = self.model().get_genotype(section)["name"]
-        genotype_variant_id = self.model().get_genotype(section)["variant_id"]
+        # # genotype icon
+        # GENOTYPE_ICONS = {key: FIcon(val) for key, val in cst.GENOTYPE_ICONS.items()}
+        # genotype_sample_name = self.model().get_genotype(section)["name"]
+        # genotype_variant_id = self.model().get_genotype(section)["variant_id"]
 
-        genotype = ""
-        if genotype_variant_id and genotype_sample_name:
-            genotype_infos = next(
-                sql.get_genotypes(
-                    self.model().conn,
-                    genotype_variant_id,
-                    ["gt"],
-                    [genotype_sample_name],
-                )
-            )
-            genotype = genotype_infos.get("gt", -1)
+        # genotype = ""
+        # if genotype_variant_id and genotype_sample_name:
+        #     genotype_infos = next(
+        #         sql.get_genotypes(
+        #             self.model().conn,
+        #             genotype_variant_id,
+        #             ["gt"],
+        #             [genotype_sample_name],
+        #         )
+        #     )
+        #     genotype = genotype_infos.get("gt", -1)
 
-        if genotype == "NULL" or genotype is None or genotype == "":
-            genotype_int = -1
-        else:
-            genotype_int = int(genotype)
+        # if genotype == "NULL" or genotype is None or genotype == "":
+        #     genotype_int = -1
+        # else:
+        #     genotype_int = int(genotype)
 
-        pix_icon = GENOTYPE_ICONS.get(genotype_int)  # , GENOTYPE_ICONS[-1])
-        pix_icon.engine.setColor(color)
+        # pix_icon = GENOTYPE_ICONS.get(genotype_int)  # , GENOTYPE_ICONS[-1])
+        # pix_icon.engine.setColor(color)
 
         # painter
         pen = QPen(QColor(color))
@@ -106,6 +106,7 @@ class GenotypeVerticalHeader(QHeaderView):
         painter.drawLine(rect.left(), rect.top() + 1, rect.left(), rect.bottom() - 1)
 
         target = QRect(0, 0, 20, 20)
+        pix_icon = FIcon(0xF0130, color)
         pix = pix_icon.pixmap(target.size())
         target.moveCenter(rect.center() + QPoint(1, 1))
 
@@ -214,6 +215,14 @@ class GenotypeModel(QAbstractTableModel):
 
         if role == Qt.ToolTipRole:
             return self.get_tooltip(index.row())
+
+        if role == Qt.BackgroundRole and item["classification"] > 0:
+            classification = next(
+                i for i in self.classifications if i["number"] == item["classification"]
+            )
+            color = QColor(classification.get("color", QColor("red")))
+            color.setAlpha(50)
+            return color
 
     def get_tooltip(self, row: int):
         """Return all samples info as a formatted text"""
@@ -436,6 +445,7 @@ class GenotypesWidget(plugin.PluginWidget):
         )
 
         self.view.setItemDelegate(self.delegate)
+        self.view.horizontalHeader().setStretchLastSection(True)
 
         self.add_sample_button = QPushButton(self.tr("Add samples ..."))
         self.add_sample_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -488,8 +498,8 @@ class GenotypesWidget(plugin.PluginWidget):
     def on_model_reset(self):
         if self.model.rowCount() > 0:
             self.stack_layout.setCurrentIndex(1)
-            self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-            self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+            # self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+            # self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         else:
             self.stack_layout.setCurrentIndex(0)
 
