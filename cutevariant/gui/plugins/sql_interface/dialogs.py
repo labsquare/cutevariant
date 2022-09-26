@@ -47,6 +47,8 @@ class SqlInterfaceDialog(PluginDialog):
         button_box.setAlignment(Qt.AlignCenter)
         button_box.addWidget(self.button)
 
+        #TODO: add a file_edit to select a file output (instead of always sending to stdout)
+
         self.setWindowTitle("SQL interface")
         self.vlayout = QVBoxLayout()
         self.vlayout.addWidget(group_box)
@@ -76,7 +78,11 @@ class SqlInterfaceDialog(PluginDialog):
 
     def _execute_sql(self, query) -> typing.Tuple[dict]:
         self.conn.row_factory = sqlite3.Row
-        return (dict(data) for data in self.conn.execute(query))
+        #TODO: warning on error (in case terminal is too long to see it)
+        res = (dict(data) for data in self.conn.execute(query))
+        self.conn.commit()
+        return res
+
 
 
 if __name__ == "__main__":
