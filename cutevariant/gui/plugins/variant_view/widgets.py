@@ -644,15 +644,16 @@ class VariantModel(QAbstractTableModel):
         self.variants.clear()
 
         # Save cache
-        self._load_variant_cache[self._variant_hash] = self._load_variant_thread.results.copy()
+        if self._load_variant_thread:
+            self._load_variant_cache[self._variant_hash] = self._load_variant_thread.results.copy()
 
-        # Load variants
-        self.variants = self._load_variant_thread.results
-        if self.variants:
-            # Set headers of the view
-            self.headers = list(self.variants[0].keys())
-            # Hide extra fields
-            self.headers = self.fields
+            # Load variants
+            self.variants = self._load_variant_thread.results
+            if self.variants:
+                # Set headers of the view
+                self.headers = list(self.variants[0].keys())
+                # Hide extra fields
+                self.headers = self.fields
 
         # self.total = self._load_count_thread.results["count"]
 
@@ -673,10 +674,11 @@ class VariantModel(QAbstractTableModel):
         """
 
         # Save cache
-        self._load_count_cache[self._count_hash] = self._load_count_thread.results.copy()
+        if self._load_count_thread.results:
+            self._load_count_cache[self._count_hash] = self._load_count_thread.results.copy()
 
-        self.total = self._load_count_thread.results["count"]
-        self.count_loaded.emit()
+            self.total = self._load_count_thread.results["count"]
+            self.count_loaded.emit()
 
         #  Test if both thread are finished
         self._finished_thread_count += 1
@@ -1005,7 +1007,7 @@ class VariantView(QWidget):
         self.pagging_actions = QActionGroup(self)
         # First page action  <<
         action = self.bottom_bar.addAction(FIcon(0xF0600), "<<", self.on_page_clicked)
-        action.setShortcut(Qt.CTRL + Qt.Key_Left)
+        action.setShortcut(Qt.CTRL | Qt.Key_Left)
         action.setAutoRepeat(False)
         action.setToolTip(self.tr("First page (%s)" % action.shortcut().toString()))
         self.pagging_actions.addAction(action)
@@ -1032,7 +1034,7 @@ class VariantView(QWidget):
 
         # End page action >>
         action = self.bottom_bar.addAction(FIcon(0xF0601), ">>", self.on_page_clicked)
-        action.setShortcut(Qt.CTRL + Qt.Key_Right)
+        action.setShortcut(Qt.CTRL | Qt.Key_Right)
         action.setAutoRepeat(False)
         action.setToolTip(self.tr("Last page (%s)" % action.shortcut().toString()))
         self.pagging_actions.addAction(action)
