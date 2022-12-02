@@ -52,7 +52,7 @@ class VqlEditorWidget(plugin.PluginWidget):
         self.top_bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.run_action = self.top_bar.addAction(FIcon(0xF040A), self.tr("Run"), self.run_vql)
         self.top_bar.setIconSize(QSize(16, 16))
-        self.run_action.setShortcuts([Qt.CTRL + Qt.Key_R, QKeySequence.Refresh])
+        self.run_action.setShortcuts([Qt.CTRL | Qt.Key_R, QKeySequence.Refresh])
         self.run_action.setToolTip(
             self.tr("Run VQL query (%s)" % self.run_action.shortcut().toString())
         )
