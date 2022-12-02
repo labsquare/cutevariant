@@ -216,7 +216,7 @@ class GenotypeModel(QAbstractTableModel):
         if role == Qt.ToolTipRole:
             return self.get_tooltip(index.row())
 
-        if role == Qt.BackgroundRole and item["classification"] > 0:
+        if role == Qt.BackgroundRole and item["classification"] and item["classification"] > 0:
             classification = next(
                 i for i in self.classifications if i["number"] == item["classification"]
             )
