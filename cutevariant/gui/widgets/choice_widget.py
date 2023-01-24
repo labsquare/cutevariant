@@ -28,7 +28,7 @@ class ChoiceModel(QAbstractListModel):
             return QIcon(self._data[index.row()]["icon"])
 
         if role == Qt.CheckStateRole:
-            return int(Qt.Checked) if self._data[index.row()]["checked"] else int(Qt.Unchecked)
+            return Qt.Checked if self._data[index.row()]["checked"] else Qt.Unchecked
 
         if role == Qt.ToolTipRole:
             return self._data[index.row()]["description"]

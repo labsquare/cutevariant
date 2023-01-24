@@ -140,7 +140,7 @@ class GroupbyModel(QAbstractTableModel):
                 return int(Qt.AlignmentFlag(Qt.AlignRight | Qt.AlignVCenter))
 
         if role == Qt.CheckStateRole and index.column() == 0 and self.is_checkable:
-            return int(Qt.Checked if self._raw_data[index.row()]["checked"] else Qt.Unchecked)
+            return Qt.Checked if self._raw_data[index.row()]["checked"] else Qt.Unchecked
 
     def clear(self):
         self._set_raw_data([])

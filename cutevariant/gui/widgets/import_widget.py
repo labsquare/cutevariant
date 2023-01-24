@@ -126,7 +126,7 @@ class FieldsModel(QAbstractTableModel):
 
         if role == Qt.CheckStateRole:
             if index.column() == self.NAME_COL:
-                return int(Qt.Checked) if item["enabled"] else int(Qt.Unchecked)
+                return Qt.Checked if item["enabled"] else Qt.Unchecked
 
         if role == Qt.ToolTipRole:
             return item["description"]
@@ -553,7 +553,7 @@ class ImportThread(QThread):
                     self.conn,
                     reader,
                     pedfile=self.pedfile,
-                    project = self.project,
+                    project=self.project,
                     import_id=import_id,
                     ignored_fields=self.ignored_fields,
                     indexed_fields=self.indexed_fields,
