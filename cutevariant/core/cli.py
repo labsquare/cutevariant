@@ -57,7 +57,7 @@ def create_db(args):
         # TODO: bug ... max is not 100...
 
         with create_reader(args.input) as reader:
-            sql.import_reader(conn, reader, import_id = args.import_id)
+            sql.import_reader(conn, reader, pedfile=args.pedfile, import_id=args.import_id)
 
         print("Successfully created database!")
 
