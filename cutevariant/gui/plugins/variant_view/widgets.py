@@ -170,6 +170,7 @@ class VariantModel(QAbstractTableModel):
         self.order_by = []
         self.formatter = None
         self.debug_sql = None
+        self.samples = []
         # Keep after all initialization
         self.conn = conn
 
@@ -583,9 +584,11 @@ class VariantModel(QAbstractTableModel):
             filters=self.filters,
             limit=self.limit,
             offset=offset,
+            selected_samples=self.samples,
             order_by=self.order_by,
         )
-
+    
+        print("ICCCCCCCCC", self.debug_sql)
         LOGGER.debug(self.debug_sql)
         # Create load_func to run asynchronously: load variants
         load_func = functools.partial(
@@ -595,6 +598,7 @@ class VariantModel(QAbstractTableModel):
             filters=self.filters,
             limit=self.limit,
             offset=offset,
+            selected_samples=self.samples,
             order_by=self.order_by,
         )
 
@@ -2157,7 +2161,7 @@ class VariantViewWidget(plugin.PluginWidget):
             self.view.filters = self.mainwindow.get_state_data("filters")
             self.view.model.order_by = self.mainwindow.get_state_data("order_by")
             self.view.model.source = self.mainwindow.get_state_data("source")
-
+            self.view.model.samples = self.mainwindow.get_state_data("samples")
             self.view.load(reset_page=True)
 
     def on_variant_clicked(self, index: QModelIndex):
