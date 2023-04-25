@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "cutevariant"
+version = "0.5.0"
+description = "About"
+authors = ["A standalone and free application to explore genetics variations from VCF file"]
+license = "GPL3"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "~3.10"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"
+pytest-qt = "^4.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
