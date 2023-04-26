@@ -78,14 +78,17 @@ def insert_variant(conn, filename, sample):
     conn.sql("SELECT * FROM variants").show()
 
 
-def create_genotype(name: str, filename: str, output: str):
-    q = f"""
-    COPY (
-    SELECT hash(CHROM,POS,REF,ALT) as hash, l2[list_position(l1,'GT')] AS gt, l2[list_position(l1,'DP')] AS dp, split(l2[list_position(l1,'AD')],',') AS ad  FROM (
-    SELECT "#CHROM" as chrom, pos,ref, unnest(split(ALT,',')) AS alt, split(FORMAT,':') as l1, split({name},':') as l2 FROM read_csv_auto('{filename}'))
-    WHERE GT SIMILAR TO '[01][/|][01]') TO '{output}' """
+def create_genotype(input, output):
+    columns = duckdb.sql(f"DESCRIBE SELECT * FROM '{input}'").fetchall()
+    columns = [col[0] for col in columns]
+    samples = columns[4:]
 
-    duckdb.sql(q)
+    for s in samples:
+        q = f"""
+        COPY (
+        SELECT hash(CHROM,POS,REF,ALT) as id, "{s}"['gt'] as gt FROM '{input}' WHERE gt > 0
+        ) TO '{output}/{s}.parquet'"""
+        duckdb.sql(q)
 
 
 if __name__ == "__main__":
@@ -101,13 +104,21 @@ if __name__ == "__main__":
     print("extract samples ")
     samples = extract_samples(filename)
 
-    vcf_to_parquet("./M46.snps.vcf", "M46.parquet")
-    vcf_to_parquet("./M48.snps.vcf", "M48.parquet")
-    vcf_to_parquet("./final.vcf.gz", "final.parquet")
+    files = [
+        "./M48.snps.vcf",
+        "./M46.snps.vcf",
+        "./JAS_N36.GATK.snp.vcf",
+        "./JAS_P18.GATK.snp.vcf",
+    ]
 
-    # insert_variant(conn, "./M46.parquet", "M46")
-    # insert_variant(conn, "./M48.parquet", "M48")
-    insert_variant(conn, "./final.parquet", "c6662ee9-0ecd-4ba8-8c12-053185021653")
+    for file in files:
+        pfile = file + ".parquet"
+        samples = extract_samples(file)
+        vcf_to_parquet(file, pfile)
+        create_genotype(pfile, "genotypes/")
+
+        for sample in samples:
+            insert_variant(conn, pfile, sample)
 
     # vcf_to_parquet("./subset.vcf", "subset.parquet")
 
