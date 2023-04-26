@@ -25,7 +25,10 @@ def create_tables(conn):
     ref VARCHAR,
     alt VARCHAR,
     count_het UINT32 DEFAULT 0,
-    count_hom UINT32 DEFAULT 0)
+    count_hom UINT32 DEFAULT 0,
+    count_var AS (count_het + count_hom)
+
+    )
     """
 
     conn.sql(q)
@@ -34,10 +37,14 @@ def create_tables(conn):
 def vcf_to_parquet(filename: str, output: str):
     samples = extract_samples(filename)
 
-    gt_field = """CAST(list_aggr(CAST(split(replace(replace(split({0},':')[1],'.','0'),'|','/'),'/') AS UINT8[]),'sum') AS UINT8) AS {0}"""
+    gt_field = """
+    {{
+    "gt": CAST(list_aggr(CAST(split(replace(replace(split("{0}",':')[1],'.','0'),'|','/'),'/') AS UINT8[]),'sum') AS UINT8),
+    }} AS "{0}"
+
+    """
     gt_field = ",".join([gt_field.format(sample) for sample in samples])
 
-    print("start conversion")
     q = f"""
     COPY (
     SELECT 
@@ -48,8 +55,28 @@ def vcf_to_parquet(filename: str, output: str):
     FROM read_csv_auto('{filename}',   delim='\t',types={{'#CHROM':'VARCHAR'}})
     ) TO '{output}'
     """
-
+    print(q)
     duckdb.sql(q)
+
+
+def insert_variant(conn, filename, sample):
+    conn.sql(
+        f"""
+        INSERT INTO variants(id,chrom,pos,ref,alt, count_het,count_hom) 
+        SELECT 
+        hash(chrom,pos,ref,alt) as id,
+        chrom,
+        pos,
+        ref,
+        alt,
+        CAST ({sample}['gt']=1 AS INT) as count_het,
+        CAST({sample}['gt']=2 AS INT) as count_hom 
+        FROM '{filename}' 
+        ON CONFLICT DO UPDATE SET count_hom = count_hom + excluded.count_hom, count_het = count_het + excluded.count_het
+        """
+    )
+
+    conn.sql("SELECT * FROM variants").show()
 
 
 def create_genotype(name: str, filename: str, output: str):
@@ -69,13 +96,18 @@ if __name__ == "__main__":
 
     duckdb.sql("SET enable_progress_bar=1")
 
+    create_tables(conn)
     filename = "./M48.snps.vcf"
 
     print("extract samples ")
     samples = extract_samples(filename)
 
-    # vcf_to_parquet("./M46.snps.vcf", "M46.parquet")
     vcf_to_parquet("./M46.snps.vcf", "M46.parquet")
+    vcf_to_parquet("./M48.snps.vcf", "M48.parquet")
+
+    insert_variant(conn, "./M46.parquet", "M46")
+    insert_variant(conn, "./M48.parquet", "M48")
+
     # vcf_to_parquet("./subset.vcf", "subset.parquet")
 
     # vcf_to_parquet(
