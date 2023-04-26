@@ -48,14 +48,13 @@ def vcf_to_parquet(filename: str, output: str):
     q = f"""
     COPY (
     SELECT 
-    "#CHROM" as CHROM,
+    replace("#CHROM",'chr','') as CHROM,
     POS,REF,
     unnest(split(ALT,',')) AS ALT,
     {gt_field} 
     FROM read_csv_auto('{filename}',   delim='\t',types={{'#CHROM':'VARCHAR'}})
     ) TO '{output}'
     """
-    print(q)
     duckdb.sql(q)
 
 
@@ -69,8 +68,8 @@ def insert_variant(conn, filename, sample):
         pos,
         ref,
         alt,
-        CAST ({sample}['gt']=1 AS INT) as count_het,
-        CAST({sample}['gt']=2 AS INT) as count_hom 
+        CAST ("{sample}"['gt']=1 AS INT) as count_het,
+        CAST("{sample}"['gt']=2 AS INT) as count_hom 
         FROM '{filename}' 
         ON CONFLICT DO UPDATE SET count_hom = count_hom + excluded.count_hom, count_het = count_het + excluded.count_het
         """
@@ -104,9 +103,11 @@ if __name__ == "__main__":
 
     vcf_to_parquet("./M46.snps.vcf", "M46.parquet")
     vcf_to_parquet("./M48.snps.vcf", "M48.parquet")
+    vcf_to_parquet("./final.vcf.gz", "final.parquet")
 
-    insert_variant(conn, "./M46.parquet", "M46")
-    insert_variant(conn, "./M48.parquet", "M48")
+    # insert_variant(conn, "./M46.parquet", "M46")
+    # insert_variant(conn, "./M48.parquet", "M48")
+    insert_variant(conn, "./final.parquet", "c6662ee9-0ecd-4ba8-8c12-053185021653")
 
     # vcf_to_parquet("./subset.vcf", "subset.parquet")
 
