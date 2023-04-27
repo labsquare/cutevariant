@@ -75,8 +75,6 @@ def insert_variant(conn, filename, sample):
         """
     )
 
-    conn.sql("SELECT * FROM variants").show()
-
 
 def create_genotype(input, output):
     columns = duckdb.sql(f"DESCRIBE SELECT * FROM '{input}'").fetchall()
@@ -93,17 +91,20 @@ def create_genotype(input, output):
 
 if __name__ == "__main__":
     from glob import glob
+    import os
 
     conn = duckdb.connect("demo.db")
 
     duckdb.sql("SET enable_progress_bar=1")
 
     create_tables(conn)
-    filename = "./M48.snps.vcf"
 
-    print("extract samples ")
-    samples = extract_samples(filename)
+    try:
+        os.mkdir("genotypes")
+    except:
+        pass
 
+    # Met des fichiers VCF ici
     files = [
         "./M48.snps.vcf",
         "./M46.snps.vcf",
@@ -112,26 +113,14 @@ if __name__ == "__main__":
     ]
 
     for file in files:
+        print(f"===== {file} =====")
         pfile = file + ".parquet"
         samples = extract_samples(file)
-        vcf_to_parquet(file, pfile)
-        create_genotype(pfile, "genotypes/")
 
+        print("conversion du VCF en parquet ")
+        vcf_to_parquet(file, pfile)
+        print("Extraction des genotypes")
+        create_genotype(pfile, "genotypes/")
+        print("Insertions des variants à la bases")
         for sample in samples:
             insert_variant(conn, pfile, sample)
-
-    # vcf_to_parquet("./subset.vcf", "subset.parquet")
-
-    # vcf_to_parquet(
-    #     "./ALL.chr1.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz",
-    #     "huge.parquet",
-    # )
-
-    # print("create tables")
-    # create_tables(conn)
-    # print("import variants")
-    # import_variant(conn, filename)
-    # import_variant(conn, "./M46.snps.vcf")
-
-    # print("create genotypes")
-    # create_genotype("NA20127", filename, f"genotypes/NA20127.parquet")
