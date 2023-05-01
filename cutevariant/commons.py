@@ -10,6 +10,7 @@ from .bgzf import BgzfBlocks
 from PySide6.QtGui import QColor
 
 from cutevariant.constants import BASEDIR
+
 ################################################################################
 def create_logger():
     logger = logging.getLogger(__name__)
@@ -20,8 +21,8 @@ def create_logger():
     stdout_handler = logging.StreamHandler()
     stdout_handler.setFormatter(formatter)
 
-    file_handler = logging.FileHandler(os.path.join(BASEDIR,"cutevariant.log"), mode="w")
-    #file_handler.setFormatter(formatter)
+    file_handler = logging.FileHandler(os.path.join(BASEDIR, "cutevariant.log"), mode="w")
+    # file_handler.setFormatter(formatter)
 
     # class MyCustomLogFilter(logging.Filter):
     #     def __init__(self, *args, **kwargs):
@@ -35,7 +36,7 @@ def create_logger():
     # stdout_handler.addFilter(MyCustomLogFilter())
 
     # logger.addHandler(stdout_handler)
-    #logger.addHandler(file_handler)
+    # logger.addHandler(file_handler)
 
     return logger
 
@@ -179,7 +180,7 @@ def find_variant_name(conn, variant_id: int, troncate=False, troncate_len: int =
         conn: database connexion
         variant_id (int): variant ID
         troncate (bool, optional): If name need to be troncated
-        troncate_len (int, optional): max len of variant name if need to be troncated  
+        troncate_len (int, optional): max len of variant name if need to be troncated
     """
     from cutevariant.config import Config
     from cutevariant.core import sql
@@ -207,5 +208,18 @@ def find_variant_name(conn, variant_id: int, troncate=False, troncate_len: int =
     if troncate and len(variant_name) > troncate_len:
         troncate_position = int(troncate_len / 2)
         variant_name = variant_name[0:troncate_position] + "..." + variant_name[-troncate_position:]
-    
+
     return variant_name
+
+
+def get_genotype_type(genotype: str):
+    """Return genotype"""
+
+    if not genotype:
+        return -1
+
+    genotype = genotype.replace("|", "/")
+
+    MAPPING = {"0/1": 1, "1/0": 1, "1/1": 2, "0/0": 0}
+
+    return MAPPING.get(genotype, -1)
