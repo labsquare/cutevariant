@@ -75,12 +75,10 @@ class SampleModel(QAbstractTableModel):
             return sample_tooltip
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
-
         col = index.column()
         sample = self._samples[index.row()]
 
         if role == Qt.DisplayRole:
-
             if col == SampleModel.NAME_COLUMN:
                 return sample.get("name", "unknown")
 
@@ -93,7 +91,6 @@ class SampleModel(QAbstractTableModel):
                 return count_validation_positive_variant
 
         if role == Qt.DecorationRole:
-
             color = QApplication.palette().color(QPalette.Text)
             color_alpha = QColor(QApplication.palette().color(QPalette.Text))
             color_alpha.setAlpha(50)
@@ -132,7 +129,6 @@ class SampleModel(QAbstractTableModel):
                 return QIcon(FIcon(0xF017A, color_alpha))
 
         if role == Qt.ToolTipRole:
-
             if col == SampleModel.COMMENT_COLUMN:
                 sample_comment_tooltip = sample.get("comment", "").replace("\n", "<br>")
                 return sample_comment_tooltip
@@ -202,7 +198,6 @@ class SampleModel(QAbstractTableModel):
             self.headerDataChanged.emit(Qt.Horizontal, left, right)
 
     def remove_samples(self, rows: list):
-
         rows = sorted(rows, reverse=True)
         self.beginResetModel()
         for row in rows:
@@ -226,7 +221,6 @@ class SampleVerticalHeader(QHeaderView):
         return QSize(30, super().sizeHint().height())
 
     def paintSection(self, painter: QPainter, rect: QRect, section: int):
-
         if painter is None:
             return
 
@@ -239,14 +233,21 @@ class SampleVerticalHeader(QHeaderView):
             painter.restore()
 
             if self.model().classifications:
-                style = next(i for i in self.model().classifications if i.get("number",None) == classification) or {}
+                style = (
+                    next(
+                        i
+                        for i in self.model().classifications
+                        if i.get("number", None) == classification
+                    )
+                    or {}
+                )
             else:
                 style = {}
-            color = style.get("color", "white")  
+            color = style.get("color", "white")
             color_alpha_75 = QColor(color)
             color_alpha_75.setAlpha(75)
             color_alpha_0 = QColor(color)
-            color_alpha_0.setAlpha(0)   
+            color_alpha_0.setAlpha(0)
 
             current_source = self.parent.mainwindow.get_state_data("source") or ""
 
@@ -259,11 +260,11 @@ class SampleVerticalHeader(QHeaderView):
             current_samples = sources_samples.get(current_source, [])
 
             if name in current_samples:
-                icon = 0xF0009 #0xF0016 #0xF0899 #0xF0008 #0xF0009
+                icon = 0xF0009  # 0xF0016 #0xF0899 #0xF0008 #0xF0009
                 color_line = color
                 color_icon = color
             else:
-                icon = 0xF0009 #0xF0013
+                icon = 0xF0009  # 0xF0013
                 color_line = color_alpha_0
                 color_icon = color_alpha_75
 
@@ -284,7 +285,6 @@ class SampleVerticalHeader(QHeaderView):
 
 
 class SamplesWidget(plugin.PluginWidget):
-
     LOCATION = plugin.DOCK_LOCATION
     ENABLE = True
     REFRESH_STATE_DATA = {"samples"}
@@ -320,12 +320,14 @@ class SamplesWidget(plugin.PluginWidget):
         # self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        
+
         self.view.setVerticalHeader(SampleVerticalHeader(self))
         self.view.verticalHeader().setSectionsClickable(True)
-        self.view.verticalHeader().sectionDoubleClicked.connect(self.on_double_clicked_vertical_header)
+        self.view.verticalHeader().sectionDoubleClicked.connect(
+            self.on_double_clicked_vertical_header
+        )
 
-        self.view.doubleClicked.connect(self.on_double_clicked) 
+        self.view.doubleClicked.connect(self.on_double_clicked)
 
         # Setup actions
         self._setup_actions()
@@ -343,7 +345,6 @@ class SamplesWidget(plugin.PluginWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
     def on_model_changed(self):
-
         if self.model.rowCount() > 0:
             self.stack_layout.setCurrentIndex(1)
         else:
@@ -358,7 +359,6 @@ class SamplesWidget(plugin.PluginWidget):
         # self.mainwindow.refresh_plugins(sender=self)
 
     def on_add_samples(self):
-
         dialog = SamplesEditor(self.model.conn)
 
         if dialog.exec() == QDialog.Accepted:
@@ -378,7 +378,6 @@ class SamplesWidget(plugin.PluginWidget):
             self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
     def _create_classification_menu(self, sample: List = None):
-
         # Sample Classification
         if "classification" in sample:
             sample_classification = sample["classification"]
@@ -388,7 +387,6 @@ class SamplesWidget(plugin.PluginWidget):
         menu = QMenu(self)
         menu.setTitle("Classification")
         for i in self.model.classifications:
-
             if sample_classification == i["number"]:
                 icon = 0xF0133
                 # menu.setIcon(FIcon(icon, item["color"]))
@@ -409,7 +407,6 @@ class SamplesWidget(plugin.PluginWidget):
         tags_preset = Config("tags")
 
         for item in tags_preset.get("samples", []):
-
             icon = 0xF04F9
 
             action = tags_menu.addAction(FIcon(icon, item["color"]), item["name"])
@@ -420,7 +417,6 @@ class SamplesWidget(plugin.PluginWidget):
         return tags_menu
 
     def _setup_actions(self):
-
         # self.action_prev = self.tool_bar.addAction(FIcon(0xF0141), "Prev")
         # self.action_next = self.tool_bar.addAction(FIcon(0xF0142), "Next")
 
@@ -465,7 +461,9 @@ class SamplesWidget(plugin.PluginWidget):
         self.select_action = QAction(FIcon(0xF0349), "Select variants")
         self.select_action.triggered.connect(self.on_show_variant)
 
-        self.create_filter_action_intersection = QAction(FIcon(0xF0EF1), "Create filters (intersection)")
+        self.create_filter_action_intersection = QAction(
+            FIcon(0xF0EF1), "Create filters (intersection)"
+        )
         self.create_filter_action_intersection.triggered.connect(self.on_create_filter_intersection)
 
         self.create_filter_action_union = QAction(FIcon(0xF0EF1), "Create filters (union)")
@@ -488,7 +486,7 @@ class SamplesWidget(plugin.PluginWidget):
         menu = QMenu(self)
 
         menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_edit)
-        #menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_double_clicked) 
+        # menu.addAction(FIcon(0xF064F), f"Edit Sample '{sample_name}'", self.on_double_clicked)
 
         menu.addMenu(self._create_classification_menu(sample))
         if not self.is_locked(sample_id):
@@ -497,8 +495,17 @@ class SamplesWidget(plugin.PluginWidget):
 
         fields_menu = menu.addMenu("Add genotype fields...")
 
+        fields_menu.addSection("Presets")
+        presets = Config("samples").get("presets", {})
+        for preset in presets.keys():
+            preset_action = fields_menu.addAction(preset, self.on_add_preset)
+            preset_action.setData(presets[preset])
+
+        fields_menu.addSeparator()
+        others_menu = QMenu("Other fields")
+        fields_menu.addMenu(others_menu)
         for field in sql.get_field_by_category(self.model.conn, "samples"):
-            field_action = fields_menu.addAction(QIcon(), field["name"], self.on_add_field)
+            field_action = others_menu.addAction(QIcon(), field["name"], self.on_add_field)
             field_action.setData(field)
 
         menu.addAction(self.select_action)
@@ -537,7 +544,7 @@ class SamplesWidget(plugin.PluginWidget):
         """
         Action on default doubleClick
         """
-        #self.on_edit()
+        # self.on_edit()
         self.on_show_variant()
 
     def on_double_clicked_vertical_header(self):
@@ -547,7 +554,6 @@ class SamplesWidget(plugin.PluginWidget):
         self.on_edit()
 
     def on_edit(self):
-
         sample = self.model.get_sample(self.view.currentIndex().row())
         # print(sample)
         if sample:
@@ -570,13 +576,11 @@ class SamplesWidget(plugin.PluginWidget):
         indexes = self.view.selectionModel().selectedRows()
 
         if indexes:
-
             # Copy existing fields
             fields = copy.deepcopy(self.mainwindow.get_state_data("fields"))
 
             # Add field for selected samples
             for sample_index in indexes:
-
                 sample_name = sample_index.siblingAtColumn(0).data()
                 new_field = f"samples.{sample_name}.{field_name}"
                 if new_field not in fields:
@@ -588,8 +592,36 @@ class SamplesWidget(plugin.PluginWidget):
             # Refresh plugins
             self.mainwindow.refresh_plugins(sender=self)
 
-    def on_remove(self):
+    def on_add_preset(self):
+        """
+        Trigger by menu preset_action
+        action.data() contains new field names to add, extracted from Config
+        """
+        action = self.sender()
+        field_names = action.data()
 
+        # Selected samples (by index)
+        indexes = self.view.selectionModel().selectedRows()
+
+        if indexes:
+            # Copy existing fields
+            fields = copy.deepcopy(self.mainwindow.get_state_data("fields"))
+
+            # Add field for selected samples
+            for sample_index in indexes:
+                sample_name = sample_index.siblingAtColumn(0).data()
+                for field_name in field_names:
+                    new_field = f"samples.{sample_name}.{field_name}"
+                    if new_field not in fields:
+                        fields.append(new_field)
+
+            # Set State Data
+            self.mainwindow.set_state_data("fields", fields)
+
+            # Refresh plugins
+            self.mainwindow.refresh_plugins(sender=self)
+
+    def on_remove(self):
         rows = []
         for index in self.view.selectionModel().selectedRows():
             rows.append(index.row())
@@ -606,7 +638,6 @@ class SamplesWidget(plugin.PluginWidget):
         self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
     def update_classification(self, value: int = 0):
-
         unique_ids = set()
         for index in self.view.selectionModel().selectedRows():
             if not index.isValid():
@@ -633,7 +664,6 @@ class SamplesWidget(plugin.PluginWidget):
         """
 
         for index in self.view.selectionModel().selectedRows():
-
             # current variant
             row = index.row()
             sample = self.model.get_sample(row)
@@ -655,12 +685,10 @@ class SamplesWidget(plugin.PluginWidget):
             self.model.update_sample(row, {"tags": cst.HAS_OPERATOR.join(current_tags)})
 
     def on_show_variant(self):
-
         # Get current sample name
         indexes = self.view.selectionModel().selectedRows()
 
         if indexes:
-
             # Create list of selected samples
             sample_name_list = []
             for sample_index in indexes:
@@ -676,24 +704,20 @@ class SamplesWidget(plugin.PluginWidget):
             )
 
     def on_create_filter_intersection(self):
-
         self.on_create_filter(operator="$and")
 
     def on_create_filter_union(self):
-
         self.on_create_filter(operator="$or")
 
-    def on_create_filter(self, operator:str = '$and'):
-
+    def on_create_filter(self, operator: str = "$and"):
         # Selected samples (by index)
         indexes = self.view.selectionModel().selectedRows()
 
         # Default operator (if not set)
         if not operator:
-            operator = '$and'
+            operator = "$and"
 
         if indexes:
-
             # Copy existing filters
             filters = copy.deepcopy(self.mainwindow.get_state_data("filters"))
 
@@ -723,7 +747,6 @@ class SamplesWidget(plugin.PluginWidget):
                 self.mainwindow.refresh_plugins(sender=self)
 
     def on_clear_filters(self):
-
         # Selected samples (by index)
         indexes = self.view.selectionModel().selectedRows()
 
@@ -731,7 +754,6 @@ class SamplesWidget(plugin.PluginWidget):
         filters = self.mainwindow.get_state_data("filters")
 
         if indexes:
-
             # Create filters for selected samples
             for sample_index in indexes:
                 sample_name = sample_index.siblingAtColumn(0).data()
@@ -743,16 +765,13 @@ class SamplesWidget(plugin.PluginWidget):
             # Refresh plugins
             self.mainwindow.refresh_plugins(sender=self)
 
-    def on_create_samples_source_from_selected(
-        self
-    ):
+    def on_create_samples_source_from_selected(self):
         """Create source from a list of samples manually selected in samples model"""
 
-         # Selected samples (by index)
+        # Selected samples (by index)
         indexes = self.view.selectionModel().selectedRows()
 
         if indexes:
-
             # Create list of selected samples
             sample_name_list = []
             for sample_index in indexes:
@@ -769,13 +788,16 @@ class SamplesWidget(plugin.PluginWidget):
             )
 
             if ok:
-
                 # If locked source names
-                if source_name in [DEFAULT_SELECTION_NAME, SAMPLES_SELECTION_NAME, CURRENT_SAMPLE_SELECTION_NAME]:
+                if source_name in [
+                    DEFAULT_SELECTION_NAME,
+                    SAMPLES_SELECTION_NAME,
+                    CURRENT_SAMPLE_SELECTION_NAME,
+                ]:
                     QMessageBox.warning(
                         self,
                         self.tr("Overwrite source locked"),
-                        self.tr(f"Source '{source_name}' is locked")
+                        self.tr(f"Source '{source_name}' is locked"),
                     )
                     return
 
@@ -786,14 +808,16 @@ class SamplesWidget(plugin.PluginWidget):
                     for source in sources
                     if source["description"] is not None
                 }
-                
+
                 # Check if source exists
-                if sources_samples.get(source_name,None):
+                if sources_samples.get(source_name, None):
                     # Ask for overwriting
                     ret = QMessageBox.warning(
                         self,
                         self.tr("Overwrite source"),
-                        self.tr(f"Source '{source_name}' already exists. Do you want to overwrite it ?"),
+                        self.tr(
+                            f"Source '{source_name}' already exists. Do you want to overwrite it ?"
+                        ),
                         QMessageBox.Yes | QMessageBox.No,
                     )
                     if ret == QMessageBox.No:
@@ -816,18 +840,22 @@ class SamplesWidget(plugin.PluginWidget):
 
         if len(samples):
             sql.insert_selection_from_samples(
-                self.model.conn, samples, name=source_name, force=False, description=",".join(samples)
+                self.model.conn,
+                samples,
+                name=source_name,
+                force=False,
+                description=",".join(samples),
             )
             self.mainwindow.set_state_data("source", source_name)
             self.mainwindow.refresh_plugins(sender=self)
         else:
             self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
             self.mainwindow.refresh_plugins(sender=self)
-        
+
         for i in range(self.view.verticalHeader().count()):
             self.view.verticalHeader().updateSection(i)
         if "source_editor" in self.mainwindow.plugins:
-               self.mainwindow.refresh_plugin("source_editor")
+            self.mainwindow.refresh_plugin("source_editor")
 
     def on_add_genotypes(self, samples: list = None, refresh=True):
         """Add from a list of samples
@@ -886,7 +914,9 @@ class SamplesWidget(plugin.PluginWidget):
 
         config = Config("classifications")
         self.model.classifications = config.get("samples", [])
-        self.model.classifications = sorted(self.model.classifications, key=lambda d: d.get('number',0))
+        self.model.classifications = sorted(
+            self.model.classifications, key=lambda d: d.get("number", 0)
+        )
         self.model.load()
 
     def on_refresh(self):
