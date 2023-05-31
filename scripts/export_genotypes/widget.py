@@ -11,7 +11,6 @@ from openpyxl import Workbook
 
 
 def export_genotypes(database_file_name: str, vql_query: str, output: str, overwrite: bool = False):
-
     if not overwrite and os.path.isfile(output):
         return -1
     if not output:
@@ -21,28 +20,34 @@ def export_genotypes(database_file_name: str, vql_query: str, output: str, overw
     selected_variants = list(command.select_cmd(conn, **vql.parse_one_vql(vql_query), limit=0))
 
     all_samples = sorted([s["name"] for s in sql.get_samples(conn)])
+    affected_samples = sorted([s["name"] for s in sql.get_samples(conn) if s["phenotype"] == 1])
+    unaffected_samples = sorted([s["name"] for s in sql.get_samples(conn) if s["phenotype"] == 2])
 
     with open(output, "w") as f:
-
         TAB = "\t"
         LF = "\n"
 
-        f.write(f"chr{TAB}pos{TAB}gene{TAB}{TAB.join(all_samples)}{LF}")
+        f.write(
+            f"chr{TAB}pos{TAB}gene{TAB}hgvsc{TAB}{TAB.join(affected_samples)}{TAB}{TAB.join(unaffected_samples)}{LF}"
+        )
 
         for variant in selected_variants:
             chrom = variant["chr"]
             pos = variant["pos"]
-            genotypes = sql.get_genotypes(conn, variant["id"], ["gt"], all_samples)
+            aff_genotypes = sql.get_genotypes(conn, variant["id"], ["gt"], affected_samples)
+            unaf_genotypes = sql.get_genotypes(conn, variant["id"], ["gt"], unaffected_samples)
 
+            # Write affected and unaffected separately
             f.write(
-                f"{chrom}{TAB}{pos}{TAB}{variant['ann.gene']}{TAB}{TAB.join(str(s['gt'] or -1) for s in sorted(genotypes,key=lambda s:s['name']))}{LF}"
+                f"{chrom}{TAB}{pos}{TAB}{variant['ann.gene']}{TAB}{variant['ann.hgvs_c']}{TAB}{variant['ann.transcript']}"
+                f"{TAB}{TAB.join(str(s['gt'] if s['gt']!=-1 else 0) for s in sorted(aff_genotypes,key=lambda s:s['name']))}"
+                f"{TAB}{TAB.join(str(s['gt'] if s['gt']!=-1 else 0) for s in sorted(unaf_genotypes,key=lambda s:s['name']))}{LF}"
             )
 
     return 0
 
 
 class ScriptInterface(QDialog):
-
     VQL_REQUEST = 0
     GENE_LIST = 1
     LOCI_LIST = 2
@@ -88,7 +93,6 @@ class ScriptInterface(QDialog):
         self.db_filename = database_filename
 
     def save(self):
-
         if self._current_query_type == ScriptInterface.VQL_REQUEST:
             query = self.user_query
             vql_command = vql.parse_one_vql(self.query)
@@ -156,7 +160,6 @@ class ScriptInterface(QDialog):
 
 
 if __name__ == "__main__":
-
     import sys
 
     app = QApplication(sys.argv)

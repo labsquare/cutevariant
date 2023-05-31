@@ -49,7 +49,7 @@ class FieldsModel(QAbstractListModel):
             return self._items[index.row()]["field_name"]
 
         if role == Qt.CheckStateRole:
-            return int(Qt.Checked if self._items[index.row()]["checked"] else Qt.Unchecked)
+            return Qt.Checked if self._items[index.row()]["checked"] else Qt.Unchecked
 
         if role == Qt.DecorationRole:
             data_type = self._items[index.row()].get("type", "str")
