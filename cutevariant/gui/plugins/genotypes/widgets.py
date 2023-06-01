@@ -142,7 +142,7 @@ class GenotypeModel(QAbstractTableModel):
         self._genotypes = []
 
         # Selected fields
-        self._fields = set()
+        self._fields = []
 
         # Selected samples
         self._samples = set()
@@ -200,11 +200,17 @@ class GenotypeModel(QAbstractTableModel):
         if self.clicked_preset_fields != []:
             #reorder fields corresponding to the preset that was just clicked
             if not sorted(fields) == sorted(self.clicked_preset_fields):
-                raise RuntimeError(f"All fields in the clicked preset: {self.clicked_preset_fields} should be in selected fields: {fields}")
+                raise RuntimeError(f"Fields in the clicked preset: {self.clicked_preset_fields} should be equal to selected fields: {fields}, only order should differ")
             self._fields = self.clicked_preset_fields
             self.clicked_preset_fields = [] # reset after use
         else:
-            self._fields = list(set(fields))
+            seen = set()
+            unique_fields = []
+            for f in fields:
+                if f not in seen:
+                    seen.add(f)
+                    unique_fields.append(f)
+            self._fields = unique_fields
 
     def set_variant_id(self, variant_id: int):
         self._variant_id = variant_id
@@ -412,13 +418,7 @@ class GenotypeModel(QAbstractTableModel):
         """
         Allows to store ordered fields, to be used during the next refresh
         """
-        unique_ordered_fields = []
-        seen = set()
-        for f in ordered_fields:
-            if f not in seen:
-                seen.add(f)
-                unique_ordered_fields.append(f)
-        self.clicked_preset_fields = unique_ordered_fields
+        self.clicked_preset_fields = ordered_fields
 
 
 # class SamplesView(QTableView):
@@ -458,6 +458,8 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view.setSortingEnabled(True)
         self.view.setIconSize(QSize(16, 16))
         self.view.horizontalHeader().setHighlightSections(False)
+        self.view.horizontalHeader().setSectionsMovable(True)
+        self.view.horizontalHeader().sectionMoved.connect(self._on_section_moved)
         self.view.setModel(self.model)
 
         self.view.setVerticalHeader(GenotypeVerticalHeader())
@@ -647,6 +649,15 @@ class GenotypesWidget(plugin.PluginWidget):
 
     def _on_double_clicked_vertical_header(self):
         self._show_sample_variant_dialog()
+
+    def _on_section_moved(self, logical: int, old_visual_index: int, new_visual_index: int):
+        """
+        Update fields value so that saving a preset will keep the current column order
+        """
+        fields = self.model.get_fields()
+        moved_field = fields.pop(old_visual_index - 1)
+        fields.insert(new_visual_index - 1, moved_field)
+        self.model.set_fields(fields)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
