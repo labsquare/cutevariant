@@ -658,6 +658,7 @@ class GenotypesWidget(plugin.PluginWidget):
         moved_field = fields.pop(old_visual_index - 1)
         fields.insert(new_visual_index - 1, moved_field)
         self.model.set_fields(fields)
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
 
