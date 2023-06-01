@@ -498,12 +498,13 @@ class GenotypesWidget(plugin.PluginWidget):
     def on_model_reset(self):
         if self.model.rowCount() > 0:
             self.stack_layout.setCurrentIndex(1)
-            # self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-            # self.view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+            self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+            self.view.resizeColumnsToContents() # using horizontalHeader() prevented interactivity
+            self.view.horizontalHeader().setSectionResizeMode(
+                self.model.columnCount() - 1, QHeaderView.Stretch
+            ) # strech last column only
         else:
             self.stack_layout.setCurrentIndex(0)
-
-        # self.view.horizontalHeader().setSectionResizeMode(QHeaderView.AdjustToContents)
 
     def setup_actions(self):
 
