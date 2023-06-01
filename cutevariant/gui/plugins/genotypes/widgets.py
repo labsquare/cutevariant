@@ -153,6 +153,9 @@ class GenotypeModel(QAbstractTableModel):
         self._headers = []
         self.fields_descriptions = {}
 
+        # Used to communicate field order during a refresh after clicking on a preset
+        self.clicked_preset_fields = []
+
         # FROM config("classification"), see on_project_data
         self.classifications = []
 
@@ -194,7 +197,14 @@ class GenotypeModel(QAbstractTableModel):
         return self._fields
 
     def set_fields(self, fields: typing.List[str]):
-        self._fields = list(set(fields))
+        if self.clicked_preset_fields != []:
+            #reorder fields corresponding to the preset that was just clicked
+            if not sorted(fields) == sorted(self.clicked_preset_fields):
+                raise RuntimeError(f"All fields in the clicked preset: {self.clicked_preset_fields} should be in selected fields: {fields}")
+            self._fields = self.clicked_preset_fields
+            self.clicked_preset_fields = [] # reset after use
+        else:
+            self._fields = list(set(fields))
 
     def set_variant_id(self, variant_id: int):
         self._variant_id = variant_id
@@ -397,6 +407,18 @@ class GenotypeModel(QAbstractTableModel):
         self._genotypes.clear()
         self.endResetModel()
         self.load_finished.emit()
+
+    def set_clicked_preset_fields(self, ordered_fields: list):
+        """
+        Allows to store ordered fields, to be used during the next refresh
+        """
+        unique_ordered_fields = []
+        seen = set()
+        for f in ordered_fields:
+            if f not in seen:
+                seen.add(f)
+                unique_ordered_fields.append(f)
+        self.clicked_preset_fields = unique_ordered_fields
 
 
 # class SamplesView(QTableView):
@@ -617,7 +639,7 @@ class GenotypesWidget(plugin.PluginWidget):
         key = self.sender().data()
         if key in presets:
             self.fields_button.set_checked(presets[key])
-
+            self.model.set_clicked_preset_fields(presets[key])
         self.on_refresh()
 
     def _on_double_clicked(self):
