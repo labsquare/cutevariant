@@ -129,7 +129,6 @@ def is_annotation_join_required(fields, filters, order_by=None) -> bool:
                 return True
 
     for condition in filters_to_flat(filters):
-
         condition = list(condition.keys())[0]
         if condition.startswith("ann."):
             return True
@@ -217,7 +216,6 @@ def samples_join_required(fields, filters, order_by=None) -> list:
 
 
 def fields_to_vql(fields) -> list:
-
     vql_fields = []
     for field in fields:
         if field.startswith("samples."):
@@ -272,7 +270,6 @@ def fields_to_sql(fields, use_as=False) -> list:
     sql_fields = []
 
     for field in fields:
-
         if field.startswith("ann."):
             sql_field = f"`annotations`.`{field[4:]}`"
             if use_as:
@@ -388,7 +385,6 @@ def condition_to_sql(item: dict, samples=None) -> str:
     condition = ""
 
     if table == "samples":
-
         if name == "$any":
             operator = "OR"
 
@@ -396,7 +392,6 @@ def condition_to_sql(item: dict, samples=None) -> str:
             operator = "AND"
 
         if operator and samples:
-
             condition = (
                 "("
                 + f" {operator} ".join(
@@ -519,9 +514,9 @@ def remove_field_in_filter(filters: dict, field: str = None) -> dict:
     Returns:
         dict: New filters dict with field removed
     """
+
     # ---------------------------------
     def recursive(obj):
-
         output = {}
         for k, v in obj.items():
             if k in ["$and", "$or"]:
@@ -568,9 +563,9 @@ def filters_to_sql(filters: dict, samples=None) -> str:
     Returns:
         str: A sql where expression
     """
+
     # ---------------------------------
     def recursive(obj):
-
         conditions = ""
         for k, v in obj.items():
             if k in ["$and", "$or"]:
@@ -617,9 +612,9 @@ def filters_to_vql(filters: dict) -> str:
     Returns:
         str: A sql where expression
     """
+
     # ---------------------------------
     def recursive(obj):
-
         conditions = ""
         for k, v in obj.items():
             if k in ["$and", "$or"]:
@@ -766,7 +761,6 @@ def build_vql_query(
     order_by=[],
     **kwargs,
 ):
-
     select_clause = ",".join(fields_to_vql(fields))
 
     where_clause = filters_to_vql(filters)
