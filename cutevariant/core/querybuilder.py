@@ -689,7 +689,12 @@ def build_sql_query(
 
     # get samples ids
 
-    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+    if len(selected_samples) > 0:
+        samples_ids = {
+            i["name"]: i["id"] for i in sql.get_samples(conn) if i["name"] in selected_samples
+        }
+    else:
+        samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
 
     # Create fields
     sql_fields = ["`variants`.`id`"] + fields_to_sql(fields, use_as=True)

@@ -376,6 +376,7 @@ class SamplesWidget(plugin.PluginWidget):
             # if ret == QMessageBox.Yes:
             self.remove_all_sample_fields()
             self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
+            self.mainwindow.refresh_plugins(sender=self, force_refresh=True)
 
     def _create_classification_menu(self, sample: List = None):
         # Sample Classification
@@ -592,6 +593,7 @@ class SamplesWidget(plugin.PluginWidget):
         self.on_model_changed()
         self.remove_all_sample_fields()
         self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
+        self.mainwindow.refresh_plugin("variant_view")
 
     def on_clear_samples(self):
         self.model.clear()
@@ -809,7 +811,7 @@ class SamplesWidget(plugin.PluginWidget):
                 description=",".join(samples),
             )
             self.mainwindow.set_state_data("source", source_name)
-            self.mainwindow.refresh_plugins(sender=self)
+            self.mainwindow.refresh_plugins(sender=self, force_refresh=True)
         else:
             self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)
             self.mainwindow.refresh_plugins(sender=self)

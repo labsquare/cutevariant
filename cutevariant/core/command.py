@@ -43,6 +43,7 @@ def select_cmd(
     having={},  # {"op":">", "value": 3  }
     limit=50,
     offset=0,
+    selected_samples=[],
     **kwargs,
 ):
     """Select query Command
@@ -76,9 +77,11 @@ def select_cmd(
         offset=offset,
         group_by=group_by,
         having=having,
+        selected_samples=selected_samples,
         **kwargs,
     )
     LOGGER.debug("command:select_cmd:: %s", query)
+    print("cmd:select_cmd:: %s", query)
     for i in conn.execute(query):
         # THIS IS INSANE... SQLITE DOESNT RETURN ALIAS NAME WITH SQUARE BRACKET....
         # I HAVE TO replace [] by () and go back after...
@@ -95,6 +98,7 @@ def count_cmd(
     filters={},
     group_by=[],
     having={},
+    selected_samples=[],
     **kwargs,
 ):
     """Count command
@@ -140,6 +144,7 @@ def count_cmd(
         order_by=None,
         group_by=group_by,
         having=having,
+        selected_samples=selected_samples,
         **kwargs,
     )
 

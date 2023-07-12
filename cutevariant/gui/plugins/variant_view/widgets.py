@@ -165,6 +165,7 @@ class VariantModel(QAbstractTableModel):
 
         self.filters = dict()
         self.source = "variants"
+        self.selected_samples = []
         self.group_by = []
         self.having = {}
         self.order_by = []
@@ -596,6 +597,7 @@ class VariantModel(QAbstractTableModel):
             limit=self.limit,
             offset=offset,
             order_by=self.order_by,
+            selected_samples=self.selected_samples
         )
 
         # Create count_func to run asynchronously: count variants
@@ -604,6 +606,7 @@ class VariantModel(QAbstractTableModel):
             fields=query_fields,
             source=self.source,
             filters=self.filters,
+            selected_samples=self.selected_samples
         )
 
         # Start the run
@@ -2155,6 +2158,7 @@ class VariantViewWidget(plugin.PluginWidget):
             self.view.model.clear_variant_cache()
             self.view.fields = self.mainwindow.get_state_data("fields")
             self.view.filters = self.mainwindow.get_state_data("filters")
+            self.view.model.selected_samples = self.mainwindow.get_state_data("samples")
             self.view.model.order_by = self.mainwindow.get_state_data("order_by")
             self.view.model.source = self.mainwindow.get_state_data("source")
 
