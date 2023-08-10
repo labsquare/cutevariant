@@ -12,3 +12,34 @@ pythonVersion = '3.9'
 venvPath = '.'
 venv = 'venv'
 '''
+[tool.poetry]
+name = "cutevariant"
+version = "0.4.0"
+description = "A standalone and free application to explore genetics variations from VCF file"
+authors = ["Sacha Schutz","Pierre Marijon", "Lucas Bourneuf"]
+license = "GNU GPL"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+PySide6 = "^6.5.2"
+polars = "^0.18.12"
+duckdb = "^0.8.1"
+cachetools = "^5.3.1"
+pyyaml = "^6.0.1"
+pyvcf3 = "^1.0.3"
+textx = "^3.1.1"
+jinja2 = "^3.1.2"
+markdown = "^3.4.4"
+pydantic = "^2.1.1"
+nuitka = "^1.7.9"
+ipython = "^8.14.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-qt = "^4.2.0"
+pytest-cov = "^4.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

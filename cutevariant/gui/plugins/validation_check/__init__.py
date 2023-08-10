@@ -1,5 +1,0 @@
-__title__ = "Validation check"
-__description__ = "A dialog to check variants presumably miss-validated"
-__long_description__ = ""
-__author__ = "Antony Le Béchec"
-__version__ = "1.0.0"

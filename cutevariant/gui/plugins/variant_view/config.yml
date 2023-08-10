@@ -1,6 +1,0 @@
-
-line_per_page: 50
-memory_cache: 10 
-links : 
-  - "http://www.google.fr"
-  - "http://www.youtube.fr"

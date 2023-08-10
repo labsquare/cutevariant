@@ -1,9 +1,9 @@
-__all__ = ["core", "gui"]
+__all__ = ["core"]
 __version__ = "0.4.5.dev0"
 
 
-# Configure logger
-from .commons import create_logger
+# # Configure logger
+# from .commons import create_logger
 
-LOGGER = create_logger()
-# LOGGER.setLevel("DEBUG")
+# LOGGER = create_logger()
+# # LOGGER.setLevel("DEBUG")
