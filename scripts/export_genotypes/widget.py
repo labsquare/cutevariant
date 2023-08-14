@@ -20,15 +20,15 @@ def export_genotypes(database_file_name: str, vql_query: str, output: str, overw
     selected_variants = list(command.select_cmd(conn, **vql.parse_one_vql(vql_query), limit=0))
 
     all_samples = sorted([s["name"] for s in sql.get_samples(conn)])
-    affected_samples = sorted([s["name"] for s in sql.get_samples(conn) if s["phenotype"] == 1])
-    unaffected_samples = sorted([s["name"] for s in sql.get_samples(conn) if s["phenotype"] == 2])
+    affected_samples = sorted([s["name"] for s in sql.get_samples(conn) if s["phenotype"] == 2])
+    unaffected_samples = sorted([s["name"] for s in sql.get_samples(conn) if s["phenotype"] == 1])
 
     with open(output, "w") as f:
         TAB = "\t"
         LF = "\n"
 
         f.write(
-            f"chr{TAB}pos{TAB}gene{TAB}hgvsc{TAB}{TAB.join(affected_samples)}{TAB}{TAB.join(unaffected_samples)}{LF}"
+            f"chr{TAB}pos{TAB}gene{TAB}hgvsc{TAB}transcript{TAB}{TAB.join(affected_samples)}{TAB}{TAB.join(unaffected_samples)}{LF}"
         )
 
         for variant in selected_variants:
@@ -40,8 +40,8 @@ def export_genotypes(database_file_name: str, vql_query: str, output: str, overw
             # Write affected and unaffected separately
             f.write(
                 f"{chrom}{TAB}{pos}{TAB}{variant['ann.gene']}{TAB}{variant['ann.hgvs_c']}{TAB}{variant['ann.transcript']}"
-                f"{TAB}{TAB.join(str(s['gt'] if s['gt']!=-1 else 0) for s in sorted(aff_genotypes,key=lambda s:s['name']))}"
-                f"{TAB}{TAB.join(str(s['gt'] if s['gt']!=-1 else 0) for s in sorted(unaf_genotypes,key=lambda s:s['name']))}{LF}"
+                f"{TAB}{TAB.join(str(s['gt'] or 0) for s in sorted(aff_genotypes,key=lambda s:s['name']))}"
+                f"{TAB}{TAB.join(str(s['gt'] or 0) for s in sorted(unaf_genotypes,key=lambda s:s['name']))}{LF}"
             )
 
     return 0
@@ -108,7 +108,7 @@ class ScriptInterface(QDialog):
 
             genes = self.query_textbox.toPlainText().split("\n")
             for gene in genes:
-                query = f"SELECT chr,pos,ann.gene FROM variants WHERE ann.gene = '{gene}'"
+                query = f"SELECT chr,pos,ann.gene,ann.hgvs_c,ann.transcript FROM variants WHERE ann.gene = '{gene}'"
                 res = export_genotypes(
                     self.db_filename, query, os.path.join(output_dir, f"{gene}.csv")
                 )
