@@ -10,6 +10,8 @@ class NoGenotypeError(Exception):
 
 def __format_gt(expr: pl.Expr, /, name: str) -> pl.Expr:
     """Manage gt field."""
+    # 1/2 -> 1
+    # 2/2 -> 2
     return expr.str.count_match("1").cast(pl.UInt8).alias(name.lower())
 
 
@@ -130,8 +132,5 @@ def genotypes(
 
     # Select intrusting column
     genotypes = genotypes.select(["id", "sample", *[col.lower() for col in col_index]])
-
-    if "gt" in genotypes.columns:
-        return genotypes.filter(pl.col("gt") != 0)
 
     return genotypes
