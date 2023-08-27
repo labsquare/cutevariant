@@ -17,25 +17,26 @@ from IPython import embed
 
 from cutevariant.core.reader.abstractreader import AbstractReader
 
-from IPython import embed
-
 
 class VcfReader(AbstractReader):
     def __init__(self, filename: str, run_name: str) -> None:
         super().__init__(filename)
         self.run_name = run_name
         self.vcf_cols = self.read_vcf_columns()
+        self.vcf_fields = self.parse_vcf_header()
+        self.format_fields = sorted([f["id"].lower() for f in self.vcf_fields["format"]])
 
     def samples(self) -> typing.List[str]:
         return self.vcf_cols[self.vcf_cols.index("format") + 1 :]
 
     def get_sample_fields(self, struct: dict, sample_name: str):
-        return {
+        d = {
             field.lower(): value
             for field, value in zip(struct["format"].split(":"), struct[sample_name].split(":"))
         }
+        return {key: d.get(key, "") for key in self.format_fields}
 
-    def genotypes(self, samplename: str, method="fast") -> pl.LazyFrame:
+    def genotypes(self, samplename: str) -> pl.LazyFrame:
         lf_vcf = pl.scan_csv(
             self.filename,
             separator="\t",
@@ -43,37 +44,19 @@ class VcfReader(AbstractReader):
             has_header=False,
             new_columns=self.vcf_cols,
         )
-        # TODO: Benchmark
-        if method == "slow":
-            # Add variant ID
-            # Looking for genotype information, select format field
-            # Do that weird concat string to get columns joined and then split again to a dict
-            # At the end, add the run name to the whole genotype information
-            lf_vcf = (
-                lf_vcf.with_columns(index_vcf_expr())
-                .select(["format", samplename])
-                .with_columns(
-                    pl.concat_str([pl.col("format"), pl.lit("-"), pl.col(samplename)])
-                    .alias("sample_fields")
-                    .apply(
-                        lambda s: {
-                            f.lower(): v
-                            for f, v in zip(s.split("-")[0].split(":"), s.split("-")[1].split(":"))
-                        }
-                    )
+
+        # TODO: Try this instead: https://stackoverflow.com/questions/74521285/how-to-zip-2-list-columns-on-python-polars
+        sample_fields_extractor = partial(self.get_sample_fields, sample_name=samplename)
+        format_dtype = pl.Struct({fieldname: pl.Utf8 for fieldname in self.format_fields})
+        lf_vcf = (
+            lf_vcf.with_columns(
+                pl.struct(["format", samplename]).apply(
+                    sample_fields_extractor, return_dtype=format_dtype
                 )
-                .unnest("sample_fields")
-                .with_columns(pl.lit(self.run_name).alias("run_name"))
             )
-        else:
-            sample_fields_extractor = partial(self.get_sample_fields, sample_name=samplename)
-            lf_vcf = (
-                lf_vcf.with_columns(
-                    pl.struct(["format", samplename]).apply(sample_fields_extractor)
-                )
-                .unnest("format")
-                .with_columns(pl.lit(self.run_name).alias("run_name"))
-            )
+            .unnest("format")
+            .with_columns(pl.lit(self.run_name).alias("run_name"))
+        )
 
         return lf_vcf
 
@@ -87,9 +70,7 @@ class VcfReader(AbstractReader):
             new_columns=self.vcf_cols,
         )
         # Extract variants and select columns
-        lf_vcf = lf_vcf.select(["chrom", "pos", "ref", "alt"]).with_columns(
-            [index_vcf_expr(), pl.lit(self.run_name).alias("run_name")]
-        )
+        lf_vcf = lf_vcf.select(["chrom", "pos", "ref", "alt"]).with_columns([index_vcf_expr()])
         return lf_vcf
 
     def is_gzipped(self):
@@ -167,24 +148,28 @@ class VcfReader(AbstractReader):
         variants_filename = os.path.join(output_dir, "variants.parquet")
         if os.path.exists(variants_filename):
             if auto_merge:
-                pl.concat(
-                    [pl.scan_parquet(variants_filename), variants_lf]
-                ).collect().write_parquet(variants_filename + ".new")
+                pl.concat([pl.scan_parquet(variants_filename), variants_lf]).sink_parquet(
+                    variants_filename + ".new",
+                )
                 os.rename(variants_filename + ".new", variants_filename)
         else:
-            variants_lf.collect().write_parquet(variants_filename)
+            variants_lf.sink_parquet(
+                variants_filename,
+            )
 
         # Import every sample in a different file
         for sample in self.samples():
             genotype_lf = self.genotypes(sample)
             sample_filename = os.path.join(output_dir, "samples", f"{sample}.parquet")
             if os.path.exists(sample_filename):
-                pl.concat([pl.scan_parquet(sample_filename), genotype_lf]).collect().write_parquet(
-                    sample_filename + ".new"
+                pl.concat([pl.scan_parquet(sample_filename), genotype_lf]).sink_parquet(
+                    sample_filename + ".new",
                 )
                 os.rename(sample_filename + ".new", sample_filename)
             else:
-                genotype_lf.collect().write_parquet(sample_filename)
+                genotype_lf.sink_parquet(
+                    sample_filename,
+                )
 
 
 def index_vcf_expr() -> pl.Expr:
