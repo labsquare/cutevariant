@@ -46,18 +46,35 @@ class VcfReader(AbstractReader):
         )
 
         # TODO: Try this instead: https://stackoverflow.com/questions/74521285/how-to-zip-2-list-columns-on-python-polars
-        sample_fields_extractor = partial(self.get_sample_fields, sample_name=samplename)
-        format_dtype = pl.Struct({fieldname: pl.Utf8 for fieldname in self.format_fields})
+
         lf_vcf = (
             lf_vcf.with_columns(
-                pl.struct(["format", samplename]).apply(
-                    sample_fields_extractor, return_dtype=format_dtype
-                )
+                pl.concat_str([pl.col("ref"), pl.lit(","), pl.col("alt")])
+                .str.split(",")
+                .alias("refalt")
             )
-            .unnest("format")
-            .with_columns(pl.lit(self.run_name).alias("run_name"))
+            .with_columns([pl.col("alt").str.split(",")])
+            .explode("alt")
+            .with_columns(index_vcf_expr())
+            .with_columns(
+                [
+                    pl.col("format").str.split(":"),
+                    pl.col(samplename).str.split(":"),
+                ]
+            )
+            .explode(["format", pl.col(samplename)])
+            # Trop compliqué...
+            # .with_columns(
+            #     [
+            #         pl.when((pl.col("format") == "GT") & (pl.col(s).str.contains("/")))
+            #         .then(pl.col(s).str.split("/"))
+            #         .when((pl.col("format") == "GT") & (pl.col(s).str.contains("|")))
+            #         .then(pl.col(s).str.split("|"))
+            #         .otherwise(pl.col(s).str.split(","))
+            #         for s in self.samples()
+            #     ]
+            # )
         )
-
         return lf_vcf
 
     def variants(self) -> pl.LazyFrame:
@@ -70,7 +87,12 @@ class VcfReader(AbstractReader):
             new_columns=self.vcf_cols,
         )
         # Extract variants and select columns
-        lf_vcf = lf_vcf.select(["chrom", "pos", "ref", "alt"]).with_columns([index_vcf_expr()])
+        lf_vcf = (
+            lf_vcf.select(["chrom", "pos", "ref", "alt"])
+            .with_columns(pl.col("alt").str.split(","))
+            .explode("alt")
+            .with_columns([index_vcf_expr()])
+        )
         return lf_vcf
 
     def is_gzipped(self):
@@ -191,5 +213,5 @@ def index_vcf_expr() -> pl.Expr:
 
 
 if __name__ == "__main__":
-    reader = VcfReader("examples/example.vcf", "RUN_TEST")
-    reader.import_vcf("/home/charles/Bioinfo/tests_cutevariants/premier_projet")
+    reader = VcfReader("examples/sample.vcf", "RUN_TEST")
+    reader.import_vcf("/home/charles/Bioinfo/tests_cutevariant/premier_projet")
