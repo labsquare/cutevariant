@@ -1,6 +1,6 @@
 from functools import partial
 import os
-from typing import Sequence, List
+from typing import Sequence, List, Tuple
 import typing
 import polars as pl
 import duckdb as db
@@ -24,19 +24,13 @@ class VcfReader(AbstractReader):
         self.run_name = run_name
         self.vcf_cols = self.read_vcf_columns()
         self.vcf_fields = self.parse_vcf_header()
-        self.format_fields = sorted([f["id"].lower() for f in self.vcf_fields["format"]])
 
     def samples(self) -> typing.List[str]:
         return self.vcf_cols[self.vcf_cols.index("format") + 1 :]
 
-    def get_sample_fields(self, struct: dict, sample_name: str):
-        d = {
-            field.lower(): value
-            for field, value in zip(struct["format"].split(":"), struct[sample_name].split(":"))
-        }
-        return {key: d.get(key, "") for key in self.format_fields}
-
-    def genotypes(self, samplename: str) -> pl.LazyFrame:
+    def genotypes(
+        self, samplename: str, ploidy=2
+    ) -> Tuple[pl.LazyFrame, pl.LazyFrame, pl.LazyFrame]:
         lf_vcf = pl.scan_csv(
             self.filename,
             separator="\t",
@@ -63,19 +57,44 @@ class VcfReader(AbstractReader):
                 ]
             )
             .explode(["format", pl.col(samplename)])
-            # Trop compliqué...
-            # .with_columns(
-            #     [
-            #         pl.when((pl.col("format") == "GT") & (pl.col(s).str.contains("/")))
-            #         .then(pl.col(s).str.split("/"))
-            #         .when((pl.col("format") == "GT") & (pl.col(s).str.contains("|")))
-            #         .then(pl.col(s).str.split("|"))
-            #         .otherwise(pl.col(s).str.split(","))
-            #         for s in self.samples()
-            #     ]
-            # )
         )
-        return lf_vcf
+
+        # Get the GGT column: a list consisting of each parental genotype
+        ggt_lf = (
+            lf_vcf.filter(pl.col("format") == "GT")
+            .with_columns(
+                pl.col(samplename)
+                .str.replace(r"[|]", "/")
+                .str.split("/")
+                .list.eval(pl.element().cast(pl.Int8))
+            )
+            .with_columns(
+                pl.concat_list(
+                    pl.col("refalt").list.get(pl.col(samplename).list.get(0)),
+                    pl.col("refalt").list.get(pl.col(samplename).list.get(1)),
+                ).alias(samplename)
+            )
+            .select(["id", "format", samplename])
+            .filter(pl.col(samplename).list.lengths() != 1)
+        )
+
+        gt_lf = (
+            lf_vcf.select(["id", "format", samplename])
+            .filter(pl.col("format") == "GT")
+            .with_columns(
+                pl.col(samplename)
+                .str.replace(r"[|]", "/")
+                .str.split("/")
+                .list.eval(pl.element().cast(pl.Int8))
+            )
+            .filter(pl.col(samplename).list.lengths() != 1)
+        )
+
+        other_format_lf = lf_vcf.select(["id", "format", samplename]).filter(
+            pl.col("format") != "GT"
+        )
+
+        return ggt_lf, gt_lf, other_format_lf
 
     def variants(self) -> pl.LazyFrame:
         # Get raw vcf lazyframe
@@ -89,6 +108,7 @@ class VcfReader(AbstractReader):
         # Extract variants and select columns
         lf_vcf = (
             lf_vcf.select(["chrom", "pos", "ref", "alt"])
+            .with_columns(pl.col("chrom"))
             .with_columns(pl.col("alt").str.split(","))
             .explode("alt")
             .with_columns([index_vcf_expr()])
@@ -169,11 +189,9 @@ class VcfReader(AbstractReader):
         variants_lf = self.variants()
         variants_filename = os.path.join(output_dir, "variants.parquet")
         if os.path.exists(variants_filename):
-            if auto_merge:
-                pl.concat([pl.scan_parquet(variants_filename), variants_lf]).sink_parquet(
-                    variants_filename + ".new",
-                )
-                os.rename(variants_filename + ".new", variants_filename)
+            overwrite_parquet_file(
+                pl.concat([pl.scan_parquet(variants_filename), variants_lf]), variants_filename
+            )
         else:
             variants_lf.sink_parquet(
                 variants_filename,
@@ -181,17 +199,55 @@ class VcfReader(AbstractReader):
 
         # Import every sample in a different file
         for sample in self.samples():
-            genotype_lf = self.genotypes(sample)
-            sample_filename = os.path.join(output_dir, "samples", f"{sample}.parquet")
-            if os.path.exists(sample_filename):
-                pl.concat([pl.scan_parquet(sample_filename), genotype_lf]).sink_parquet(
-                    sample_filename + ".new",
+            # Format fields come in three main types: ggt (the genotype in full notation), gt (the genotype in 0/1 or 1/2 notation), and other fields.
+            ggt, gt, other_formats = self.genotypes(sample)
+
+            # region Get GGT (special) fields list
+
+            ggt_sample_filename = os.path.join(output_dir, "samples", f"{sample}.ggt.parquet")
+            if os.path.exists(ggt_sample_filename):
+                # The path already exists: use overwrite function to safely write concatenated frames over the same file name.
+                pl.concat([pl.read_parquet(ggt_sample_filename), ggt.collect()]).write_parquet(
+                    ggt_sample_filename + ".new"
                 )
-                os.rename(sample_filename + ".new", sample_filename)
+                os.rename(ggt_sample_filename + ".new", ggt_sample_filename)
             else:
-                genotype_lf.sink_parquet(
-                    sample_filename,
+                ggt.collect().write_parquet(
+                    ggt_sample_filename,
                 )
+            # endregion
+
+            # region Get genotypes fields
+            gt_sample_filename = os.path.join(output_dir, "samples", f"{sample}.gt.parquet")
+            if os.path.exists(gt_sample_filename):
+                # The path already exists: use overwrite function to safely write concatenated frames over the same file name.
+                overwrite_parquet_file(
+                    pl.concat([pl.scan_parquet(gt_sample_filename), gt]), gt_sample_filename
+                )
+            else:
+                gt.sink_parquet(
+                    gt_sample_filename,
+                )
+            # endregion
+
+            # region Get other format fields
+            other_formats_sample_filename = os.path.join(output_dir, "samples", f"{sample}.parquet")
+            if os.path.exists(other_formats_sample_filename):
+                # The path already exists: use overwrite function to safely write concatenated frames over the same file name.
+                overwrite_parquet_file(
+                    pl.concat([pl.scan_parquet(other_formats_sample_filename), other_formats]),
+                    other_formats_sample_filename,
+                )
+            else:
+                other_formats.sink_parquet(
+                    other_formats_sample_filename,
+                )
+            # endregion
+
+
+def overwrite_parquet_file(lazyframe: pl.LazyFrame, filename: str):
+    lazyframe.sink_parquet(filename + ".new")
+    os.rename(filename + ".new", filename)
 
 
 def index_vcf_expr() -> pl.Expr:
@@ -213,5 +269,5 @@ def index_vcf_expr() -> pl.Expr:
 
 
 if __name__ == "__main__":
-    reader = VcfReader("examples/sample.vcf", "RUN_TEST")
+    reader = VcfReader("examples/example.vcf", "RUN_TEST")
     reader.import_vcf("/home/charles/Bioinfo/tests_cutevariant/premier_projet")
