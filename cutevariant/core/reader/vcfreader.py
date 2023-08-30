@@ -185,8 +185,11 @@ class VcfReader(AbstractReader):
             output_dir (str): Path to the cutevariant project directory to import VCF into
         """
 
-        # Import variants
-        variants_lf = self.variants()
+        # region Import variants
+        try:
+            variants_lf = self.variants()
+        except NoDataError:
+            return
         variants_filename = os.path.join(output_dir, "variants.parquet")
         if os.path.exists(variants_filename):
             overwrite_parquet_file(
