@@ -9,6 +9,8 @@ import gzip
 
 import re
 
+from polars import NoDataError
+
 from annotations import extract_annotations
 from quality import extract_quality
 from genotypes import format2expr, genotypes
@@ -17,20 +19,32 @@ from IPython import embed
 
 from cutevariant.core.reader.abstractreader import AbstractReader
 
+from typing import NamedTuple
+
+
+class SearchReplace(NamedTuple):
+    Search: str
+    Replace: str
+
 
 class VcfReader(AbstractReader):
-    def __init__(self, filename: str, run_name: str) -> None:
+    def __init__(self, filename: str, run_name: str, sample_trim: SearchReplace = None) -> None:
         super().__init__(filename)
         self.run_name = run_name
         self.vcf_cols = self.read_vcf_columns()
         self.vcf_fields = self.parse_vcf_header()
+        self._samples = self.vcf_cols[self.vcf_cols.index("format") + 1 :]
+        if sample_trim:
+            self.sample_trim(sample_trim)
+
+    def sample_trim(self, sample_trim: SearchReplace):
+        self._samples = [re.sub(sample_trim.Search, sample_trim.Replace, s) for s in self._samples]
+        self.vcf_cols = self.vcf_cols[: -len(self._samples)] + self._samples
 
     def samples(self) -> typing.List[str]:
-        return self.vcf_cols[self.vcf_cols.index("format") + 1 :]
+        return self._samples
 
-    def genotypes(
-        self, samplename: str, ploidy=2
-    ) -> Tuple[pl.LazyFrame, pl.LazyFrame, pl.LazyFrame]:
+    def genotypes(self, samplename: str, column: str, column_type: str) -> pl.LazyFrame:
         lf_vcf = pl.scan_csv(
             self.filename,
             separator="\t",
@@ -47,9 +61,7 @@ class VcfReader(AbstractReader):
                 .str.split(",")
                 .alias("refalt")
             )
-            .with_columns([pl.col("alt").str.split(",")])
-            .explode("alt")
-            .with_columns(index_vcf_expr())
+            .select(["chrom", "pos", "refalt", "format", samplename])
             .with_columns(
                 [
                     pl.col("format").str.split(":"),
@@ -57,44 +69,14 @@ class VcfReader(AbstractReader):
                 ]
             )
             .explode(["format", pl.col(samplename)])
+            .rename({"format": "field", samplename: "value"})
+            .filter(pl.col("field") == column)
+            .with_columns(index_vcf_expr())
+            .with_columns(pl.lit(samplename).alias("samplename"))
+            .with_columns(pl.lit(self.run_name).alias("runname"))
         )
 
-        # Get the GGT column: a list consisting of each parental genotype
-        ggt_lf = (
-            lf_vcf.filter(pl.col("format") == "GT")
-            .with_columns(
-                pl.col(samplename)
-                .str.replace(r"[|]", "/")
-                .str.split("/")
-                .list.eval(pl.element().cast(pl.Int8))
-            )
-            .with_columns(
-                pl.concat_list(
-                    pl.col("refalt").list.get(pl.col(samplename).list.get(0)),
-                    pl.col("refalt").list.get(pl.col(samplename).list.get(1)),
-                ).alias(samplename)
-            )
-            .select(["id", "format", samplename])
-            .filter(pl.col(samplename).list.lengths() != 1)
-        )
-
-        gt_lf = (
-            lf_vcf.select(["id", "format", samplename])
-            .filter(pl.col("format") == "GT")
-            .with_columns(
-                pl.col(samplename)
-                .str.replace(r"[|]", "/")
-                .str.split("/")
-                .list.eval(pl.element().cast(pl.Int8))
-            )
-            .filter(pl.col(samplename).list.lengths() != 1)
-        )
-
-        other_format_lf = lf_vcf.select(["id", "format", samplename]).filter(
-            pl.col("format") != "GT"
-        )
-
-        return ggt_lf, gt_lf, other_format_lf
+        return lf_vcf
 
     def variants(self) -> pl.LazyFrame:
         # Get raw vcf lazyframe
@@ -104,6 +86,7 @@ class VcfReader(AbstractReader):
             comment_char="#",
             has_header=False,
             new_columns=self.vcf_cols,
+            raise_if_empty=False,
         )
         # Extract variants and select columns
         lf_vcf = (
@@ -178,7 +161,7 @@ class VcfReader(AbstractReader):
             if line.startswith("#CHROM"):
                 return line.replace("#", "").replace("ID", "RSID").lower().rstrip().split("\t")
 
-    def import_vcf(self, output_dir: str, auto_merge: bool = True):
+    def import_vcf(self, output_dir: str):
         """Imports VCF specified in filename.
 
         Args:
@@ -199,53 +182,12 @@ class VcfReader(AbstractReader):
             variants_lf.sink_parquet(
                 variants_filename,
             )
+        # endregion
 
         # Import every sample in a different file
         for sample in self.samples():
             # Format fields come in three main types: ggt (the genotype in full notation), gt (the genotype in 0/1 or 1/2 notation), and other fields.
-            ggt, gt, other_formats = self.genotypes(sample)
-
-            # region Get GGT (special) fields list
-
-            ggt_sample_filename = os.path.join(output_dir, "samples", f"{sample}.ggt.parquet")
-            if os.path.exists(ggt_sample_filename):
-                # The path already exists: use overwrite function to safely write concatenated frames over the same file name.
-                pl.concat([pl.read_parquet(ggt_sample_filename), ggt.collect()]).write_parquet(
-                    ggt_sample_filename + ".new"
-                )
-                os.rename(ggt_sample_filename + ".new", ggt_sample_filename)
-            else:
-                ggt.collect().write_parquet(
-                    ggt_sample_filename,
-                )
-            # endregion
-
-            # region Get genotypes fields
-            gt_sample_filename = os.path.join(output_dir, "samples", f"{sample}.gt.parquet")
-            if os.path.exists(gt_sample_filename):
-                # The path already exists: use overwrite function to safely write concatenated frames over the same file name.
-                overwrite_parquet_file(
-                    pl.concat([pl.scan_parquet(gt_sample_filename), gt]), gt_sample_filename
-                )
-            else:
-                gt.sink_parquet(
-                    gt_sample_filename,
-                )
-            # endregion
-
-            # region Get other format fields
-            other_formats_sample_filename = os.path.join(output_dir, "samples", f"{sample}.parquet")
-            if os.path.exists(other_formats_sample_filename):
-                # The path already exists: use overwrite function to safely write concatenated frames over the same file name.
-                overwrite_parquet_file(
-                    pl.concat([pl.scan_parquet(other_formats_sample_filename), other_formats]),
-                    other_formats_sample_filename,
-                )
-            else:
-                other_formats.sink_parquet(
-                    other_formats_sample_filename,
-                )
-            # endregion
+            format_fields = self.genotypes(sample)
 
 
 def overwrite_parquet_file(lazyframe: pl.LazyFrame, filename: str):
@@ -271,6 +213,33 @@ def index_vcf_expr() -> pl.Expr:
     )
 
 
+def batch_import(input_folder: str, output_folder: str):
+    """Imports VCFs in batch, assuming folder contains as many subfolders as there are run names"""
+    for run_name in os.listdir(input_folder):
+        if not os.path.isdir(os.path.join(input_folder, run_name)):
+            continue
+        for vcf in os.listdir(os.path.join(input_folder, run_name)):
+            vcf_file_name = os.path.join(input_folder, run_name, vcf)
+            if not os.path.isfile(vcf_file_name) or not vcf_file_name.endswith(".vcf"):
+                continue
+            reader = VcfReader(
+                os.path.join(input_folder, run_name, vcf),
+                run_name=run_name,
+                # sample_trim=SearchReplace(r"_S\d+$", ""),
+            )
+            reader.import_vcf(output_folder)
+
+
 if __name__ == "__main__":
-    reader = VcfReader("examples/example.vcf", "RUN_TEST")
-    reader.import_vcf("/home/charles/Bioinfo/tests_cutevariant/premier_projet")
+    reader = VcfReader(
+        "/media/charles/LINUXMINT/Documents/touslesppi/PPI070/1049-F_S74_extract.vcf",
+        "PPI070",
+        sample_trim=SearchReplace(r"_s\d+$", ""),
+    )
+    reader.import_vcf("/home/charles/Bioinfo/tests_cutevariant/premier_projet/")
+
+# if __name__ == "__main__":
+#     batch_import(
+#         "/media/charles/SANDISK/TousLesVCF_PPI/touslesppi",
+#         "/home/charles/Bioinfo/tests_cutevariant/tous_ppi",
+#     )
