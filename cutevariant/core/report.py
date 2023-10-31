@@ -60,6 +60,7 @@ class SampleReport(AbstractReport):
         super().__init__(conn)
         self._sample_id = sample_id
         self._variant_classif_threshold = 1
+        self._sample = sql.get_sample(self._conn, self._sample_id)
 
     def set_variant_classif_threshold(self, threshold: int):
         self._variant_classif_threshold = threshold
@@ -107,11 +108,12 @@ class SampleReport(AbstractReport):
                 "$and": [
                     {
                         "samples."
-                        + sql.get_sample(self._conn, self._sample_id)["name"]
+                        + self._sample["name"]
                         + ".gt": {"$gt": 0}
                     }
                 ]
             },
+            [self._sample["name"]]
         ):
             # if classif is not defined in config, keep the number by default
             row = [variant_classifs.get(row["classification"], row["classification"]), row["count"]]
@@ -159,11 +161,12 @@ class SampleReport(AbstractReport):
                 "$and": [
                     {
                         "samples."
-                        + sql.get_sample(self._conn, self._sample_id)["name"]
+                        + self._sample["name"]
                         + ".classification": {"$gte": self._variant_classif_threshold}
                     }
                 ]
             },
+            selected_samples= [self._sample["name"]]
         )
         variants = []
         for var_id in variants_ids:

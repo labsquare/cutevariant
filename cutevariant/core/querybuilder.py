@@ -26,6 +26,7 @@ import re
 from functools import lru_cache
 
 # Custom imports
+from cutevariant.config import Config
 from cutevariant.core import sql
 
 import cutevariant.constants as cst
@@ -129,7 +130,6 @@ def is_annotation_join_required(fields, filters, order_by=None) -> bool:
                 return True
 
     for condition in filters_to_flat(filters):
-
         condition = list(condition.keys())[0]
         if condition.startswith("ann."):
             return True
@@ -217,7 +217,6 @@ def samples_join_required(fields, filters, order_by=None) -> list:
 
 
 def fields_to_vql(fields) -> list:
-
     vql_fields = []
     for field in fields:
         if field.startswith("samples."):
@@ -272,7 +271,6 @@ def fields_to_sql(fields, use_as=False) -> list:
     sql_fields = []
 
     for field in fields:
-
         if field.startswith("ann."):
             sql_field = f"`annotations`.`{field[4:]}`"
             if use_as:
@@ -388,7 +386,6 @@ def condition_to_sql(item: dict, samples=None) -> str:
     condition = ""
 
     if table == "samples":
-
         if name == "$any":
             operator = "OR"
 
@@ -396,7 +393,6 @@ def condition_to_sql(item: dict, samples=None) -> str:
             operator = "AND"
 
         if operator and samples:
-
             condition = (
                 "("
                 + f" {operator} ".join(
@@ -519,9 +515,9 @@ def remove_field_in_filter(filters: dict, field: str = None) -> dict:
     Returns:
         dict: New filters dict with field removed
     """
+
     # ---------------------------------
     def recursive(obj):
-
         output = {}
         for k, v in obj.items():
             if k in ["$and", "$or"]:
@@ -568,9 +564,9 @@ def filters_to_sql(filters: dict, samples=None) -> str:
     Returns:
         str: A sql where expression
     """
+
     # ---------------------------------
     def recursive(obj):
-
         conditions = ""
         for k, v in obj.items():
             if k in ["$and", "$or"]:
@@ -617,9 +613,9 @@ def filters_to_vql(filters: dict) -> str:
     Returns:
         str: A sql where expression
     """
+
     # ---------------------------------
     def recursive(obj):
-
         conditions = ""
         for k, v in obj.items():
             if k in ["$and", "$or"]:
@@ -691,10 +687,17 @@ def build_sql_query(
         offset (int): record count per page
         group_by (list/None): list of field you want to group
     """
-
     # get samples ids
 
-    samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+    if selected_samples:  # value can be None or list
+        if len(selected_samples) > 0:
+            samples_ids = {
+                i["name"]: i["id"] for i in sql.get_samples(conn) if i["name"] in selected_samples
+            }
+        else:
+            samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
+    else:
+        samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
 
     # Create fields
     sql_fields = ["`variants`.`id`"] + fields_to_sql(fields, use_as=True)
@@ -756,6 +759,17 @@ def build_sql_query(
     if limit:
         sql_query += f" LIMIT {limit} OFFSET {offset}"
 
+    # prevent the "too many FROM clause term, max 200" error
+    MAX_SAMPLES_DEFAULT = 100
+    config = Config("app")
+    max_samples = config.get("max_samples_in_query", MAX_SAMPLES_DEFAULT)
+    if len(samples_ids) > max_samples:
+        LOGGER.debug(f"failed query: {sql_query}")
+        LOGGER.error(
+            f"QUERY FAILED because too many samples in query. Expected {max_samples} max, got instead: {len(samples_ids)}"
+        )
+        return "SELECT * FROM variants WHERE 0 = 1 LIMIT 1"  # bogus query to return 0 rows
+
     return sql_query
 
 
@@ -766,7 +780,6 @@ def build_vql_query(
     order_by=[],
     **kwargs,
 ):
-
     select_clause = ",".join(fields_to_vql(fields))
 
     where_clause = filters_to_vql(filters)

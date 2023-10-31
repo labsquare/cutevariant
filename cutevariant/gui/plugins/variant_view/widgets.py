@@ -61,7 +61,6 @@ class VariantVerticalHeader(QHeaderView):
         return QSize(30, super().sizeHint().height())
 
     def paintSection(self, painter: QPainter, rect: QRect, section: int):
-
         if painter is None:
             return
 
@@ -69,7 +68,6 @@ class VariantVerticalHeader(QHeaderView):
         super().paintSection(painter, rect, section)
 
         try:
-
             favorite = self.model().variant(section).get("favorite", False)
             number = self.model().variant(section).get("classification", 0)
 
@@ -165,6 +163,7 @@ class VariantModel(QAbstractTableModel):
 
         self.filters = dict()
         self.source = "variants"
+        self.selected_samples = []
         self.group_by = []
         self.having = {}
         self.order_by = []
@@ -263,7 +262,6 @@ class VariantModel(QAbstractTableModel):
         self._load_count_cache.clear()
 
     def set_cache(self, cachesize=32):
-
         if hasattr(self, "_load_variant_cache"):
             self._load_variant_cache.clear()
 
@@ -313,7 +311,6 @@ class VariantModel(QAbstractTableModel):
             return
 
         if self.variants and self.headers:
-
             column_name = self.headers[index.column()]
 
             # ---- Display Role ----
@@ -450,7 +447,6 @@ class VariantModel(QAbstractTableModel):
         difference = set(model_variant.items()) - set(sql_variant.items())
 
         if difference:
-
             diff_fields = ",".join([f"{key}" for key, value in difference])
 
             box = QMessageBox(None)
@@ -463,13 +459,11 @@ class VariantModel(QAbstractTableModel):
             box.setIcon(QMessageBox.Warning)
 
             if box.exec_() == QMessageBox.No:
-
                 return
 
         # Update all variant with same variant_id
         # Use case : When several transcript are displayed
         for row in self.find_row_id_from_variant_id(variant_id):
-
             if left.isValid() and right.isValid():
                 # Get database id of the variant to allow its update operation
                 variant["id"] = self.variants[row]["id"]
@@ -481,7 +475,6 @@ class VariantModel(QAbstractTableModel):
         # Log modification
 
         with open("user.log", "a") as file:
-
             username = getpass.getuser()
             timestamp = str(datetime.datetime.now())
             del variant["id"]
@@ -584,6 +577,7 @@ class VariantModel(QAbstractTableModel):
             limit=self.limit,
             offset=offset,
             order_by=self.order_by,
+            selected_samples=self.selected_samples,
         )
 
         LOGGER.debug(self.debug_sql)
@@ -596,6 +590,7 @@ class VariantModel(QAbstractTableModel):
             limit=self.limit,
             offset=offset,
             order_by=self.order_by,
+            selected_samples=self.selected_samples,
         )
 
         # Create count_func to run asynchronously: count variants
@@ -604,6 +599,7 @@ class VariantModel(QAbstractTableModel):
             fields=query_fields,
             source=self.source,
             filters=self.filters,
+            selected_samples=self.selected_samples,
         )
 
         # Start the run
@@ -773,7 +769,6 @@ class LoadingTableView(QTableView):
         self.horizontalHeader().setHighlightSections(False)
 
     def paintEvent(self, event: QPainter):
-
         if self.is_loading():
             painter = QPainter(self.viewport())
 
@@ -1176,7 +1171,6 @@ class VariantView(QWidget):
             self.select_row(0)
 
     def on_count_loaded(self):
-
         self.page_box.clear()
         if self.model.pageCount() - 1 == 0:
             self.set_pagging_enabled(False)
@@ -1198,7 +1192,6 @@ class VariantView(QWidget):
         self.load_finished.emit()
 
     def set_formatter(self, formatter_class):
-
         self.delegate.set_formatter(formatter_class)
         self.view.reset()
 
@@ -1235,7 +1228,6 @@ class VariantView(QWidget):
         self.model.filters = _filters
 
     def on_page_clicked(self):
-
         action_text = self.sender().text()
 
         if action_text == "<<":
@@ -1271,7 +1263,6 @@ class VariantView(QWidget):
         self.favorite_action.blockSignals(False)
 
     def on_clear_cache(self):
-
         self.model.clear_all_cache()
         self.load()
 
@@ -1306,7 +1297,6 @@ class VariantView(QWidget):
             self.view.setFocus(Qt.OtherFocusReason)
 
     def set_tool_loading(self, active=True):
-
         if active:
             self.info_label.setText(self.tr("Counting all variants. This can take a while ... "))
             self.loading_action.setVisible(True)
@@ -1319,7 +1309,6 @@ class VariantView(QWidget):
         self.bottom_bar.setDisabled(active)
 
     def set_loading(self, active=True):
-
         self.set_view_loading(active)
         self.set_tool_loading(active)
 
@@ -1343,7 +1332,6 @@ class VariantView(QWidget):
         return links
 
     def _show_variant_dialog(self):
-
         current_index = self.view.selectionModel().currentIndex()
 
         if current_index.isValid():
@@ -1355,7 +1343,6 @@ class VariantView(QWidget):
                 self.parent.mainwindow.refresh_plugin("sample_view")
 
     def _show_sample_variant_dialog(self):
-
         # current index
         index = self.view.currentIndex()
 
@@ -1460,7 +1447,6 @@ class VariantView(QWidget):
 
         # Menu Validation for sample
         if sample_id and sample_name and variant_id and current_variant[header_name]:
-
             # find genotype
             genotype = sql.get_sample_annotations(self.conn, variant_id, sample_id)
 
@@ -1550,7 +1536,6 @@ class VariantView(QWidget):
             menu.exec_(event.globalPos())
 
     def _open_url(self, url_template: str, in_browser=False):
-
         config = Config("variant_view")
 
         batch_open = False
@@ -1565,7 +1550,6 @@ class VariantView(QWidget):
             indexes = [self.view.currentIndex().siblingAtColumn(0)]
 
         for row_index in indexes:
-
             variant = self.model.variant(row_index.row())
             variant_id = variant["id"]
             full_variant = sql.get_variant(self.conn, variant_id, True, False)
@@ -1729,7 +1713,6 @@ class VariantView(QWidget):
         """
 
         for index in self.view.selectionModel().selectedRows():
-
             # current variant
             row = index.row()
             variant = self.model.variants[row]
@@ -1825,7 +1808,6 @@ class VariantView(QWidget):
         QApplication.instance().clipboard().setText(data)
 
     def _open_default_link(self, index: QModelIndex):
-
         #  get default link
         link = [i for i in self._get_links() if i["is_default"] is True]
         if not link:
@@ -1902,7 +1884,6 @@ class VariantView(QWidget):
         variant = self.model.variant(index.row())
 
         for item in self.model.classifications:
-
             if variant["classification"] == item["number"]:
                 icon = 0xF0133
                 # class_menu.setIcon(FIcon(icon, item["color"]))
@@ -1925,7 +1906,6 @@ class VariantView(QWidget):
         tags_preset = Config("tags")
 
         for item in tags_preset.get("variants", []):
-
             icon = 0xF04F9
 
             action = tags_menu.addAction(FIcon(icon, item["color"]), item["name"])
@@ -1946,7 +1926,6 @@ class VariantView(QWidget):
         )
 
         for item in genotypes_classifications:
-
             if genotype["classification"] == item["number"]:
                 icon = 0xF0133
                 # validation_menu.setIcon(FIcon(icon, item["color"]))
@@ -2033,7 +2012,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.view.vql_button_clicked.connect(self.on_vql_button_clicked)
 
     def show_plugin(self, name: str):
-
         if name in self.mainwindow.plugins:
             print("YOO ", name)
             dock = self.mainwindow.plugins[name].parent()
@@ -2079,7 +2057,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_field_removed(self, field: str):
-
         # TODO: Refactor to remove column based on field name...
         fields = self.view.model.fields
         field_index = fields.index(field)
@@ -2090,12 +2067,10 @@ class VariantViewWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_filter_added(self, field: str):
-
         dialog = FilterDialog(self.conn)
         dialog.set_field(field)
 
         if dialog.exec():
-
             one_filter = dialog.get_filter()
             filters = copy.deepcopy(self.view.model.filters)
 
@@ -2151,10 +2126,10 @@ class VariantViewWidget(plugin.PluginWidget):
         # See load(), we use this attr to restore fields after grouping
 
         if self.mainwindow:
-
             self.view.model.clear_variant_cache()
             self.view.fields = self.mainwindow.get_state_data("fields")
             self.view.filters = self.mainwindow.get_state_data("filters")
+            self.view.model.selected_samples = self.mainwindow.get_state_data("samples")
             self.view.model.order_by = self.mainwindow.get_state_data("order_by")
             self.view.model.source = self.mainwindow.get_state_data("source")
 

@@ -12,6 +12,8 @@ import typing
 import uuid
 from typing import Any, Iterable
 
+from cutevariant import LOGGER
+
 from cutevariant.gui import mainwindow, style, plugin, FIcon
 from cutevariant import constants as cst
 from cutevariant.core import sql, get_sql_connection
