@@ -736,7 +736,7 @@ def test_get_variant_as_group(conn):
     observed_genes = dict(
         [
             (i["ann." + group_by], i["count"])
-            for i in sql.get_variant_as_group(conn, "ann." + group_by, fields, "variants", {})
+            for i in sql.get_variant_as_group(conn, "ann." + group_by, fields, "variants", {}, [])
         ]
     )
 

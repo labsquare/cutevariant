@@ -351,6 +351,7 @@ class SamplesWidget(plugin.PluginWidget):
             self.stack_layout.setCurrentIndex(0)
 
         self.mainwindow.set_state_data("samples", copy.deepcopy(self.model.get_samples()))
+        self.mainwindow.set_state_data("selected_samples", copy.deepcopy(self.model.get_samples()))
 
         # Automatically create source on all samples
         # self.on_create_samples_source(source_name="samples")
@@ -811,6 +812,7 @@ class SamplesWidget(plugin.PluginWidget):
                 description=",".join(samples),
             )
             self.mainwindow.set_state_data("source", source_name)
+            self.mainwindow.set_state_data("selected_samples", samples)
             self.mainwindow.refresh_plugins(sender=self, force_refresh=True)
         else:
             self.mainwindow.set_state_data("source", DEFAULT_SELECTION_NAME)

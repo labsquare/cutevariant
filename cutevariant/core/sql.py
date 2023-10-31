@@ -486,7 +486,6 @@ def alter_table(conn: sqlite3.Connection, table_name: str, fields: list):
         fields (list): list of dict with name and type.
     """
     for field in fields:
-
         name = field["name"]
         p_type = field["type"]
         s_type = PYTHON_TO_SQLITE.get(p_type, "TEXT")
@@ -519,7 +518,6 @@ def alter_table_from_fields(conn: sqlite3.Connection, fields: list):
         return
 
     for table in tables:
-
         category = "samples" if table == "genotypes" else table
 
         # Get local columns names
@@ -1733,6 +1731,7 @@ def insert_fields(conn: sqlite3.Connection, data: list):
 #         )
 #     conn.commit()
 
+
 # @lru_cache()
 def get_fields(conn):
     """Get fields as list of dictionnary
@@ -1907,7 +1906,6 @@ def create_annotations_indexes(conn, indexed_annotation_fields=None):
     if indexed_annotation_fields is None:
         return
     for field in indexed_annotation_fields:
-
         LOGGER.debug(
             f"CREATE INDEX IF NOT EXISTS `idx_annotations_{field}` ON annotations (`{field}`)"
         )
@@ -2130,7 +2128,6 @@ def get_variant_occurences(conn: sqlite3.Connection, variant_id: int):
 
 
 def get_variant_occurences_summary(conn: sqlite3.Connection, variant_id: int):
-
     for rec in conn.execute(
         f"""
         SELECT gt , COUNT(*) as count FROM genotypes 
@@ -2240,7 +2237,6 @@ def get_variants(
     having={},  # {"op":">", "value": 3  }
     **kwargs,
 ):
-
     # TODO : rename as get_variant_as_tables ?
 
     query = qb.build_sql_query(
@@ -2545,7 +2541,6 @@ def insert_variants(
     RETURNING_ENABLE = parse_version(sqlite3.sqlite_version) >= parse_version("3.35.0 ")
 
     for variant_count, variant in enumerate(variants):
-
         variant_fields = {i for i in variant.keys() if i not in ("samples", "annotations")}
 
         common_fields = variant_fields & variants_local_fields
@@ -2601,7 +2596,6 @@ def insert_variants(
             # Delete previous annotations
             cursor.execute(f"DELETE FROM annotations WHERE variant_id ={variant_id}")
             for ann in variant["annotations"]:
-
                 ann["variant_id"] = variant_id
                 common_fields = annotations_local_fields & ann.keys()
                 query_fields = ",".join((f"`{i}`" for i in common_fields))
@@ -2618,7 +2612,6 @@ def insert_variants(
         if "samples" in variant:
             for sample in variant["samples"]:
                 if sample["name"] in samples_map:
-
                     sample["variant_id"] = int(variant_id)
                     sample["sample_id"] = int(samples_map[sample["name"]])
 
@@ -2660,11 +2653,11 @@ def get_variant_as_group(
     fields: list,
     source: str,
     filters: dict,
+    selected_samples: list,
     order_by_count=True,
     order_desc=True,
     limit=50,
 ):
-
     order_by = "count" if order_by_count else f"`{groupby}`"
     order_desc = "DESC" if order_desc else "ASC"
 
@@ -2674,18 +2667,23 @@ def get_variant_as_group(
         source=source,
         filters=filters,
         limit=None,
+        selected_samples=selected_samples,
     )
+    # print(f"subquery:{subquery}")
 
     query = f"""SELECT `{groupby}`, COUNT(`{groupby}`) AS count
     FROM ({subquery}) GROUP BY `{groupby}` ORDER BY {order_by} {order_desc} LIMIT {limit}"""
+
     for i in conn.execute(query):
         res = dict(i)
         res["field"] = groupby
         yield res
 
 
-def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samples: List[int], gt_threshold=0, order_by=True) -> typing.Tuple[dict]:
-    """Get count of variants for any field in "variants" or "genotype", 
+def get_variant_groupby_for_samples(
+    conn: sqlite3.Connection, groupby: str, samples: List[int], gt_threshold=0, order_by=True
+) -> typing.Tuple[dict]:
+    """Get count of variants for any field in "variants" or "genotype",
     limited to samples in list
 
     Args:
@@ -2693,7 +2691,7 @@ def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samp
         groupby (str): Field defining the GROUP BY
         samples (List[int]): list of sample ids on which the search is applied
         order_by (bool, optional): If True, results are ordered by the groupby field. Defaults to True.
-    
+
     Return:
         tuple of dict ; each containing one group and its count
     """
@@ -2713,7 +2711,6 @@ def get_variant_groupby_for_samples(conn: sqlite3.Connection, groupby: str, samp
 
     conn.row_factory = sqlite3.Row
     return (dict(data) for data in conn.execute(query))
-
 
 
 ## History table ==================================================================
@@ -2745,7 +2742,6 @@ def create_history_indexes(conn):
 
 ## Tags table ==================================================================
 def create_table_tags(conn):
-
     conn.execute(
         """CREATE TABLE IF NOT EXISTS tags (
         id INTEGER PRIMARY KEY ASC,
@@ -2787,7 +2783,6 @@ def get_tags_from_samples(conn: sqlite3.Connection, separator="&") -> typing.Lis
     """TODO : pas optimal pou le moment"""
     tags = set()
     for record in conn.execute("SELECT tags FROM samples "):
-
         tags = tags.union({t for t in record["tags"].split(separator) if t})
 
     return tags
@@ -2820,7 +2815,6 @@ def get_tag(conn: sqlite3.Connection, tag_id: int) -> dict:
 
 
 def update_tag(conn: sqlite3.Connection, tag: dict):
-
     if "id" not in tag:
         raise KeyError("'id' key is not in the given tag <%s>" % tag)
 
@@ -2993,7 +2987,6 @@ def get_samples(conn: sqlite3.Connection):
 
 
 def search_samples(conn: sqlite3.Connection, name: str, families=[], tags=[], classifications=[]):
-
     query = """
     SELECT * FROM samples
     """
@@ -3024,12 +3017,10 @@ def search_samples(conn: sqlite3.Connection, name: str, families=[], tags=[], cl
 
 
 def get_samples_family(conn: sqlite3.Connection):
-
     return {data["family_id"] for data in conn.execute("SELECT DISTINCT family_id FROM samples")}
 
 
 def get_samples_by_family(conn: sqlite3.Connection, families=[]):
-
     placeholder = ",".join((f"'{i}'" for i in families))
     return (
         dict(data)
@@ -3205,7 +3196,6 @@ def update_genotypes(conn: sqlite3.Connection, data: dict):
 
 
 def create_triggers(conn):
-
     # variants count case/control on samples update
     conn.execute(
         """
@@ -3277,9 +3267,7 @@ def create_triggers(conn):
     }
 
     for table in tables_fields_triggered:
-
         for field in tables_fields_triggered[table]:
-
             conn.execute(
                 f"""
                 CREATE TRIGGER IF NOT EXISTS history_{table}_{field}
@@ -3308,7 +3296,6 @@ def create_triggers(conn):
 
 
 def create_database_schema(conn: sqlite3.Connection, fields: Iterable[dict] = None):
-
     if fields is None:
         # get mandatory fields
         fields = list(get_clean_fields())
@@ -3351,13 +3338,12 @@ def import_reader(
     conn: sqlite3.Connection,
     reader: AbstractReader,
     pedfile: str = None,
-    project:dict = None,
+    project: dict = None,
     import_id: str = None,
     ignored_fields: list = [],
     indexed_fields: list = [],
     progress_callback: Callable = None,
 ):
-
     tables = ["variants", "annotations", "genotypes"]
     fields = get_clean_fields(reader.get_fields())
     fields = get_accepted_fields(fields, ignored_fields)
@@ -3372,7 +3358,7 @@ def import_reader(
     # Update metadatas
     update_metadatas(conn, reader.get_metadatas())
 
-    # Update project 
+    # Update project
     if project:
         update_project(conn, project)
 
@@ -3439,7 +3425,6 @@ def export_writer(
 
 
 def import_pedfile(conn: sqlite3.Connection, filename: str):
-
     if os.path.isfile(filename):
         for sample in PedReader(filename, get_samples(conn), raw_samples=False):
             update_sample(conn, sample)

@@ -173,6 +173,7 @@ class GroupByViewWidget(PluginWidget):
                 self.mainwindow.get_state_data("fields"),
                 self.mainwindow.get_state_data("source"),
                 self.mainwindow.get_state_data("filters"),
+                self.mainwindow.get_state_data("selected_samples"),
             )
 
     def on_double_click(self):
@@ -215,7 +216,6 @@ class GroupByViewWidget(PluginWidget):
         self.load()
 
     def on_loaded(self):
-
         self.field_select_combo.setEnabled(True)
 
         # Show total

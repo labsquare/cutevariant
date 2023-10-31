@@ -26,6 +26,7 @@ import re
 from functools import lru_cache
 
 # Custom imports
+from cutevariant.config import Config
 from cutevariant.core import sql
 
 import cutevariant.constants as cst
@@ -686,13 +687,15 @@ def build_sql_query(
         offset (int): record count per page
         group_by (list/None): list of field you want to group
     """
-
     # get samples ids
 
-    if len(selected_samples) > 0:
-        samples_ids = {
-            i["name"]: i["id"] for i in sql.get_samples(conn) if i["name"] in selected_samples
-        }
+    if selected_samples:  # value can be None or list
+        if len(selected_samples) > 0:
+            samples_ids = {
+                i["name"]: i["id"] for i in sql.get_samples(conn) if i["name"] in selected_samples
+            }
+        else:
+            samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
     else:
         samples_ids = {i["name"]: i["id"] for i in sql.get_samples(conn)}
 
@@ -755,6 +758,17 @@ def build_sql_query(
 
     if limit:
         sql_query += f" LIMIT {limit} OFFSET {offset}"
+
+    # prevent the "too many FROM clause term, max 200" error
+    MAX_SAMPLES_DEFAULT = 100
+    config = Config("app")
+    max_samples = config.get("max_samples_in_query", MAX_SAMPLES_DEFAULT)
+    if len(samples_ids) > max_samples:
+        LOGGER.debug(f"failed query: {sql_query}")
+        LOGGER.error(
+            f"QUERY FAILED because too many samples in query. Expected {max_samples} max, got instead: {len(samples_ids)}"
+        )
+        return "SELECT * FROM variants WHERE 0 = 1 LIMIT 1"  # bogus query to return 0 rows
 
     return sql_query
 

@@ -47,6 +47,7 @@ class GroupbyModel(QAbstractTableModel):
         self._fields = ["chr", "pos", "ref", "alt"]
         self._source = "variants"
         self._filters = {}
+        self._selected_samples = []
         self._order_by_count = True
 
         self.is_loading = False
@@ -131,7 +132,6 @@ class GroupbyModel(QAbstractTableModel):
                 return QApplication.instance().style().standardPalette().color(QPalette.Shadow)
 
         if role == Qt.TextAlignmentRole:
-
             if index.column() == 0:
                 return int(Qt.AlignmentFlag(Qt.AlignLeft | Qt.AlignVCenter))
 
@@ -170,7 +170,9 @@ class GroupbyModel(QAbstractTableModel):
         if column < self.columnCount():
             self._order_by_count = column == 1
             self._order_desc = order == Qt.DescendingOrder
-            self.load(self._field_name, self._fields, self._source, self._filters)
+            self.load(
+                self._field_name, self._fields, self._source, self._filters, self._selected_samples
+            )
 
     def setData(
         self, index: QModelIndex, value: typing.Any, role: int = int(Qt.DisplayRole)
@@ -181,13 +183,7 @@ class GroupbyModel(QAbstractTableModel):
         else:
             return False
 
-    def load(
-        self,
-        field_name,
-        fields,
-        source,
-        filters,
-    ):
+    def load(self, field_name, fields, source, filters, selected_samples):
         """Counts unique values inside field_name
 
         Args:
@@ -203,12 +199,14 @@ class GroupbyModel(QAbstractTableModel):
         self._fields = fields
         self._source = source
         self._filters = filters
+        self._selected_samples = selected_samples
         groupby_func = lambda conn: sql.get_variant_as_group(
             conn,
             self._field_name,
             self._fields,
             self._source,
             self._filters,
+            self._selected_samples,
             self._order_by_count,
             self._order_desc,
         )
@@ -290,19 +288,10 @@ class GroupbyTable(QWidget):
             self.groupby_model.set_conn(conn)
 
     def load(
-        self,
-        field_name: str,
-        fields: list,
-        source: str,
-        filters: dict,
+        self, field_name: str, fields: list, source: str, filters: dict, selected_samples: list
     ):
         if self.conn:
-            self.groupby_model.load(
-                field_name,
-                fields,
-                source,
-                filters,
-            )
+            self.groupby_model.load(field_name, fields, source, filters, selected_samples)
 
     def start_loading(self):
         self.tableview.start_loading()
