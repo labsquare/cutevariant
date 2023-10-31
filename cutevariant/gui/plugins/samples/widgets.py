@@ -497,8 +497,17 @@ class SamplesWidget(plugin.PluginWidget):
 
         fields_menu = menu.addMenu("Add genotype fields...")
 
+        fields_menu.addSection("Presets")
+        presets = Config("samples").get("presets", {})
+        for preset in presets.keys():
+            preset_action = fields_menu.addAction(preset, self.on_add_preset)
+            preset_action.setData(presets[preset])
+
+        fields_menu.addSeparator()
+        others_menu = QMenu("Other fields")
+        fields_menu.addMenu(others_menu)
         for field in sql.get_field_by_category(self.model.conn, "samples"):
-            field_action = fields_menu.addAction(QIcon(), field["name"], self.on_add_field)
+            field_action = others_menu.addAction(QIcon(), field["name"], self.on_add_field)
             field_action.setData(field)
 
         menu.addAction(self.select_action)
@@ -578,6 +587,35 @@ class SamplesWidget(plugin.PluginWidget):
                 new_field = f"samples.{sample_name}.{field_name}"
                 if new_field not in fields:
                     fields.append(new_field)
+
+            # Set State Data
+            self.mainwindow.set_state_data("fields", fields)
+
+            # Refresh plugins
+            self.mainwindow.refresh_plugins(sender=self)
+
+    def on_add_preset(self):
+        """
+        Trigger by menu preset_action
+        action.data() contains new field names to add, extracted from Config
+        """
+        action = self.sender()
+        field_names = action.data()
+
+        # Selected samples (by index)
+        indexes = self.view.selectionModel().selectedRows()
+
+        if indexes:
+            # Copy existing fields
+            fields = copy.deepcopy(self.mainwindow.get_state_data("fields"))
+
+            # Add field for selected samples
+            for sample_index in indexes:
+                sample_name = sample_index.siblingAtColumn(0).data()
+                for field_name in field_names:
+                    new_field = f"samples.{sample_name}.{field_name}"
+                    if new_field not in fields:
+                        fields.append(new_field)
 
             # Set State Data
             self.mainwindow.set_state_data("fields", fields)
