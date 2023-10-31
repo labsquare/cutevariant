@@ -8,7 +8,6 @@ from cutevariant.gui.ficon import FIcon
 
 
 class ChoiceModel(QAbstractListModel):
-
     choice_changed = Signal()
 
     def __init__(self, parent=None):
@@ -79,14 +78,12 @@ class ChoiceModel(QAbstractListModel):
             TYPE: Description
         """
         if role == Qt.CheckStateRole:
-
-            checked = True if value == Qt.Checked else False
-            self._data[index.row()]["checked"] = checked
-
-            if checked:
-                self.rows_checked.add(index.row())
-            else:
+            if index.row() in self.rows_checked:
                 self.rows_checked.remove(index.row())
+                self._data[index.row()]["checked"] = False
+            else:
+                self.rows_checked.add(index.row())
+                self._data[index.row()]["checked"] = True
 
             self.dataChanged.emit(index, index, [Qt.CheckStateRole])
             self.choice_changed.emit()
@@ -187,7 +184,6 @@ class ChoiceModel(QAbstractListModel):
 
 
 class ChoiceButton(QPushButton):
-
     item_changed = Signal(list)
 
     def __init__(self, parent=None):
@@ -272,7 +268,7 @@ if __name__ == "__main__":
 
     l.addWidget(btn)
 
-    btn.set_checked(["test2"])
+    btn.set_checked(["test 2"])
 
     w.show()
 
