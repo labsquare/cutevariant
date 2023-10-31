@@ -24,7 +24,6 @@ class FilterProxyModel(QSortFilterProxyModel):
 
 
 class GroupbyModel(QAbstractTableModel):
-
     groupby_started = Signal()
     groubpby_finished = Signal()
     groupby_error = Signal()

@@ -1949,7 +1949,6 @@ class VariantView(QWidget):
         )
 
         for item in genotypes_classifications:
-
             if genotype["classification"] == item["number"]:
                 icon = 0xF0133
                 # validation_menu.setIcon(FIcon(icon, item["color"]))
@@ -2036,7 +2035,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.view.vql_button_clicked.connect(self.on_vql_button_clicked)
 
     def show_plugin(self, name: str):
-
         if name in self.mainwindow.plugins:
             print("YOO ", name)
             dock = self.mainwindow.plugins[name].parent()
@@ -2082,7 +2080,6 @@ class VariantViewWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_field_removed(self, field: str):
-
         # TODO: Refactor to remove column based on field name...
         fields = self.view.model.fields
         field_index = fields.index(field)
@@ -2093,12 +2090,10 @@ class VariantViewWidget(plugin.PluginWidget):
         self.mainwindow.refresh_plugins(sender=self)
 
     def on_filter_added(self, field: str):
-
         dialog = FilterDialog(self.conn)
         dialog.set_field(field)
 
         if dialog.exec():
-
             one_filter = dialog.get_filter()
             filters = copy.deepcopy(self.view.model.filters)
 
@@ -2154,7 +2149,6 @@ class VariantViewWidget(plugin.PluginWidget):
         # See load(), we use this attr to restore fields after grouping
 
         if self.mainwindow:
-
             self.view.model.clear_variant_cache()
             self.view.fields = self.mainwindow.get_state_data("fields")
             self.view.filters = self.mainwindow.get_state_data("filters")

@@ -71,7 +71,6 @@ class StateData:
         self.reset()
 
     def __setitem__(self, key, value):
-
         if key in self._data:
             if self._data[key] == value:
                 return
@@ -114,7 +113,6 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self, parent=None):
-
         super().__init__(parent)
 
         ## ===== CLASS ATTRIBUTES =====
@@ -461,7 +459,6 @@ class MainWindow(QMainWindow):
         self.export_menu = self.file_menu.addMenu(self.tr("Export as"))
 
         for export_format_name in ExportDialogFactory.get_supported_formats():
-
             action = self.export_menu.addAction(
                 self.tr(f"Export as {export_format_name}..."), self.on_export_pressed
             )
@@ -718,7 +715,6 @@ class MainWindow(QMainWindow):
             raise
 
     def on_select_samples(self):
-
         w = SamplesEditor(self.conn)
         w.setAttribute(Qt.WA_DeleteOnClose)
         w.setWindowModality(Qt.ApplicationModal)
@@ -732,7 +728,6 @@ class MainWindow(QMainWindow):
         loop.exec()
 
     def add_samples(self, samples: list):
-
         samples = set(self.get_state_data("samples")).union(set(samples))
         self.set_state_data("samples", list(samples))
         self.refresh_plugins()
@@ -762,7 +757,6 @@ class MainWindow(QMainWindow):
         dialog = VcfImportDialog(sql.get_database_file_name(self.conn))
 
         if dialog.exec_() == QDialog.Accepted:
-
             db_filename = dialog.db_filename()
             # LOGGER.warning("ICI", db_filename)
 
@@ -943,7 +937,6 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def on_save_session(self):
-
         filename, _ = QFileDialog.getSaveFileName(
             self,
             self.tr("Save the session"),
@@ -1008,7 +1001,6 @@ class MainWindow(QMainWindow):
             json.dump(session, file)
 
     def showEvent(self, event):
-
         # Execute first run
         if self._is_initialize:
             path = self.get_last_session_path()
@@ -1019,7 +1011,6 @@ class MainWindow(QMainWindow):
         return super().showEvent(event)
 
     def load_session(self, filename: str):
-
         # read sessions
         with open(filename) as file:
             state = json.load(file)
@@ -1177,7 +1168,6 @@ class MainWindow(QMainWindow):
         return self.developers_menu
 
     def update_status_bar(self):
-
         source = self.get_state_data("source")
         fields = self.get_state_data("fields")
         filters = self.get_state_data("filters")
@@ -1198,7 +1188,6 @@ class MainWindow(QMainWindow):
         self.source_info_label.setText(f"Source: {source}")
 
     def quick_search(self, query: str):
-
         additionnal_filter = quicksearch(query)
         self.quick_search_edit.clear()
 
