@@ -96,6 +96,9 @@ def filters_to_flat(filters: dict):
     """
 
     flatten = []
+    if not isinstance(filters, dict):
+        LOGGER.error(f"filters_to_flat:filters is expected to be a dict, got instead:{filters}")
+        return []
     for k, v in filters.items():
         if isinstance(v, list):
             for i in v:
@@ -629,6 +632,9 @@ def filters_to_vql(filters: dict) -> str:
         return conditions
 
     # ---------------------------------
+    if not isinstance(filters, dict):
+        LOGGER.error(f"filters_to_vql:filters is expected to be a dict, got instead:{filters}")
+        return ""
     query = recursive(filters)
 
     # hacky code to remove first level parenthesis
