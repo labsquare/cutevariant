@@ -745,6 +745,18 @@ def build_sql_query(
         if where_clause and where_clause != "()":
             sql_query += " WHERE " + where_clause
 
+        # prevent the "too many FROM clause term, max 200" SQLite error
+        MAX_CONDITIONS_DEFAULT = 100
+        config = Config("filters_editor")
+        max_conditions = config.get("max_conditions", MAX_CONDITIONS_DEFAULT)
+        count_conditions = 1 + sum([where_clause.count(v) for v in ["AND", "OR"]])
+        if count_conditions > max_conditions:
+            LOGGER.debug(f"failed query: {sql_query}")
+            LOGGER.error(
+                f"QUERY FAILED because of too many conditions (= probably too many filters on samples). Expected {max_conditions} max, got instead: {count_conditions}"
+            )
+            return "SELECT * FROM variants WHERE 0 = 1 LIMIT 1"  # bogus query to return 0 rows
+
     # Add Order By
     if order_by:
         # TODO : sqlite escape field with quote
@@ -764,17 +776,6 @@ def build_sql_query(
 
     if limit:
         sql_query += f" LIMIT {limit} OFFSET {offset}"
-
-    # prevent the "too many FROM clause term, max 200" error
-    MAX_SAMPLES_DEFAULT = 100
-    config = Config("app")
-    max_samples = config.get("max_samples_in_query", MAX_SAMPLES_DEFAULT)
-    if len(samples_ids) > max_samples:
-        LOGGER.debug(f"failed query: {sql_query}")
-        LOGGER.error(
-            f"QUERY FAILED because too many samples in query. Expected {max_samples} max, got instead: {len(samples_ids)}"
-        )
-        return "SELECT * FROM variants WHERE 0 = 1 LIMIT 1"  # bogus query to return 0 rows
 
     return sql_query
 

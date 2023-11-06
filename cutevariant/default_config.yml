@@ -64,6 +64,9 @@ classifications:
     name: "Pathogenic"
     color: '#ed6d79'
 
+filters_editor:
+  max_conditions: 100
+
 tags:
   genotypes:
   - color: '#144eff'
