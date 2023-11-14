@@ -64,24 +64,40 @@ classifications:
     name: "Pathogenic"
     color: '#ed6d79'
 
+double_checking:
+  is_active:
+    variants: false
+    samples: false
+    genotypes: false
+  tags:
+    variants: "RECENTLY CHANGED"
+    samples: "RECENTLY CHANGED"
+    genotypes: "RECENTLY CHANGED"
+
 filters_editor:
   max_conditions: 100
 
 tags:
   genotypes:
   - color: '#144eff'
-    description: tag2
-    name: genotype#tag2
-  - color: '#ff343e'
     description: tag1
     name: genotype#tag1
+  - color: '#ff343e'
+    description: tag2
+    name: genotype#tag2
+  - color: '#ffa034'
+    description: "To mark for double checking by another user"
+    name: "RECENTLY CHANGED"
   samples:
   - color: '#3251ff'
-    description: tag2
-    name: sample#tag2
-  - color: '#ff3932'
     description: tag1
     name: sample#tag1
+  - color: '#ff3932'
+    description: tag2
+    name: sample#tag2
+  - color: '#ffa034'
+    description: "To mark for double checking by another user"
+    name: "RECENTLY CHANGED"
   variants:
   - color: '#ff201e'
     description: tag1
@@ -89,6 +105,9 @@ tags:
   - color: '#2e3dff'
     description: tag2
     name: variant#tag2
+  - color: '#ffa034'
+    description: "To mark for double checking by another user"
+    name: "RECENTLY CHANGED"
 
 
 variant_view:

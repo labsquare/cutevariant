@@ -1653,8 +1653,45 @@ class VariantView(QWidget):
                 continue
             unique_ids.add(variant_id)
             update_data = {"classification": int(value)}
+            update_data = self.add_double_check_tag(variant, update_data)
+
             self.model.update_variant(index.row(), update_data)
             self.parent.mainwindow.refresh_plugin("variant_edit")
+
+    def add_double_check_tag(self, variant: dict, update_data: dict):
+        """
+        When changing classification of a variant, automatically add a tag to the update data prior to database modification
+        So that a second user can easily fetch and verify those changes
+        This behavior can be (de)activated in Config
+
+        Args:
+            variant (dict): displayed data being modified
+            update_data (dict): modifications being made to displayed data
+
+        Returns:
+            dict: modified update_data including the supplemental tag
+        """
+        config = Config("double_checking")
+        if not config[
+            "is_active"
+        ]:  # prevent bugs with older configs without a double_checking section
+            return update_data
+        if not config["is_active"]["variants"]:
+            return update_data
+
+        tag_label = config["tags"]["variants"]
+        # check already present tags to avoid duplication
+        if hasattr(variant, "tags"):
+            tags_list = variant["tags"].split(",") if "," in variant["tags"] else []
+        else:
+            # if tags aren't in the row, need to fetch them from DB
+            db_var = sql.get_variant(self.conn, variant["id"])
+            tags_list = db_var["tags"].split(",") if "," in db_var["tags"] else []
+
+        if tag_label not in tags_list:
+            tags_list.append(tag_label)
+            update_data["tags"] = ",".join(sorted(tags_list))
+        return update_data
 
     def update_validation(self, value: int = 0):
         """Update validation of the variant for a given sample ID

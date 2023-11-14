@@ -97,7 +97,7 @@ from datetime import datetime
 
 # Custom imports
 import cutevariant.constants as cst
-import cutevariant.commons as cm
+# import cutevariant.commons as cm
 
 import cutevariant.core.querybuilder as qb
 from cutevariant.core.sql_aggregator import StdevFunc

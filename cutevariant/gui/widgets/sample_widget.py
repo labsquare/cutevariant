@@ -569,6 +569,20 @@ class SampleWidget(QWidget):
         for widget in self._section_widgets:
             widget.conn = conn
 
+    def add_double_check_tag(self, sample):
+        config = Config("double_checking")
+        if not config["is_active"]["samples"]:
+            return sample
+        
+        tag_label = config["tags"]["samples"]
+        old_sample = self.last_sample_hash
+        if old_sample["classification"] != sample["classification"]:
+            tags_list = sample["tags"].split(",") if "," in sample["tags"] else []
+            if tag_label not in tags_list:
+                tags_list.append(tag_label)
+                sample["tags"] = ",".join(sorted(tags_list))
+        return sample
+
     def save(self, sample_id: int):
         """Save widget forms to the database
 
@@ -581,19 +595,12 @@ class SampleWidget(QWidget):
         sample = sql.get_sample(self.conn, sample_id)
         current_sample_hash = self.get_sample_hash(sample)
 
-        if self.last_sample_hash != current_sample_hash:
-            ret = QMessageBox.warning(
-                None,
-                "Database has been modified by another user.",
-                "Do you want to overwrite value?",
-                QMessageBox.Yes | QMessageBox.No,
-            )
-            if ret == QMessageBox.No:
-                return
+        if cm.database_has_changed(current_sample_hash, self.last_sample_hash):
+            return
 
         for widget in self._section_widgets:
             sample.update(widget.get_sample())
-
+        sample = self.add_double_check_tag(sample)
         sql.update_sample(self.conn, sample)
 
     def load(self, sample_id: int):
@@ -629,7 +636,7 @@ class SampleWidget(QWidget):
         values.append(self.comment.toPlainText())
         return values
 
-    def get_sample_hash(self, sample: dict) -> str:
+    def get_sample_hash(self, sample: dict) -> dict:
         """Return a footprint of a sample based on editable fields.
 
         This is used to check if sample has been changed by other before to save into the database
@@ -638,15 +645,13 @@ class SampleWidget(QWidget):
             sample (dict): sample
 
         Returns:
-            str: a string representation of a sample
+            dict: a shortened identifying representation of a sample
         """
-        return repr(
-            {
+        return {
                 k: v
                 for k, v in sample.items()
-                if k in ["family, classification", "comment", "tags", "sex", "phenotype"]
+                if k in ["family", "classification", "comment", "tags", "sex", "phenotype"]
             }
-        )
 
 
 class SampleDialog(QDialog):

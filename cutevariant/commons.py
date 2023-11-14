@@ -8,8 +8,11 @@ import shutil
 from .bgzf import BgzfBlocks
 
 from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QMessageBox
 
 from cutevariant.constants import BASEDIR
+
+
 ################################################################################
 def create_logger():
     logger = logging.getLogger(__name__)
@@ -20,8 +23,8 @@ def create_logger():
     stdout_handler = logging.StreamHandler()
     stdout_handler.setFormatter(formatter)
 
-    file_handler = logging.FileHandler(os.path.join(BASEDIR,"cutevariant.log"), mode="w")
-    #file_handler.setFormatter(formatter)
+    file_handler = logging.FileHandler(os.path.join(BASEDIR, "cutevariant.log"), mode="w")
+    # file_handler.setFormatter(formatter)
 
     # class MyCustomLogFilter(logging.Filter):
     #     def __init__(self, *args, **kwargs):
@@ -35,7 +38,7 @@ def create_logger():
     # stdout_handler.addFilter(MyCustomLogFilter())
 
     # logger.addHandler(stdout_handler)
-    #logger.addHandler(file_handler)
+    # logger.addHandler(file_handler)
 
     return logger
 
@@ -123,7 +126,6 @@ def camel_to_snake(name: str) -> str:
 
 
 def is_json_file(filename):
-
     if not os.path.exists(filename):
         return False
 
@@ -137,7 +139,6 @@ def is_json_file(filename):
 
 
 def contrast_color(color: QColor, factor=200):
-
     luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255
 
     if luminance > 0.5:
@@ -179,7 +180,7 @@ def find_variant_name(conn, variant_id: int, troncate=False, troncate_len: int =
         conn: database connexion
         variant_id (int): variant ID
         troncate (bool, optional): If name need to be troncated
-        troncate_len (int, optional): max len of variant name if need to be troncated  
+        troncate_len (int, optional): max len of variant name if need to be troncated
     """
     from cutevariant.config import Config
     from cutevariant.core import sql
@@ -207,5 +208,41 @@ def find_variant_name(conn, variant_id: int, troncate=False, troncate_len: int =
     if troncate and len(variant_name) > troncate_len:
         troncate_position = int(troncate_len / 2)
         variant_name = variant_name[0:troncate_position] + "..." + variant_name[-troncate_position:]
-    
+
     return variant_name
+
+
+def database_has_changed(current_data: dict, db_data: dict):
+    """
+    Args:
+        current_data: what the user sees
+        db_data: what's actually in the database
+
+    Those values can differ if another user changed the DB from another instance and the current user hasn't refreshed yet
+
+    Return False if both are the same, or if the user agrees to overwrite the DB
+    Return True otherwise
+    """
+    difference = set(current_data.items()) - set(db_data.items())
+
+    if difference:
+        diff_fields = [f"{key}" for key, value in difference]
+
+        box = QMessageBox(None)
+        box.setWindowTitle("Modifier by another user")
+        box.setText(
+            f"The fields <b>{','.join(diff_fields)}</b> have been modified by another user.\nDo you want to overwrite their changes?"
+        )
+        box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        box.setDetailedText("The data you see:\n"
+                            + "\n".join([f'{field}:{current_data[field]}' for field in diff_fields if field in db_data])
+                            + "\nWhat's in the database:\n"
+                            + "\n".join([f'{field}:{db_data[field]}' for field in diff_fields if field in db_data])
+                        )
+        box.setIcon(QMessageBox.Warning)
+
+        # If a difference exists, only accept changes if the user explicitely clicks Yes
+        if box.exec_() == QMessageBox.Yes:
+            return False
+        return True
+    return False

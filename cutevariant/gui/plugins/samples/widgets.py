@@ -11,6 +11,7 @@ from PySide6.QtWidgets import *
 
 from cutevariant import LOGGER
 from cutevariant import constants as cst
+from cutevariant.commons import database_has_changed
 from cutevariant.core import sql
 from cutevariant.config import Config
 from cutevariant.gui import plugin, style, MainWindow
@@ -185,6 +186,16 @@ class SampleModel(QAbstractTableModel):
             row (int):
             update_data (dict):
         """
+        editable_fields = ["classification", "tags"]
+        displayed_data = self.get_sample(row)
+        db_data = sql.get_sample(self.conn, displayed_data["id"])
+        if database_has_changed(
+            {k: v for k, v in displayed_data.items() if k in editable_fields},
+            {k: v for k, v in db_data.items() if k in editable_fields},
+        ):
+            LOGGER.debug("canceled sample update")
+            return
+
         self._samples[row].update(update_data)
         data = self.get_sample(row)
         sql.update_sample(self.conn, data)
@@ -284,6 +295,15 @@ class SampleVerticalHeader(QHeaderView):
             LOGGER.debug("Cannot paint classification " + str(e))
 
 
+class LoadingMessage(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowIcon(QIcon(cst.DIR_ICONS + "app.png"))
+        self.setWindowTitle("Loading samples, please wait...")
+        self.setWindowFlag(Qt.WindowStaysOnTopHint)
+        self.setFixedSize(250, 1)
+
+
 class SamplesWidget(plugin.PluginWidget):
     LOCATION = plugin.DOCK_LOCATION
     ENABLE = True
@@ -363,6 +383,8 @@ class SamplesWidget(plugin.PluginWidget):
         dialog = SamplesEditor(self.model.conn)
 
         if dialog.exec() == QDialog.Accepted:
+            loading_msg = LoadingMessage()
+            loading_msg.show()
             self.model.add_samples(dialog.get_selected_samples())
             self.on_model_changed()
 
@@ -378,6 +400,7 @@ class SamplesWidget(plugin.PluginWidget):
             self.remove_all_sample_fields()
             self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
             self.mainwindow.refresh_plugins(sender=self, force_refresh=True)
+            loading_msg.close()
 
     def _create_classification_menu(self, sample: List = None):
         # Sample Classification
@@ -640,6 +663,41 @@ class SamplesWidget(plugin.PluginWidget):
         self.remove_all_sample_fields()
         self.on_create_samples_source(source_name=SAMPLES_SELECTION_NAME)
 
+    def add_double_check_tag(self, sample: dict, update_data: dict):
+        """
+        When changing classification of a sample, automatically add a tag to the update data prior to database modification
+        So that a second user can easily fetch and verify those changes
+        This behavior can be (de)activated in Config
+
+        Args:
+            sample (dict): displayed data being modified
+            update_data (dict): modifications being made to displayed data
+
+        Returns:
+            dict: modified update_data including the supplemental tag
+        """
+        config = Config("double_checking")
+        if not config[
+            "is_active"
+        ]:  # prevent bugs with older configs without a double_checking section
+            return update_data
+        if not config["is_active"]["samples"]:
+            return update_data
+
+        tag_label = config["tags"]["samples"]
+        # check already present tags to avoid duplication
+        if hasattr(sample, "tags"):
+            tags_list = sample["tags"].split(",") if "," in sample["tags"] else []
+        else:
+            # if tags aren't in the row, need to fetch them from DB
+            db_sample = sql.get_sample(self.model.conn, sample["id"])
+            tags_list = db_sample["tags"].split(",") if "," in db_sample["tags"] else []
+
+        if tag_label not in tags_list:
+            tags_list.append(tag_label)
+            update_data["tags"] = ",".join(sorted(tags_list))
+        return update_data
+
     def update_classification(self, value: int = 0):
         unique_ids = set()
         for index in self.view.selectionModel().selectedRows():
@@ -654,6 +712,7 @@ class SamplesWidget(plugin.PluginWidget):
 
             unique_ids.add(sample_id)
             update_data = {"classification": int(value)}
+            update_data = self.add_double_check_tag(sample, update_data)
             self.model.update_sample(index.row(), update_data)
 
             LOGGER.debug(sample)

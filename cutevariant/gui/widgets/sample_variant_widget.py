@@ -44,7 +44,6 @@ class GenotypeSectionWidget(AbstractSectionWidget):
         main_layout.addWidget(self.view)
 
     def set_genotype(self, genotype: dict):
-
         self.view.set_dict(genotype)
 
         self.view.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -90,9 +89,9 @@ class EvaluationSectionWidget(AbstractSectionWidget):
 
         # Load classification
         config = Config("classifications")
-        self.genotype_classification = config.get("genotypes",[])
+        self.genotype_classification = config.get("genotypes", [])
         self.genotype_classification = sorted(
-            self.genotype_classification, key=lambda d: d.get('number',0)
+            self.genotype_classification, key=lambda d: d.get("number", 0)
         )
         for item in self.genotype_classification:
             self.class_combo.addItem(
@@ -113,7 +112,6 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         return genotype
 
     def set_genotype(self, genotype: dict):
-
         # Load Sample name
         sample = sql.get_sample(self.conn, genotype.get("sample_id", 0))
         # sample_name = sample.get("name", None)
@@ -130,7 +128,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         config = Config("tags")
         for tag in config.get("genotypes", []):
             tags.append(tag)
-            self.tag_edit.addItem(tag.get("name",""))
+            self.tag_edit.addItem(tag.get("name", ""))
         self.tag_edit.setText(",".join(genotype.get("tags", "").split(self.TAG_SEPARATOR)))
 
         # Load comment
@@ -194,7 +192,6 @@ class VariantSectionWidget(AbstractSectionWidget):
         main_layout.addWidget(self.view)
 
     def set_genotype(self, genotype: dict):
-
         variant = sql.get_variant(self.conn, genotype["variant_id"], with_annotations=False)
 
         self.view.set_dict(
@@ -220,7 +217,6 @@ class SampleSectionWidget(AbstractSectionWidget):
         main_layout.addWidget(self.view)
 
     def set_genotype(self, genotype: dict):
-
         sample = sql.get_sample(self.conn, genotype["sample_id"])
 
         self.view.set_dict({i: v for i, v in sample.items() if i not in ["sample_id"]})
@@ -246,12 +242,10 @@ class HistorySectionWidget(AbstractSectionWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
     def set_genotype(self, genotype: dict):
-
         results = {}
         row_id = sql.get_genotype_rowid(self.conn, genotype["variant_id"], genotype["sample_id"])
 
         for rec in sql.get_histories(self.conn, "genotypes", row_id):
-
             key = rec["timestamp"] + " [" + str(rec["id"]) + "]"
             value = "{user} change {field} from '{before}' to '{after}'".format(**rec)
             results[key] = value
@@ -308,7 +302,6 @@ class SampleVariantWidget(QWidget):
         self.tab_widget.addTab(subw, widget.windowTitle())
 
     def _on_section_name_changed(self, text):
-
         index = self._section_widgets.index(self.sender())
 
         if index:
@@ -352,6 +345,33 @@ class SampleVariantWidget(QWidget):
         genotype[0].pop("name", None)
         return genotype[0]
 
+    def add_double_check_tag(self, genotype: dict):
+        """
+        When changing classification of a genotype, automatically add a tag to the update data prior to database modification
+        So that a second user can easily fetch and verify those changes
+        This behavior can be (de)activated in Config
+
+        Args:
+            genotype (dict): modifications being made to displayed genotype
+
+        Returns:
+            dict: modified update data including the supplemental tag
+        """
+        config = Config("double_checking")
+        if not config["is_active"]:  # in case of older config without this section
+            return genotype
+        if not config["is_active"]["genotypes"]:
+            return genotype
+
+        tag_label = config["tags"]["genotypes"]
+        old_genotype = self.last_genotype_hash
+        if old_genotype["classification"] != genotype["classification"]:
+            tags_list = genotype["tags"].split(",") if "," in genotype["tags"] else []
+            if tag_label not in tags_list:
+                tags_list.append(tag_label)
+                genotype["tags"] = ",".join(sorted(tags_list))
+        return genotype
+
     def save(self, sample_id: int, variant_id: int):
         """Save widget forms to the database
 
@@ -364,19 +384,13 @@ class SampleVariantWidget(QWidget):
         genotype = self.get_genotype(sample_id, variant_id)
         current_genotype_hash = self.get_genotype_hash(genotype)
 
-        if self.last_genotype_hash != current_genotype_hash:
-            ret = QMessageBox.warning(
-                None,
-                "Database has been modified by another user.",
-                "Do you want to overwrite value?",
-                QMessageBox.Yes | QMessageBox.No,
-            )
-            if ret == QMessageBox.No:
-                return
+        if cm.database_has_changed(current_genotype_hash, self.last_genotype_hash):
+            LOGGER.debug("canceled genotype update")
+            return
 
         for widget in self._section_widgets:
             genotype.update(widget.get_genotype())
-
+        genotype = self.add_double_check_tag(genotype)
         sql.update_genotypes(self.conn, genotype)
 
     def load(self, sample_id: int, variant_id: int):
@@ -412,7 +426,7 @@ class SampleVariantWidget(QWidget):
         values.append(self.comment.toPlainText())
         return values
 
-    def get_genotype_hash(self, sample: dict) -> str:
+    def get_genotype_hash(self, sample: dict) -> dict:
         """Return a footprint of a sample based on editable fields.
 
         This is used to check if sample has been changed by other before to save into the database
@@ -421,9 +435,9 @@ class SampleVariantWidget(QWidget):
             sample (dict): sample
 
         Returns:
-            str: a string representation of a sample
+            dict: a shortened identifying representation of a sample
         """
-        return repr({k: v for k, v in sample.items() if k in ["classification", "comment", "tags"]})
+        return {k: v for k, v in sample.items() if k in ["classification", "comment", "tags"]}
 
 
 class SampleVariantDialog(QDialog):

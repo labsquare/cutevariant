@@ -58,6 +58,7 @@ Exemples:
 import os
 import glob
 from abc import abstractmethod
+from functools import partial
 from logging import DEBUG
 import shutil
 from PySide6.QtNetwork import QNetworkProxy
@@ -74,7 +75,7 @@ from cutevariant.config import Config
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui import network, style, widgets
 from cutevariant.gui.widgets import ClassificationEditor
-from cutevariant.gui.widgets import TagEditor
+from cutevariant.gui.widgets import TagDialog, TagEditor
 import cutevariant.gui.mainwindow as mw
 
 
@@ -554,6 +555,103 @@ class ReportSettingsWidget(AbstractSettingsWidget):
         self.html_template.setText(html)
 
 
+class DoubleCheckingSettingsWidget(AbstractSettingsWidget):
+    """Allow to choose variables for the interface"""
+
+    def __init__(self):
+        """Init DoubleCheckingSettingsWidget"""
+        super().__init__()
+        self.setWindowTitle(self.tr("Double Checking"))
+        self.setWindowIcon(FIcon(0xF1518))
+
+        self.variants_active = QCheckBox()
+        self.samples_active = QCheckBox()
+        self.genotypes_active = QCheckBox()
+
+        self.variants_tag_edit = self._get_combo_box("variants")
+        self.samples_tag_edit = self._get_combo_box("samples")
+        self.genotypes_tag_edit = self._get_combo_box("genotypes")
+
+        description = QLabel("Automatically add a tag after a classification change in: ")
+
+        table = QTableWidget(3, 3, self)
+        table.setCellWidget(0, 0, self.variants_active)
+        table.setCellWidget(0, 1, QLabel("Variants table "))
+        table.setCellWidget(0, 2, self.variants_tag_edit)
+        table.setCellWidget(1, 0, self.samples_active)
+        table.setCellWidget(1, 1, QLabel("Samples table "))
+        table.setCellWidget(1, 2, self.samples_tag_edit)
+        table.setCellWidget(2, 0, self.genotypes_active)
+        table.setCellWidget(2, 1, QLabel("Genotypes table     "))
+        table.setCellWidget(2, 2, self.genotypes_tag_edit)
+
+        table.setShowGrid(False)
+        table.setSelectionMode(QAbstractItemView.NoSelection)
+        table.horizontalHeader().hide()
+        table.verticalHeader().hide()
+        table.setFrameStyle(QFrame.NoFrame)
+        table.resizeColumnsToContents()
+
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(description)
+        main_layout.addWidget(table)
+        main_layout.addStretch()
+
+        self.setLayout(main_layout)
+
+    def _get_combo_box(self, section):
+        combo_box = QComboBox()
+        combo_box.clear()
+        config = Config("tags")
+        tags_to_colors = {tag["name"]: tag["color"] for tag in config[section]}
+        for tag in sorted(tags_to_colors.keys()):
+            combo_box.addItem(QIcon(FIcon(0xF04F9, tags_to_colors[tag])), tag)
+        return combo_box
+
+    def save(self):
+        """Save the selected variables in config"""
+
+        config = Config("double_checking")
+
+        config["is_active"] = {
+            "variants": self.variants_active.isChecked(),
+            "samples": self.samples_active.isChecked(),
+            "genotypes": self.genotypes_active.isChecked(),
+        }
+        config["tags"] = {
+            "variants": self.variants_tag_edit.currentText(),
+            "samples": self.samples_tag_edit.currentText(),
+            "genotypes": self.genotypes_tag_edit.currentText(),
+        }
+
+        config.save()
+
+        # Clear pixmap cache
+        QPixmapCache.clear()
+
+    def load(self):
+        """Setup widgets in DoubleCheckingSettingsWidget"""
+
+        config = Config("double_checking")
+        if config.get("is_active") == None:
+            config = {
+                "is_active": {"variants": False, "samples": False, "genotypes": False},
+                "tags": {},
+            }
+
+        if config["is_active"].get("variants", False):
+            self.variants_active.setCheckState(Qt.Checked)
+        if config["is_active"].get("samples", False):
+            self.samples_active.setCheckState(Qt.Checked)
+        if config["is_active"].get("genotypes", False):
+            self.genotypes_active.setCheckState(Qt.Checked)
+
+        self.tags = config.get("tags", {"variants": None, "samples": None, "genotypes": None})
+        self.variants_tag_edit.setCurrentText(self.tags.get("variants", None))
+        self.samples_tag_edit.setCurrentText(self.tags.get("samples", None))
+        self.genotypes_tag_edit.setCurrentText(self.tags.get("genotypes", None))
+
+
 class SettingsDialog(QDialog):
     """Main widget for settings window
 
@@ -626,6 +724,7 @@ class SettingsDialog(QDialog):
         general_settings.add_page(StyleSettingsWidget())
         general_settings.add_page(VariablesSettingsWidget())
         general_settings.add_page(ReportSettingsWidget())
+        general_settings.add_page(DoubleCheckingSettingsWidget())
 
         # Classification
         classification_settings = SectionWidget()
@@ -709,7 +808,6 @@ class SettingsDialog(QDialog):
         from cutevariant.gui import plugin
 
         for extension in plugin.find_plugins():
-
             if "setting" in extension:
                 settings_widget_class = extension["setting"]
                 if not settings_widget_class.ENABLE:

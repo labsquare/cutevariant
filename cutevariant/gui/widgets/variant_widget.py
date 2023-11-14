@@ -19,6 +19,7 @@ from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.gui.widgets import TagEdit
 from cutevariant.config import Config
 
+from cutevariant import LOGGER
 from cutevariant import gui  # FormatterDelegate / cycle loop
 from cutevariant.gui.ficon import FIcon
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
@@ -502,6 +503,31 @@ class VariantWidget(QWidget):
         for widget in self._section_widgets:
             widget.conn = conn
 
+    def add_double_check_tag(self, variant):
+        """
+        When changing classification of a variant, automatically add a tag to the update data prior to database modification
+        So that a second user can easily fetch and verify those changes
+        This behavior can be (de)activated in Config
+
+        Args:
+            variant (dict): modifications being made to current variant
+        
+        Returns:
+            dict: modified update data including the supplemental tag
+        """
+        config = Config("double_checking")
+        if not config["is_active"]["variants"]:
+            return variant
+        
+        tag_label = config["tags"]["variants"]
+        old_var = self.last_variant_hash
+        if old_var["classification"] != variant["classification"]:
+            tags_list = variant["tags"].split(",") if "," in variant["tags"] else []
+            if tag_label not in tags_list:
+                tags_list.append(tag_label)
+                variant["tags"] = ",".join(sorted(tags_list))
+        return variant
+
     def save(self, variant_id: int):
         """Save widget forms to the database
 
@@ -514,21 +540,16 @@ class VariantWidget(QWidget):
         variant = sql.get_variant(self.conn, variant_id, with_annotations=True, with_samples=True)
         current_variant_hash = self.get_variant_hash(variant)
 
-        if self.last_variant_hash != current_variant_hash:
-            ret = QMessageBox.warning(
-                None,
-                "Database has been modified by another user.",
-                "Do you want to overwrite value?",
-                QMessageBox.Yes | QMessageBox.No,
-            )
-            if ret == QMessageBox.No:
-                return
+        if cm.database_has_changed(current_variant_hash, self.last_variant_hash):
+            LOGGER.debug("canceled variant update")
+            return
 
         del variant["annotations"]
         del variant["samples"]
-
+        
         for widget in self._section_widgets:
             variant.update(widget.get_variant())
+        variant = self.add_double_check_tag(variant)
 
         sql.update_variant(self.conn, variant)
 
@@ -567,7 +588,7 @@ class VariantWidget(QWidget):
         values.append(self.comment.toPlainText())
         return values
 
-    def get_variant_hash(self, variant: dict) -> str:
+    def get_variant_hash(self, variant: dict) -> dict:
         """Return a footprint of a variant based on editable fields.
 
         This is used to check if variant has been changed by other before to save into the database
@@ -576,15 +597,13 @@ class VariantWidget(QWidget):
             variant (dict): variant
 
         Returns:
-            str: a string representation of a variant
+            dict: a shortened representation of a variant
         """
-        return repr(
-            {
+        return {
                 k: v
                 for k, v in variant.items()
                 if k in ["classification", "favorite", "comment", "tags"]
             }
-        )
 
 
 class VariantDialog(QDialog):

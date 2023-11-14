@@ -46,7 +46,6 @@ from functools import partial
 
 
 class GenotypeVerticalHeader(QHeaderView):
-
     # COLOR = {0: "gray", 1: "orange", 2: "green"}
 
     def __init__(self, parent=None):
@@ -56,7 +55,6 @@ class GenotypeVerticalHeader(QHeaderView):
         return QSize(30, super().sizeHint().height())
 
     def paintSection(self, painter: QPainter, rect: QRect, section: int):
-
         painter.setBrush(QBrush(QColor("red")))
 
         painter.save()
@@ -198,11 +196,13 @@ class GenotypeModel(QAbstractTableModel):
 
     def set_fields(self, fields: typing.List[str]):
         if self.clicked_preset_fields != []:
-            #reorder fields corresponding to the preset that was just clicked
+            # reorder fields corresponding to the preset that was just clicked
             if not sorted(fields) == sorted(self.clicked_preset_fields):
-                raise RuntimeError(f"Fields in the clicked preset: {self.clicked_preset_fields} should be equal to selected fields: {fields}, only order should differ")
+                raise RuntimeError(
+                    f"Fields in the clicked preset: {self.clicked_preset_fields} should be equal to selected fields: {fields}, only order should differ"
+                )
             self._fields = self.clicked_preset_fields
-            self.clicked_preset_fields = [] # reset after use
+            self.clicked_preset_fields = []  # reset after use
         else:
             seen = set()
             unique_fields = []
@@ -246,7 +246,6 @@ class GenotypeModel(QAbstractTableModel):
         return toolTip.genotype_tooltip(data=self.get_genotype(row), conn=self.conn)
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
-
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             if section < len(self._headers):
                 return self._headers[section]
@@ -260,7 +259,6 @@ class GenotypeModel(QAbstractTableModel):
         return None
 
     def on_samples_loaded(self):
-
         self.beginResetModel()
 
         self._genotypes = self._load_samples_thread.results
@@ -272,6 +270,8 @@ class GenotypeModel(QAbstractTableModel):
 
         if "classification" not in self._fields:
             self._headers.remove("classification")
+        if "tags" not in self._fields:
+            self._headers.remove("tags")
 
         self.endResetModel()
 
@@ -307,6 +307,8 @@ class GenotypeModel(QAbstractTableModel):
         used_fields = copy.deepcopy(self.get_fields()) or []
         if "classification" not in used_fields:
             used_fields.append("classification")
+        if "tags" not in used_fields:
+            used_fields.append("tags")
 
         load_samples_func = partial(
             sql.get_genotypes,
@@ -396,11 +398,38 @@ class GenotypeModel(QAbstractTableModel):
 
         # change from memory
         rows = sorted(rows, reverse=True)
-        for row in rows:
 
+        # concurrency check
+        fields_to_compare = [
+            "classification",
+            "tags",
+        ]  # only fields that can be changed from this widget
+        # note: those two fields are always in self._genotypes, even if the column is not displayed (for classification color display and for this check)
+        current_genotypes = [v for v in self._genotypes if v["sample_id"] != None]
+        # don't compare samples who have a None genotypes as they can't be changed and have a different behavior when loading fields
+        samples_to_compare = [v["name"] for v in current_genotypes]
+        db_genotypes = [
+            v
+            for v in sql.get_genotypes(
+                self.conn,
+                self.get_variant_id(),
+                fields=fields_to_compare,
+                samples=samples_to_compare,
+            )
+        ]
+        for i in range(len(current_genotypes)):
+            current_genotypes[i] = {key: current_genotypes[i][key] for key in fields_to_compare}
+            db_genotypes[i] = {key: db_genotypes[i][key] for key in fields_to_compare}
+            if cm.database_has_changed(current_genotypes[i], db_genotypes[i]):
+                LOGGER.debug("canceled genotype edit")
+                return  # any True cancels the edition of all rows (more intuitive for user that their click does either all its intended effect or nothing at all)
+
+        # edit if no concurrency issues
+        for row in rows:
             self._genotypes[row].update(data)
 
             new_data = copy.deepcopy(self._genotypes[row])
+
             del new_data["name"]
 
             sql.update_genotypes(self.conn, new_data)
@@ -408,7 +437,6 @@ class GenotypeModel(QAbstractTableModel):
             self.headerDataChanged.emit(Qt.Vertical, row, row)
 
     def clear(self):
-
         self.beginResetModel()
         self._genotypes.clear()
         self.endResetModel()
@@ -523,15 +551,14 @@ class GenotypesWidget(plugin.PluginWidget):
         if self.model.rowCount() > 0:
             self.stack_layout.setCurrentIndex(1)
             self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-            self.view.resizeColumnsToContents() # using horizontalHeader() prevented interactivity
+            self.view.resizeColumnsToContents()  # using horizontalHeader() prevented interactivity
             self.view.horizontalHeader().setSectionResizeMode(
                 self.model.columnCount() - 1, QHeaderView.Stretch
-            ) # strech last column only
+            )  # strech last column only
         else:
             self.stack_layout.setCurrentIndex(0)
 
     def setup_actions(self):
-
         # Fields to display
         # field_action = create_widget_action(self.toolbar, self.field_selector)
         # field_action.setIcon(FIcon(0xF0756))
@@ -564,7 +591,6 @@ class GenotypesWidget(plugin.PluginWidget):
         self.load_presets()
 
     def load_presets(self):
-
         self.preset_menu.clear()
 
         config = Config("samples")
@@ -661,7 +687,6 @@ class GenotypesWidget(plugin.PluginWidget):
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
-
         row = self.view.selectionModel().currentIndex().row()
 
         genotype = self.model.get_genotype(row)
@@ -677,7 +702,6 @@ class GenotypesWidget(plugin.PluginWidget):
 
         # Validation
         if genotype["sample_id"] and genotype["variant_id"]:
-
             # find sample lock/unlock
             if self.is_locked(genotype.get("sample_id", 0)):
                 validation_menu_enable = False
@@ -699,7 +723,6 @@ class GenotypesWidget(plugin.PluginWidget):
             cat_menu.setEnabled(validation_menu_enable)
 
             for item in self.model.classifications:
-
                 if genotype["classification"] == item["number"]:
                     icon = 0xF0133
                     # cat_menu.setIcon(FIcon(icon, item["color"]))
@@ -717,7 +740,6 @@ class GenotypesWidget(plugin.PluginWidget):
             tags_preset = Config("tags")
 
             for item in tags_preset.get("genotypes", []):
-
                 icon = 0xF04F9
 
                 action = tags_menu.addAction(FIcon(icon, item["color"]), item["name"])
@@ -752,11 +774,9 @@ class GenotypesWidget(plugin.PluginWidget):
         return locked
 
     def _show_sample_dialog(self):
-
         row = self.view.selectionModel().currentIndex().row()
         sample = self.model.get_genotype(row)
         if sample:
-
             dialog = SampleDialog(self.conn, sample["sample_id"])
 
             if dialog.exec_() == QDialog.Accepted:
@@ -764,7 +784,6 @@ class GenotypesWidget(plugin.PluginWidget):
                 self.on_refresh()
 
     def _show_sample_variant_dialog(self):
-
         row = self.view.selectionModel().currentIndex().row()
         sample = self.model.get_genotype(row)
 
@@ -773,7 +792,6 @@ class GenotypesWidget(plugin.PluginWidget):
         variant_id = sample.get("variant_id", None)
 
         if sample and sample_id is not None and variant_id is not None:
-
             dialog = SampleVariantDialog(self.conn, sample["sample_id"], self.current_variant["id"])
 
             if dialog.exec_() == QDialog.Accepted:
@@ -793,6 +811,23 @@ class GenotypesWidget(plugin.PluginWidget):
             self.view.showColumn(col)
         else:
             self.view.hideColumn(col)
+
+    def add_double_check_tag(self):
+        """
+        When changing classification of a variant, automatically add a tag to the update data prior to database modification
+        So that a second user can easily fetch and verify those changes
+        This behavior can be (de)activated in Config
+        """
+        config = Config("double_checking")
+        if not config[
+            "is_active"
+        ]:  # prevent bugs with older configs without a double_checking section
+            return
+        if not config["is_active"]["genotypes"]:
+            return
+
+        tag_label = config["tags"]["genotypes"]
+        self._on_tags_changed([tag_label])
 
     def _on_classification_changed(self, value: int = None):
         """triggered from menu"""
@@ -819,7 +854,6 @@ class GenotypesWidget(plugin.PluginWidget):
             genotype.get("sample_id", None) is not None
             and genotype.get("variant_id", None) is not None
         ):
-
             if self.is_locked(genotype.get("sample_id", 0)):
                 sample_name = genotype.get("name", "unknown")
                 QMessageBox.information(
@@ -828,7 +862,9 @@ class GenotypesWidget(plugin.PluginWidget):
                 return
 
             rows = [i.row() for i in self.view.selectionModel().selectedRows()]
-            self.model.edit(rows, {"classification": value})
+            update_data = {"classification": value}
+            self.add_double_check_tag()
+            self.model.edit(rows, update_data)
 
             if "samples" in self.mainwindow.plugins:
                 self.mainwindow.refresh_plugin("samples")
@@ -861,7 +897,6 @@ class GenotypesWidget(plugin.PluginWidget):
         """triggered from menu"""
 
         for index in self.view.selectionModel().selectedRows():
-
             # current variant sample
             row = index.row()
             genotype = self.model.get_genotype(row)
@@ -887,11 +922,9 @@ class GenotypesWidget(plugin.PluginWidget):
             for tag in tags:
                 current_tags.append(tag) if tag not in current_tags else current_tags
 
-            # update tags
             self.model.edit([row], {"tags": cst.HAS_OPERATOR.join(current_tags)})
 
     def _on_clear_filters(self):
-
         self.on_refresh()
 
     def _create_filters(self, copy_existing_filters: bool = True) -> dict:
@@ -944,7 +977,6 @@ class GenotypesWidget(plugin.PluginWidget):
         #     return
 
         if success and name:
-
             sql.insert_selection_from_source(
                 self.conn, name, "variants", self._create_filters(False)
             )
@@ -953,7 +985,6 @@ class GenotypesWidget(plugin.PluginWidget):
                 self.mainwindow.refresh_plugin("source_editor")
 
         else:
-
             return
 
     def on_add_filter(self):
@@ -989,7 +1020,6 @@ class GenotypesWidget(plugin.PluginWidget):
         self.load_fields()
 
     def load_samples(self):
-
         self.sample_selector.clear()
         for sample in sql.get_samples(self.conn):
             self.sample_selector.add_item(FIcon(0xF0B55), sample["name"], data=sample["name"])
@@ -1056,7 +1086,6 @@ class GenotypesWidget(plugin.PluginWidget):
 
 
 if __name__ == "__main__":
-
     import sqlite3
     import sys
     from PySide6.QtWidgets import QApplication
