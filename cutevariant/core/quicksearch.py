@@ -2,6 +2,7 @@ from typing import Tuple
 import re
 
 from cutevariant import LOGGER
+from cutevariant.config import Config
 
 from .vql import VQLSyntaxError, parse_one_vql
 
@@ -52,8 +53,9 @@ def parse_gene_query(query: str) -> dict:
     if match:
         gene_name = match[0]
 
-        gene_col_name = "gene"
-        return {"$and": [{f"ann.{gene_col_name}": gene_name}]}
+        config = Config("variables")
+        gene_col = config.get("gene_field", "ann.gene")
+        return {"$and": [{f"{gene_col}": gene_name}]}
     else:
         return dict()
 
