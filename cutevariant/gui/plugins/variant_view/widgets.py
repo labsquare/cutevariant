@@ -1877,14 +1877,13 @@ class VariantView(QWidget):
         """
         Action on default doubleClick
         """
-        # self.open_editor(index)
-        self.update_favorites()
+        self.open_editor(index)
 
     def on_double_clicked_vertical_header(self, index: QModelIndex):
         """
         Action on doubleClick on verticalHeader
         """
-        self.open_editor(index)
+        self.update_favorites()
 
     def open_editor(self, index: QModelIndex):
         """
