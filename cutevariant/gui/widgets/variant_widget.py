@@ -57,6 +57,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         main_layout = QFormLayout()
 
         self.variant_label = QLabel()
+        self.variant_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.favorite = QCheckBox()
         self.favorite.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)

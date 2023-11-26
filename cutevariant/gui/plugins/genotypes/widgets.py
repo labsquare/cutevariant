@@ -515,6 +515,7 @@ class GenotypesWidget(plugin.PluginWidget):
         self.label.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setMinimumHeight(30)
+        self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         font = QFont()
         font.setBold(True)

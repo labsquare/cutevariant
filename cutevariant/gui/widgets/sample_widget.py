@@ -107,6 +107,7 @@ class EvaluationSectionWidget(AbstractSectionWidget):
         main_layout = QFormLayout()
 
         self.name_label = QLabel()
+        self.name_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.class_combo = QComboBox()
         self.tag_edit = TagEdit()
