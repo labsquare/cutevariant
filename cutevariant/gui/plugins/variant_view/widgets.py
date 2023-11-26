@@ -876,6 +876,8 @@ class VariantView(QWidget):
         self.view.horizontalHeader().setSectionsMovable(True)
         self.view.setModel(self.model)
 
+        self.load_settings()
+
         self.view.setItemDelegate(self.delegate)
         # setup bottom bar toolbar
         spacer = QWidget()
@@ -933,6 +935,12 @@ class VariantView(QWidget):
         self.view.selectionModel().currentChanged.connect(self.on_variant_clicked)
 
         self._setup_actions()
+
+    def load_settings(self):
+        config = Config("variant_view")
+        selection_color = config.get("selection_color", "#007acc")
+        self.view.setStyleSheet(f"selection-background-color: {selection_color}")
+        self.model.load_settings()
 
     def _setup_actions(self):
         # ## SETUP TOP BAR
@@ -2202,7 +2210,7 @@ class VariantViewWidget(plugin.PluginWidget):
             self.view.model.selected_samples = self.mainwindow.get_state_data("samples")
             self.view.model.order_by = self.mainwindow.get_state_data("order_by")
             self.view.model.source = self.mainwindow.get_state_data("source")
-            self.view.model.load_settings()
+            self.view.load_settings()
 
             self.view.load(reset_page=True)
 

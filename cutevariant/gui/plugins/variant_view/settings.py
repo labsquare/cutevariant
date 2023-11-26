@@ -176,6 +176,7 @@ class GeneralSettings(AbstractSettingsWidget):
 
         self.row_count_box = QSpinBox()
         self.memory_box = QSpinBox()
+        self.selection_color = QPushButton()
         self.decimals_check = QCheckBox()
         self.decimal_places_box = QSpinBox()
 
@@ -196,17 +197,20 @@ class GeneralSettings(AbstractSettingsWidget):
                                "}")
         decimals_layout.setContentsMargins(0, 2, 0, 0)
 
-        self.decimals_check.toggled.connect(self.on_click_decimals)
+        self.selection_color.clicked.connect(self._on_click_selection_color)
+        self.decimals_check.toggled.connect(self._on_click_decimals)
 
         f_layout = QFormLayout(self)
         f_layout.addRow(self.tr("Rows per page"), self.row_count_box)
         f_layout.addRow(self.tr("Memory Cache"), self.memory_box)
+        f_layout.addRow(self.tr("Selection color"), self.selection_color)
         f_layout.addRow(self.tr("Round numbers"), decimals_layout)
 
     def save(self):
         config = self.section_widget.create_config()
         config["rows_per_page"] = self.row_count_box.value()
         config["memory_cache"] = self.memory_box.value()
+        config["selection_color"] = self.selection_color.text()
         config["round_decimals"] = self.decimals_check.isChecked()
         config["decimal_places"] = self.decimal_places_box.value()
         config.save()
@@ -215,11 +219,23 @@ class GeneralSettings(AbstractSettingsWidget):
         config = self.section_widget.create_config()
         self.row_count_box.setValue(config.get("rows_per_page", 50))
         self.memory_box.setValue(config.get("memory_cache", 32))
+        self._set_selection_color(config.get("selection_color", "#007acc"))
         self.decimals_check.setChecked(config.get("round_decimals", False))
         self.decimal_places_box.setValue(config.get("decimal_places", 5))
-        self.on_click_decimals()
+        self._on_click_decimals()
     
-    def on_click_decimals(self):
+    def _on_click_selection_color(self):
+        color = QColorDialog.getColor()
+        if color:
+            self._set_selection_color(color)
+
+    def _set_selection_color(self, color: str):
+        pix = QPixmap(64, 64)
+        pix.fill(QColor(color))
+        self.selection_color.setIcon(QIcon(pix))
+        self.selection_color.setText(QColor(color).name())
+
+    def _on_click_decimals(self):
         if self.decimals_check.isChecked():
             self.decimal_places_box.setEnabled(True)
         else:
