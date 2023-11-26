@@ -664,7 +664,7 @@ class SampleDialog(QDialog):
         self.w = SampleWidget(conn)
 
         self.button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
-        self.html_button = QPushButton(self.tr("Create report ..."))
+        self.html_button = QPushButton(self.tr("Save and create report..."))
 
         self.button_layout = QHBoxLayout()
         self.button_layout.addWidget(self.html_button)
@@ -679,7 +679,7 @@ class SampleDialog(QDialog):
 
         self.button_box.accepted.connect(self.save)
         self.button_box.rejected.connect(self.reject)
-        self.html_button.clicked.connect(self.export_report)
+        self.html_button.clicked.connect(self.save_and_export)
 
         # self.resize(800, 600)
 
@@ -690,6 +690,13 @@ class SampleDialog(QDialog):
     def save(self):
         self.w.save(self._sample_id)
         self.accept()
+
+    def save_and_export(self):
+        """
+        Doing both at once prevents having to save modifications, then close and reopen the edit box to export the report
+        """
+        self.save()
+        self.export_report()
 
     def export_report(self):
         """Create HTML report"""
