@@ -176,26 +176,54 @@ class GeneralSettings(AbstractSettingsWidget):
 
         self.row_count_box = QSpinBox()
         self.memory_box = QSpinBox()
+        self.decimals_check = QCheckBox()
+        self.decimal_places_box = QSpinBox()
 
         self.memory_box.setSuffix(" MB")
 
         self.memory_box.setRange(0, 1000)
         self.row_count_box.setRange(5, 500)
+        self.decimal_places_box.setRange(0, 100)
+
+        decimals_layout = QHBoxLayout()
+        decimals_layout.addWidget(self.decimals_check)
+        decimals_layout.addWidget(QLabel("Decimal places: "))
+        decimals_layout.addWidget(self.decimal_places_box)
+        decimals_layout.setAlignment(Qt.AlignLeft)
+        self.decimals_check.setStyleSheet("QCheckBox"
+                               "{"
+                               "padding : 1px;"
+                               "}")
+        decimals_layout.setContentsMargins(0, 2, 0, 0)
+
+        self.decimals_check.toggled.connect(self.on_click_decimals)
 
         f_layout = QFormLayout(self)
         f_layout.addRow(self.tr("Rows per page"), self.row_count_box)
         f_layout.addRow(self.tr("Memory Cache"), self.memory_box)
+        f_layout.addRow(self.tr("Round numbers"), decimals_layout)
 
     def save(self):
         config = self.section_widget.create_config()
         config["rows_per_page"] = self.row_count_box.value()
         config["memory_cache"] = self.memory_box.value()
+        config["round_decimals"] = self.decimals_check.isChecked()
+        config["decimal_places"] = self.decimal_places_box.value()
         config.save()
 
     def load(self):
         config = self.section_widget.create_config()
         self.row_count_box.setValue(config.get("rows_per_page", 50))
         self.memory_box.setValue(config.get("memory_cache", 32))
+        self.decimals_check.setChecked(config.get("round_decimals", False))
+        self.decimal_places_box.setValue(config.get("decimal_places", 5))
+        self.on_click_decimals()
+    
+    def on_click_decimals(self):
+        if self.decimals_check.isChecked():
+            self.decimal_places_box.setEnabled(True)
+        else:
+            self.decimal_places_box.setEnabled(False)
 
 
 class LinkSettings(AbstractSettingsWidget):

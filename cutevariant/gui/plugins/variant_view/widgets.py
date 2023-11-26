@@ -1,4 +1,5 @@
 # Standard imports
+import decimal
 import functools
 import math
 import csv
@@ -153,6 +154,8 @@ class VariantModel(QAbstractTableModel):
         self.headers = []
 
         self.classifications = []
+
+        self.load_settings()
 
         # Cache all database fields and their descriptions for tooltips
         # Field names as keys, descriptions as values
@@ -319,7 +322,9 @@ class VariantModel(QAbstractTableModel):
                 if value is None:
                     return "NULL"
                 else:
-                    return str(self.variant(index.row())[column_name])
+                    if isinstance(value, float) and self.round_decimals:
+                        value = self.proper_round(value)
+                    return str(value)
 
             if role == Qt.ToolTipRole:
                 value = str(self.variant(index.row())[column_name])
@@ -755,6 +760,19 @@ class VariantModel(QAbstractTableModel):
         self.beginRemoveColumns(parent, column, column)
         self.fields = self.fields[:column] + self.fields[column + 1 :]
         self.endRemoveColumns()
+
+    def load_settings(self):
+        config = Config("variant_view")
+        self.round_decimals = config.get("round_decimals", False)
+        decimal_places_config = config.get("decimal_places", 10)
+        self.decimal_places =decimal.Decimal(10) ** -decimal_places_config
+
+    def proper_round(self, value):
+        """
+        This function serves to prevent banker's rounding and display more intuitive results
+        See https://stackoverflow.com/a/10826537
+        """
+        return float(decimal.Decimal(value).quantize(self.decimal_places, decimal.ROUND_HALF_UP))
 
 
 class LoadingTableView(QTableView):
@@ -2169,6 +2187,7 @@ class VariantViewWidget(plugin.PluginWidget):
             self.view.model.selected_samples = self.mainwindow.get_state_data("samples")
             self.view.model.order_by = self.mainwindow.get_state_data("order_by")
             self.view.model.source = self.mainwindow.get_state_data("source")
+            self.view.model.load_settings()
 
             self.view.load(reset_page=True)
 
