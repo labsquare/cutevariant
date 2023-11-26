@@ -1498,6 +1498,11 @@ class VariantView(QWidget):
             self.copy_cell_to_clipboard,
         )
         menu.addAction(
+            FIcon(0xF018F),
+            self.tr("Copy position"),
+            self.copy_position,
+        )
+        menu.addAction(
             FIcon(0xF0486),
             self.tr("&Select all"),
             self.select_all,
@@ -1861,6 +1866,17 @@ class VariantView(QWidget):
             return
         data = index.data()
         QApplication.instance().clipboard().setText(data)
+
+    def copy_position(self):
+        index = self.view.currentIndex()
+        if not index:
+            return
+        row = index.row()
+        variant = self.model.variants[row]
+        variant_id = variant["id"]
+        db_variant = sql.get_variant(self.conn, variant_id)
+        pos = f"{db_variant['chr']}:{db_variant['pos']}"
+        QApplication.instance().clipboard().setText(pos)
 
     def _open_default_link(self, index: QModelIndex):
         #  get default link
