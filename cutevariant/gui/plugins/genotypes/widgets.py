@@ -38,6 +38,8 @@ from cutevariant.gui.sql_thread import SqlThread
 from cutevariant.gui import FormatterDelegate
 from cutevariant.gui.formatters.cutestyle import CutestyleFormatter
 
+from cutevariant.gui.widgets.sort_field_dialog import SortFieldDialog
+
 import cutevariant.constants as cst
 
 from PySide6.QtWidgets import *
@@ -194,15 +196,21 @@ class GenotypeModel(QAbstractTableModel):
     def get_fields(self) -> typing.List[str]:
         return self._fields
 
-    def set_fields(self, fields: typing.List[str]):
+    def set_fields(self, fields: typing.List[str], keep_order=False):
         if self.clicked_preset_fields != []:
             # reorder fields corresponding to the preset that was just clicked
-            if not sorted(fields) == sorted(self.clicked_preset_fields):
+            if sorted(fields) != sorted(self.clicked_preset_fields):
                 raise RuntimeError(
                     f"Fields in the clicked preset: {self.clicked_preset_fields} should be equal to selected fields: {fields}, only order should differ"
                 )
             self._fields = self.clicked_preset_fields
             self.clicked_preset_fields = []  # reset after use
+        elif keep_order:
+            if len(set(fields)) != len(fields):
+                raise RuntimeError(
+                    f"Fields should be unique. Got this list: {fields}"
+                )
+            self._fields = fields
         else:
             seen = set()
             unique_fields = []
@@ -250,7 +258,7 @@ class GenotypeModel(QAbstractTableModel):
             if section < len(self._headers):
                 return self._headers[section]
 
-        # vertical header
+        # vertical header_headers
         if role == Qt.ToolTipRole and orientation == Qt.Vertical:
             genotype = self.get_genotype(section)
             genotype_tooltip = toolTip.genotype_tooltip(data=genotype, conn=self.conn)
@@ -278,6 +286,13 @@ class GenotypeModel(QAbstractTableModel):
         self._end_timer = time.perf_counter()
         self.elapsed_time = self._end_timer - self._start_timer
         self.load_finished.emit()
+
+    def sort_headers(self, sorted_headers: typing.List[str]):
+        if set(self._headers) != set(sorted_headers):
+            raise RuntimeError(
+                f"Sorted headers should contain exactly the same fields as current headers. Current: {self._headers} ; Sorted: {sorted_headers}"
+            )
+        self._headers = sorted_headers
 
     def load(self):
         """Start async queries to get sample fields for the selected variant
@@ -580,6 +595,18 @@ class GenotypesWidget(plugin.PluginWidget):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
 
+        ## sort button
+        self.sort_action = self.toolbar.addAction(FIcon(0xF04BA), "NA fields")
+        self.sort_action.triggered.connect(self._show_sort_dialog)
+        self.sort_action.setToolTip(
+            self.tr(
+                "Fields order<hr>Drag and drop checked fields to order them in the variant table"
+            )
+        )
+        self.toolbar.widgetForAction(self.sort_action).setToolButtonStyle(
+            Qt.ToolButtonTextBesideIcon
+        )
+
         # Presets list
         self.preset_menu = QMenu()
         self.preset_button = QPushButton()
@@ -686,6 +713,13 @@ class GenotypesWidget(plugin.PluginWidget):
         fields.insert(new_visual_index - 1, moved_field)
         self.model.set_fields(fields)
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
+    def _show_sort_dialog(self):
+        w = SortFieldDialog()
+        w.fields = self.model.get_fields()
+        if w.exec_():
+            self.model.set_fields(w.fields, keep_order=True)
+            self.model.sort_headers(["name"] + w.fields)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         row = self.view.selectionModel().currentIndex().row()
@@ -1061,6 +1095,9 @@ class GenotypesWidget(plugin.PluginWidget):
         self.model.set_variant_id(variant_id)
         self.model.set_samples(samples)
         self.model.load()
+
+        field_count = len(fields)
+        self.sort_action.setText(f"{field_count} fields")
 
         # self.view.horizontalHeader().setSectionResizeMode(
         #     0, QHeaderView.ResizeToContents
