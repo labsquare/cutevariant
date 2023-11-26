@@ -180,7 +180,7 @@ class GeneralSettings(AbstractSettingsWidget):
         self.memory_box.setSuffix(" MB")
 
         self.memory_box.setRange(0, 1000)
-        self.row_count_box.setRange(5, 100)
+        self.row_count_box.setRange(5, 500)
 
         f_layout = QFormLayout(self)
         f_layout.addRow(self.tr("Rows per page"), self.row_count_box)
