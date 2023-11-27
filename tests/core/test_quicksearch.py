@@ -1,8 +1,11 @@
 from cutevariant.core.quicksearch import quicksearch
+from cutevariant.config import Config
 import pytest
 
+config = Config("variables")
+gene_col = config.get("gene_field", "ann.gene")
 EXAMPLE_QUERIES = [
-    ("CFTR", {"$and": [{"ann.gene": "CFTR"}]}),
+    ("CFTR", {"$and": [{gene_col: "CFTR"}]}),
     ("ref='A'", {"$and": [{"ref": {"$eq": "A"}}]}),
     (
         "chr7:117120017-117308718",
