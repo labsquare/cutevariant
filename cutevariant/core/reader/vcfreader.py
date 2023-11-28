@@ -174,9 +174,10 @@ class VcfReader(AbstractReader):
         )  # TODO use class attr
 
         # Genotype format fields
-        format_fields = set(map(str.lower, vcf_reader.formats))
+        # format_fields = set(map(str.lower, vcf_reader.formats))
+        format_fields = set(vcf_reader.formats) #cant apply lower() immediately as genotype fields have to be fetched later with their real, case sensitive key
         # Remove gt field (added manually later)
-        format_fields.discard("gt")
+        format_fields.discard("GT")
 
         for i, record in enumerate(vcf_reader):
 
@@ -221,17 +222,16 @@ class VcfReader(AbstractReader):
                         # print("FORMAT FIELD",format_fields, sample["GQ"])
                         for gt_field in format_fields:
                             try:
-                                value = sample[gt_field.upper()]
+                                value = sample[gt_field]
                                 if isinstance(value, list):
                                     value = ",".join(str(i) for i in value)
-                                sample_data[gt_field] = value
+                                sample_data[gt_field.lower()] = value #now we can safely apply lower()
                             except AttributeError:
                                 # Some fields defined in VCF header by FORMAT data
                                 # are not in genotype fields of records...
-                                # LOGGER.debug(
-                                #     "VCFReader::parse: alt index %s; %s not defined in genotype ", index, gt_field
-                                # )
-                                pass
+                                LOGGER.debug(
+                                    "VCFReader::parse: alt index %s; %s not defined in genotype ", index, gt_field
+                                )
                         variant["samples"].append(sample_data)
 
                 yield variant
