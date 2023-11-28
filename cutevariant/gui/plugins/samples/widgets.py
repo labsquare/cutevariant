@@ -569,14 +569,14 @@ class SamplesWidget(plugin.PluginWidget):
         """
         Action on default doubleClick
         """
-        # self.on_edit()
-        self.on_show_variant()
+        self.on_edit()
+        
 
     def on_double_clicked_vertical_header(self):
         """
         Action on doubleClick on verticalHeader
         """
-        self.on_edit()
+        self.on_show_variant()
 
     def on_edit(self):
         sample = self.model.get_sample(self.view.currentIndex().row())

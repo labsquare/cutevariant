@@ -699,10 +699,10 @@ class GenotypesWidget(plugin.PluginWidget):
         self.on_refresh()
 
     def _on_double_clicked(self):
-        self._on_default_classification_changed()
+        self._show_sample_variant_dialog()
 
     def _on_double_clicked_vertical_header(self):
-        self._show_sample_variant_dialog()
+        self._on_default_classification_changed()
 
     def _on_section_moved(self, logical: int, old_visual_index: int, new_visual_index: int):
         """
