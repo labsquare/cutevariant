@@ -847,6 +847,12 @@ class SettingsDialog(QDialog):
             config.save()
             self.load_all()
 
+            QMessageBox.information(
+                self,
+                self.tr("Success!"),
+                self.tr(f"Successfully imported {os.path.basename(config_path)}"),
+            )
+
             self.mainwindow.refresh_plugins()
 
         else:
