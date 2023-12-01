@@ -759,6 +759,7 @@ class FilterWidget(QWidget):
 
         self.operator_box = OperatorFieldEditor()
         self.operator_box.fill()
+        self.operator_box.combo_box.currentTextChanged.connect(self._on_operator_changed)
 
         self.field_edit.combo_box.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
 
@@ -794,9 +795,13 @@ class FilterWidget(QWidget):
             self.form_layout.removeRow(2)
 
         current_field = self.field_edit.get_value()
-        self.value_edit = self.field_factory.create(current_field)
+        current_operator = self.operator_box.get_value()
+        self.value_edit = self.field_factory.create(current_field, operator=current_operator)
 
         self.form_layout.addRow("Value", self.value_edit)
+
+    def _on_operator_changed(self):
+        self._on_field_changed()
 
 
 class FilterDialog(QDialog):
