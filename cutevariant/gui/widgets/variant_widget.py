@@ -1,3 +1,5 @@
+import csv
+import io
 import sqlite3
 import typing
 
@@ -18,6 +20,7 @@ from PySide6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel
 from cutevariant.gui.widgets import DictWidget, MarkdownEditor
 from cutevariant.gui.widgets import TagEdit
 from cutevariant.config import Config
+from cutevariant.core.writer.vcfwriter import VcfWriter
 
 from cutevariant import LOGGER
 from cutevariant import gui  # FormatterDelegate / cycle loop
@@ -268,6 +271,8 @@ class OccurenceModel(QAbstractTableModel):
         self._items = []
         self._validated = validated
         self._headers = ["sample", "gt", "classification"]
+        config = Config("classifications")
+        self.genotype_classification = config.get("genotypes",[])
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent == QModelIndex():
@@ -316,8 +321,6 @@ class OccurenceModel(QAbstractTableModel):
             if index.column() == OccurenceModel.CLASSIFICATION_COLUMN:
                 classification = item.get("classification", 0)
                 classification_text = str(classification)
-                config = Config("classifications")
-                self.genotype_classification = config.get("genotypes",[])
                 for item in self.genotype_classification:
                     if item["number"] == classification:
                         classification_text = item["name"]
@@ -383,12 +386,14 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
         self.view.verticalHeader().hide()
         self.view.setAlternatingRowColors(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.view.setShowGrid(False)
-        self.summary_label = QLabel()
+        self.copy_btn = QPushButton("Copy selection to clipboard")
         main_layout.addWidget(self.view)
-        main_layout.addWidget(self.summary_label)
+        main_layout.addWidget(self.copy_btn)
         main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.copy_btn.clicked.connect(self.copy_table)
 
     def set_variant(self, variant: dict):
 
@@ -408,6 +413,30 @@ class OccurrenceSectionWidget(AbstractSectionWidget):
 
     def get_variant(self) -> dict:
         return {}
+    
+    def copy_table(self):
+        gt_map = VcfWriter.GENOTYPE_MAP
+
+        # In memory file
+        output = io.StringIO()
+        # Use CSV to securely format the data
+        writer = csv.DictWriter(output, delimiter="\t", fieldnames=self.model._headers)
+        writer.writeheader()
+        row_data = {}
+        for index in self.view.selectedIndexes():
+            col = self.model.data(index, Qt.DisplayRole)
+
+            if index.column() == OccurenceModel.GENOTYPE_COLUMN:
+                row_data[self.model._headers[index.column()]] = gt_map[col]
+            else:
+                row_data[self.model._headers[index.column()]] = col
+
+            if len(row_data.keys()) == len(self.model._headers):
+                writer.writerow(row_data)
+                row_data = {}
+
+        QApplication.instance().clipboard().setText(output.getvalue())
+        output.close()
 
 
 class HistorySectionWidget(AbstractSectionWidget):
