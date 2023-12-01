@@ -418,6 +418,7 @@ class GenotypeFieldEditor(BaseFieldEditor):
         self.box.addItem("1/1", 2)
         self.box.addItem("0/0", 0)
         self.box.addItem("?/?", -1)
+        self.box.addItem("./.", None)
 
         self.set_widget(self.box)
         self.box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
