@@ -8,6 +8,35 @@ import polars as pl
 import duckdb as db
 from datetime import datetime
 
+import re
+
+
+def get_vcf_metadata(vcf_file: Path):
+    metadata = dict()
+    with open(vcf_file, "r") as f:
+        for line in f:
+            if line.startswith("##INFO"):
+                _info_metadata = re.match(
+                    r"##INFO=<ID=(?P<id>.*),Number=(?P<number>.*),Type=(?P<type>.*),Description=\"(?P<description>.*)\">",
+                    line,
+                ).groupdict()
+                if "info" not in metadata:
+                    metadata["info"] = [_info_metadata]
+                else:
+                    metadata["info"].append(_info_metadata)
+            if line.startswith("##FORMAT"):
+                _format_metadata = re.match(
+                    r"##FORMAT=<ID=(?P<id>.*),Number=(?P<number>.*),Type=(?P<type>.*),Description=\"(?P<description>.*)\">",
+                    line,
+                ).groupdict()
+                if "format" not in metadata:
+                    metadata["format"] = [_format_metadata]
+                else:
+                    metadata["format"].append(_format_metadata)
+            if line.startswith("#"):
+                break
+    return metadata
+
 
 def import_vcf(project_dir: Path, vcf_file: Path):
 
@@ -42,10 +71,6 @@ def import_vcf(project_dir: Path, vcf_file: Path):
     # ref=A, alt=CT, format_sample_GT='1'
     # ref=A, alt=CTT, format_sample_GT='1'
 
-    initial_lf = initial_lf.with_columns(
-        *[pl.col(f"format_{s}_GT") for s in sample_names]
-    )
-
     aggregate_parquet = project_dir / "aggregates" / "variants.parquet"
 
     # Update aggregates/variants.parquet
@@ -56,7 +81,7 @@ def import_vcf(project_dir: Path, vcf_file: Path):
             [initial_lf, aggregate_lf], how="diagonal_relaxed"
         )
 
-        agg.with_columns(
+        agg = agg.with_columns(
             pl.col("hom_count").fill_null(0), pl.col("het_count").fill_null(0)
         )
 
